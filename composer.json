@@ -1,0 +1,23 @@
+{
+  "name": "phpaml/engine",
+  "description": "Client-side state, actions and rendering engine for AML View.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "AML\\Engine\\": "src/"
+    }
+  },
+  "scripts": {
+    "test": "php tests/run.php"
+  },
+  "extra": {
+    "phpaml": {
+      "type": "frontend-engine",
+      "version": "0.1.0-beta.1"
+    }
+  }
+}
