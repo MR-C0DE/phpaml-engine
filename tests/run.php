@@ -99,7 +99,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.1') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.2') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 if (!str_contains($script, "window.AMLEngine")
@@ -115,6 +115,9 @@ if (!str_contains($script, "window.AMLEngine")
     || !str_contains($script, 'data-aml-validate-api')
     || !str_contains($script, 'scheduleRemoteValidation')
     || !str_contains($script, "X-AML-Engine': 'validation")
+    || !str_contains($script, "meta[name=\"csrf-token\"]")
+    || !str_contains($script, "options.headers['X-CSRF-Token'] = token")
+    || !str_contains($script, "response.headers.get('X-CSRF-Token')")
     || !str_contains($script, 'amlStateConfig')
     || !str_contains($script, 'sharedState')
     || !str_contains($script, 'sessionStorage')

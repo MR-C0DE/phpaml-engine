@@ -10,6 +10,12 @@ if (($_GET['api'] ?? null) === 'effect') {
     echo json_encode(['value' => $query], JSON_THROW_ON_ERROR);
     return;
 }
+if (($_GET['api'] ?? null) === 'csrf') {
+    header('Content-Type: application/json');
+    header('X-CSRF-Token: renewed-browser-token');
+    echo json_encode(['token' => $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''], JSON_THROW_ON_ERROR);
+    return;
+}
 
 require dirname(__DIR__) . '/src/EngineRuntime.php';
 
@@ -65,7 +71,7 @@ $richState = htmlspecialchars(json_encode([
 ], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
 ?><!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>PHPAML Engine browser fixture</title></head>
+<head><meta charset="utf-8"><meta name="csrf-token" content="fixture-browser-token"><title>PHPAML Engine browser fixture</title></head>
 <body>
 <main>
   <h1>PHPAML Engine browser fixture</h1>
@@ -83,9 +89,11 @@ $richState = htmlspecialchars(json_encode([
     </ul>
   </section>
   <section data-aml-client id="root-b">
-    <template data-aml-state="{&quot;counter&quot;:0}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;counter&quot;:&quot;int&quot;}}"></template>
+    <template data-aml-state="{&quot;counter&quot;:0,&quot;csrfStatus&quot;:&quot;pending&quot;}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;counter&quot;:&quot;int&quot;,&quot;csrfStatus&quot;:&quot;string&quot;}}"></template>
     <button id="increment-b" data-aml-client-click="{&quot;type&quot;:&quot;increment&quot;,&quot;target&quot;:&quot;counter&quot;,&quot;value&quot;:1}">Increment B</button>
+    <button id="csrf-request" data-aml-client-click="{&quot;type&quot;:&quot;api&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;url&quot;:&quot;/browser-fixture.php?api=csrf&quot;,&quot;data&quot;:{},&quot;result&quot;:&quot;csrfStatus&quot;,&quot;error&quot;:null,&quot;loading&quot;:null,&quot;select&quot;:&quot;token&quot;}">CSRF request</button>
     <output data-aml-bind="counter"></output>
+    <output id="csrf-status" data-aml-bind="csrfStatus"></output>
   </section>
   <section data-aml-client id="root-c">
     <template data-aml-state="{&quot;account&quot;:{&quot;profile&quot;:{&quot;name&quot;:&quot;Default&quot;},&quot;active&quot;:false}}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{&quot;account&quot;:{&quot;storage&quot;:&quot;indexeddb&quot;,&quot;key&quot;:&quot;fixture.account&quot;,&quot;version&quot;:2,&quot;expiresAfter&quot;:null,&quot;migrations&quot;:{&quot;2&quot;:{&quot;rename&quot;:{&quot;name&quot;:&quot;profile.name&quot;},&quot;defaults&quot;:{&quot;active&quot;:true},&quot;remove&quot;:[&quot;legacyToken&quot;]}}}},&quot;types&quot;:{&quot;account&quot;:&quot;array&quot;}}"></template>

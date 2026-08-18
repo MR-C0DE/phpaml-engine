@@ -1,5 +1,9 @@
 # PHPAML Engine
 
+> Beta architecture note: the current inline runtime remains supported during
+> the beta. Moving it to a modular, versioned JavaScript asset is a stable-release
+> blocker; see [the runtime modularization plan](docs/runtime-modularization.md).
+
 `phpaml/engine` is the client-side execution engine for AML View. It owns local
 state, local actions and targeted bindings in the browser. Local interactions
 do not contact the PHP server.
@@ -67,6 +71,13 @@ The engine reports missing, newer, expired or corrupt data through explicit
 The reproducible browser fixture in `tests/browser-fixture.php` covers nested
 transactions, custom collection templates, multiple AML roots, history and
 restore, IndexedDB migrations, corrupt storage and live cross-tab updates.
+Playwright executes the critical interaction, transaction and CSRF scenarios
+in Chromium, Firefox and WebKit on every CI run.
+
+For same-origin mutations, Engine reads the token from
+`<meta name="csrf-token" content="…">`, sends it through `X-CSRF-Token`, and
+updates the meta element when the response provides a renewed token in the
+same header. GET requests never receive this header.
 
 Deployments with a strict Content Security Policy may pass the request nonce to
 `EngineRuntime::script($nonce)`. The nonce is validated before it is inserted;
