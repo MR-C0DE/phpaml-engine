@@ -6,7 +6,7 @@ namespace AML\Engine;
 
 final class EngineRuntime
 {
-    public const VERSION = '0.1.0-beta.1';
+    public const VERSION = '0.1.0-beta.2';
 
     public static function script(?string $nonce = null): string
     {
@@ -738,6 +738,13 @@ final class EngineRuntime
     }
     return value;
   };
+  const csrfToken = () => document.querySelector('meta[name="csrf-token"],meta[name="aml-csrf-token"]')?.getAttribute('content') || '';
+  const refreshCsrfToken = (response) => {
+    const renewed = response.headers.get('X-CSRF-Token');
+    if (!renewed) return;
+    const meta = document.querySelector('meta[name="csrf-token"],meta[name="aml-csrf-token"]');
+    if (meta) meta.setAttribute('content', renewed);
+  };
   const request = async (root, state, action, trigger, executionContext = null) => {
     const owner = executionContext?.owner || executionContext;
     const data = resolveData(action.data || {}, state, executionContext?.eventData);
@@ -757,6 +764,8 @@ final class EngineRuntime
       Object.entries(data).forEach(([key, value]) => url.searchParams.set(key, String(value ?? '')));
     } else {
       options.headers['Content-Type'] = 'application/json';
+      const token = csrfToken();
+      if (token) options.headers['X-CSRF-Token'] = token;
       options.body = JSON.stringify(data);
     }
     if (action.loading) commit(root, state, action.loading, true, executionContext);
@@ -765,6 +774,7 @@ final class EngineRuntime
     if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
     try {
       const response = await fetch(url, options);
+      refreshCsrfToken(response);
       const contentType = response.headers.get('content-type') || '';
       const result = contentType.includes('application/json') ? await response.json() : await response.text();
       if (!response.ok) throw new Error(typeof result === 'object' ? (result.message || result.error || `API request failed: ${response.status}`) : result);
@@ -1559,6 +1569,22 @@ final class EngineRuntime
   window.AMLEngine = {mount, unmount, on, navigate, context, route, clearPersisted, clearFormDraft, inspect, effects, pauseEffect, resumeEffect, runEffect, history: stateHistory, restore};
   mount();
   updateActiveLinks();
+  const liveReloadMeta = document.querySelector('meta[name="aml-live-reload"]');
+  if (liveReloadMeta) {
+    let liveReloadVersion = null;
+    const liveReloadEndpoint = liveReloadMeta.content || '/_aml/live-reload';
+    const checkForChanges = async () => {
+      try {
+        const response = await fetch(liveReloadEndpoint, {cache: 'no-store', headers: {Accept: 'application/json'}});
+        if (!response.ok) return;
+        const state = await response.json();
+        if (liveReloadVersion !== null && liveReloadVersion !== state.version) location.reload();
+        liveReloadVersion = state.version;
+      } catch { /* The development server may be restarting. */ }
+    };
+    checkForChanges();
+    setInterval(checkForChanges, 1000);
+  }
 })();
 </script>
 HTML;

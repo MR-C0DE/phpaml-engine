@@ -2,6 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.2 — 2026-08-17
+
+- plan de modularisation du runtime documenté comme prérequis de la stable ;
+- prise en charge du nonce CSP conservée pour le runtime inline de compatibilité ;
+- transactions d’état, collections riches et effets asynchrones stabilisés ;
+- renouvellement CSRF validé dans le navigateur ;
+- tests reproductibles sur Chromium, Firefox et WebKit avec Playwright 1.55.1.
+
 ## 0.1.0-beta.1
 
 - Execute declarative effects with dependency tracking and debounce.
