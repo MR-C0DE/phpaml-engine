@@ -11,6 +11,12 @@ test('updates local state without a page reload', async ({ page }) => {
   expect(await navigation).toBeNull();
 });
 
+test('runs the minified versioned runtime', async ({ page }) => {
+  await page.goto('/browser-fixture.php?minified=1');
+  await page.locator('#increment-b').click();
+  await expect(page.locator('#root-b output[data-aml-bind="counter"]')).toHaveText('1');
+});
+
 test('commits rich transactions atomically', async ({ page }) => {
   await page.locator('#run-transaction').click();
   await expect(page.locator('[data-aml-bind="profile.name"]')).toHaveText('Updated');

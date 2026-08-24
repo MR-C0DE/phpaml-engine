@@ -1,10 +1,15 @@
 {
   "name": "phpaml-engine-browser-tests",
   "private": true,
+  "type": "module",
   "scripts": {
+    "build": "node scripts/build-runtime.mjs",
+    "build:check": "node scripts/build-runtime.mjs --check",
+    "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.1"
+    "@playwright/test": "1.55.1",
+    "esbuild": "^0.28.2"
   }
 }

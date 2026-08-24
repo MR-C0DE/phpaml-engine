@@ -1,0 +1,16 @@
+export const rootStates = new WeakMap();
+export const rootConfigs = new WeakMap();
+export const mountedRoots = new Set();
+export const sharedState = Object.create(null);
+export const sharedTypes = Object.create(null);
+export const rootControllers = new WeakMap();
+export const rootCleanups = new WeakMap();
+export const validationTimers = new WeakMap();
+export const validationControllers = new WeakMap();
+export const transactions = new WeakMap();
+export const stateHistories = new WeakMap();
+export const pendingBatches = new WeakMap();
+export const pendingEffectOrigins = new WeakMap();
+export const effectRuntimes = new WeakMap();
+export const navigationRuntimes = new WeakMap();
+export const toastTimers = new WeakMap();
