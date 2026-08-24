@@ -2,16 +2,22 @@
 
 All notable changes follow Semantic Versioning.
 
-## 0.1.0-beta.2 — 2026-08-17
+## 0.1.0-beta.3 — 2026-08-24
 
 - runtime navigateur extrait en modules JavaScript maintenables ;
 - assets versionnés, minifiés et accompagnés de leur source map reproductible ;
 - chargement externe différé et compatible avec une CSP stricte ;
 - pont inline et prise en charge du nonce CSP conservés pour la compatibilité ;
-- transactions d’état, collections riches et effets asynchrones stabilisés ;
-- renouvellement CSRF validé dans le navigateur ;
 - tests unitaires JavaScript ajoutés pour l’état, le stockage, les effets, HTTP
   et la validation ;
+- chargement des assets minifiés validé sur Chromium, Firefox et WebKit.
+
+## 0.1.0-beta.2 — 2026-08-17
+
+- plan de modularisation du runtime documenté comme prérequis de la stable ;
+- prise en charge du nonce CSP conservée pour le runtime inline de compatibilité ;
+- transactions d’état, collections riches et effets asynchrones stabilisés ;
+- renouvellement CSRF validé dans le navigateur ;
 - tests reproductibles sur Chromium, Firefox et WebKit avec Playwright 1.55.1.
 
 ## 0.1.0-beta.1

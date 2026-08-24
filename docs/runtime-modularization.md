@@ -18,8 +18,8 @@ immutable caching for versioned filenames, and no inline runtime script.
 
 ## Migration stages
 
-1. **Completed in beta.2:** extract the current runtime without changing browser behavior.
-2. **Completed in beta.2:** split state, effects, navigation, validation and diagnostics
+1. **Completed in beta.3:** extract the current runtime without changing browser behavior.
+2. **Completed in beta.3:** split state, effects, navigation, validation and diagnostics
    into modules. The state and computed-value primitives now live in
    `src-js/core/state.js`; persistence, migrations and IndexedDB access live in
    `src-js/storage.js`; isolated effect-runtime construction, sanitized event
@@ -28,9 +28,9 @@ immutable caching for versioned filenames, and no inline runtime script.
    rotation live in `src-js/http.js`. All feed the reproducible runtime build.
    Synchronous form rules and control-value normalization live in
    `src-js/validation.js`.
-3. **Completed in beta.2:** bundle and minify reproducibly; publish source maps
+3. **Completed in beta.3:** bundle and minify reproducibly; publish source maps
    and verify committed outputs with `npm run build:check`.
-4. **Completed in beta.2:** expose a safe deferred external tag via
+4. **Completed in beta.3:** expose a safe deferred external tag via
    `EngineRuntime::externalScript()` and make `create-view-app` publish the
    versioned asset at `/_aml` with immutable caching.
 5. Keep `EngineRuntime::script()` only as a deprecated compatibility bridge.
