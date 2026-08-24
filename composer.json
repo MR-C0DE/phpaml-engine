@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "test": "php tests/run.php"
+    "test": "php tests/run.php",
+    "build-runtime": "node scripts/build-runtime.mjs"
   },
   "extra": {
     "phpaml": {

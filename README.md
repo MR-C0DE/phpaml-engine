@@ -8,6 +8,13 @@
 state, local actions and targeted bindings in the browser. Local interactions
 do not contact the PHP server.
 
+The browser runtime is distributed as a versioned `assets/engine-<version>.js`
+file, with a minified build and source map. Existing applications
+may continue to call `EngineRuntime::script()` as a compatibility bridge, while
+new integrations should serve the asset externally with a versioned URL.
+Once the application exposes the package's `assets` directory at `/_aml`, use
+`EngineRuntime::externalScript()` to emit a same-origin, deferred script tag.
+
 The first beta supports local actions, explicit API requests, navigation,
 lifecycle events, reactive presentation, collections, form bindings and
 accessible synchronous or asynchronous validation. AML View remains the
@@ -79,9 +86,10 @@ For same-origin mutations, Engine reads the token from
 updates the meta element when the response provides a renewed token in the
 same header. GET requests never receive this header.
 
-Deployments with a strict Content Security Policy may pass the request nonce to
-`EngineRuntime::script($nonce)`. The nonce is validated before it is inserted;
-applications do not need to enable `unsafe-inline` for the AML engine.
+Deployments should prefer `EngineRuntime::externalScript()`, which loads the
+same-origin versioned asset without requiring `unsafe-inline`. Applications
+still using the compatibility bridge may pass a validated request nonce to
+`EngineRuntime::script($nonce)`.
 
 ## Effects runtime
 

@@ -232,7 +232,7 @@ $richState = htmlspecialchars(json_encode([
     <div data-aml-virtual-list="{&quot;state&quot;:&quot;virtualRows&quot;,&quot;key&quot;:&quot;id&quot;,&quot;rowHeight&quot;:32,&quot;overscan&quot;:2}" style="height:160px;overflow-y:auto;position:relative"><div data-aml-virtual-content style="position:relative"><template data-aml-virtual-template><span data-aml-item-bind="name"></span></template></div></div>
   </section>
 </main>
-<?= EngineRuntime::script() ?>
+<?= EngineRuntime::script(null, isset($_GET['minified'])) ?>
 <script>
 const rootA = document.querySelector('#root-a');
 const transactionCount = document.querySelector('#transaction-count');
