@@ -6,7 +6,8 @@
     "build": "node scripts/build-runtime.mjs",
     "build:check": "node scripts/build-runtime.mjs --check",
     "test": "node --test tests/*.test.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "benchmark:browser": "playwright test benchmarks/engine.spec.mjs --config=playwright.performance.config.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.55.1",

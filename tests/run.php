@@ -259,4 +259,40 @@ if (!str_contains($scopedCondition, 'components.AuditComponent.i1.ready')
     throw new RuntimeException('Component-scoped conditions or API selection are inconsistent.');
 }
 
-echo "45 passed, 0 failed.\n";
+StateNamespace::reset();
+$firstFiber = new Fiber(static function (): string {
+    return StateNamespace::isolated(static function (): string {
+        StateNamespace::enter('ConcurrentComponent');
+        try {
+            Fiber::suspend(StateNamespace::qualify('before'));
+            return StateNamespace::qualify('after');
+        } finally {
+            StateNamespace::leave();
+        }
+    });
+});
+$secondFiber = new Fiber(static function (): string {
+    return StateNamespace::isolated(static function (): string {
+        StateNamespace::enter('ConcurrentComponent');
+        try {
+            Fiber::suspend(StateNamespace::qualify('before'));
+            return StateNamespace::qualify('after');
+        } finally {
+            StateNamespace::leave();
+        }
+    });
+});
+$expectedPrefix = 'components.ConcurrentComponent.i1.';
+if ($firstFiber->start() !== $expectedPrefix . 'before' || $secondFiber->start() !== $expectedPrefix . 'before') {
+    throw new RuntimeException('Concurrent renders do not start with isolated namespace counters.');
+}
+$firstFiber->resume();
+$secondFiber->resume();
+if ($firstFiber->getReturn() !== $expectedPrefix . 'after' || $secondFiber->getReturn() !== $expectedPrefix . 'after') {
+    throw new RuntimeException('Concurrent renders leaked their namespace stacks.');
+}
+if (StateNamespace::qualify('root') !== 'root') {
+    throw new RuntimeException('Concurrent renders polluted the main execution namespace.');
+}
+
+echo "46 passed, 0 failed.\n";
