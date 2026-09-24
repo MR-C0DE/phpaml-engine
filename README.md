@@ -9,6 +9,8 @@ state, local actions and targeted bindings in the browser. Local interactions
 do not contact the PHP server.
 
 The browser runtime is distributed as a versioned `assets/engine-<version>.js`
+file. Older versioned assets may remain in the Git history for reproducibility,
+but are excluded from current release archives.
 file, with a minified build and source map. Existing applications
 may continue to call `EngineRuntime::script()` as a compatibility bridge, while
 new integrations should serve the asset externally with a versioned URL.
