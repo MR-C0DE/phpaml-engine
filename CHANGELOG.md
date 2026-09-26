@@ -2,6 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.4 — 2026-09-26
+
+- add typed, declarative browser-console actions without inline JavaScript;
+- keep native `progress` and `meter` element properties synchronized with
+  reactive state updates;
+- validate the new behavior on Chromium, Firefox and WebKit;
+- document the client action and reactive native-element contracts.
+
 ## 0.1.0-beta.3 — 2026-08-24
 
 - runtime navigateur extrait en modules JavaScript maintenables ;

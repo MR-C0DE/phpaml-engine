@@ -245,7 +245,9 @@ export const render = (scope, state, target = null) => {
     scope.querySelectorAll('[data-aml-bind]').forEach((node) => {
       if (target && !pathAffects(node.dataset.amlBind, target)) return;
       const value = readPath(state, node.dataset.amlBind);
-      if (node.matches('input,textarea,select')) {
+      if (node.matches('progress,meter')) {
+        node.value = Number(value ?? 0);
+      } else if (node.matches('input,textarea,select')) {
         if (node.type === 'checkbox') node.checked = Boolean(value);
         else if (document.activeElement !== node) node.value = value ?? '';
       } else {

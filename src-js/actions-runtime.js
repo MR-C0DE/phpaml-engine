@@ -92,6 +92,11 @@ export const execute = async (root, state, action, trigger = null, executionCont
       if (selected) await execute(root, state, selected, trigger, executionContext);
       return;
     }
+    if (action.type === 'console') {
+      const method = action.level === 'warn' ? 'warn' : action.level === 'error' ? 'error' : 'log';
+      console[method](...resolveData(action.values || [], state, executionContext?.eventData));
+      return;
+    }
     if (action.type === 'navigate') await navigate(action.destination, !action.replace, root);
     else if (action.type === 'api') await request(root, state, action, trigger, executionContext);
     else apply(root, state, action, executionContext);

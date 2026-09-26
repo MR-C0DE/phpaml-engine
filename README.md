@@ -1,5 +1,9 @@
 # PHPAML Engine
 
+> Distribution note: release archives contain the current versioned runtime
+> and its source map. Older versioned bundles may remain in the Git history for
+> auditability, but are excluded from new distribution archives.
+
 > Beta architecture note: the current inline runtime remains supported during
 > the beta. Moving it to a modular, versioned JavaScript asset is a stable-release
 > blocker; see [the runtime modularization plan](docs/runtime-modularization.md).

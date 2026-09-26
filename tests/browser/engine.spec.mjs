@@ -8,7 +8,14 @@ test('updates local state without a page reload', async ({ page }) => {
   const navigation = page.waitForEvent('framenavigated', { timeout: 500 }).catch(() => null);
   await page.locator('#increment-b').click();
   await expect(page.locator('#root-b output[data-aml-bind="counter"]')).toHaveText('1');
+  await expect(page.locator('#counter-progress')).toHaveJSProperty('value', 1);
   expect(await navigation).toBeNull();
+});
+
+test('writes resolved values to the browser console', async ({ page }) => {
+  const message = page.waitForEvent('console');
+  await page.locator('#console-log').click();
+  expect((await message).text()).toBe('Count 0');
 });
 
 test('runs the minified versioned runtime', async ({ page }) => {

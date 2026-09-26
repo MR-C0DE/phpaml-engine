@@ -91,8 +91,10 @@ $richState = htmlspecialchars(json_encode([
   <section data-aml-client id="root-b">
     <template data-aml-state="{&quot;counter&quot;:0,&quot;csrfStatus&quot;:&quot;pending&quot;}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;counter&quot;:&quot;int&quot;,&quot;csrfStatus&quot;:&quot;string&quot;}}"></template>
     <button id="increment-b" data-aml-client-click="{&quot;type&quot;:&quot;increment&quot;,&quot;target&quot;:&quot;counter&quot;,&quot;value&quot;:1}">Increment B</button>
+    <button id="console-log" data-aml-client-click="{&quot;type&quot;:&quot;console&quot;,&quot;level&quot;:&quot;log&quot;,&quot;values&quot;:[&quot;Count&quot;,{&quot;$state&quot;:&quot;counter&quot;}]}">Log counter</button>
     <button id="csrf-request" data-aml-client-click="{&quot;type&quot;:&quot;api&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;url&quot;:&quot;/browser-fixture.php?api=csrf&quot;,&quot;data&quot;:{},&quot;result&quot;:&quot;csrfStatus&quot;,&quot;error&quot;:null,&quot;loading&quot;:null,&quot;select&quot;:&quot;token&quot;}">CSRF request</button>
     <output data-aml-bind="counter"></output>
+    <progress id="counter-progress" value="0" max="10" data-aml-bind="counter" aria-label="Counter progress"></progress>
     <output id="csrf-status" data-aml-bind="csrfStatus"></output>
   </section>
   <section data-aml-client id="root-c">
