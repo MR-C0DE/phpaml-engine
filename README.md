@@ -61,6 +61,17 @@ Reactive collections support `append`, `prepend`, `removeAt`, `removeBy`,
 action values are resolved at click time. List nodes are rebuilt safely with
 `textContent`, never raw HTML.
 
+State references also support safe arithmetic expressions. A `set` action can
+derive its value from current state without embedding PHP or JavaScript code:
+
+```php
+ClientAction::set('count', StateRef::to('count')->plus(1));
+ClientAction::set('count', StateRef::to('count')->minus(1));
+```
+
+Engine evaluates only its explicit expression allowlist; arbitrary code is
+never serialized or evaluated.
+
 `Actions::transaction()` groups several state changes into one browser render
 and emits one `aml:transaction` event containing the changed paths. Failures
 restore the original snapshot and emit `aml:transaction-error`. This avoids

@@ -23,6 +23,15 @@ if ($increment !== '{"type":"increment","target":"count","value":2}') {
     throw new RuntimeException('Increment action is invalid.');
 }
 
+$expression = ClientAction::set('count', StateRef::to('count')->plus(1))->json();
+if ($expression !== '{"type":"set","target":"count","value":{"$expression":{"operation":"add","left":{"$state":"count"},"right":1}}}') {
+    throw new RuntimeException('State addition expression is invalid.');
+}
+$subtraction = ClientAction::set('count', StateRef::to('count')->minus(1))->json();
+if (!str_contains($subtraction, '"operation":"subtract"')) {
+    throw new RuntimeException('State subtraction expression is invalid.');
+}
+
 if (ConsoleAction::log('Count', \AML\Engine\StateRef::to('count'))->json()
     !== '{"type":"console","level":"log","values":["Count",{"$state":"count"}]}') {
     throw new RuntimeException('Console log serialization failed.');
@@ -108,13 +117,13 @@ if (!str_contains($minifiedScript, 'window.AMLEngine') || strlen($minifiedScript
     throw new RuntimeException('The minified compatibility runtime is unavailable.');
 }
 $assetPath = EngineRuntime::assetPath();
-if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.4.js')) {
+if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.5.js')) {
     throw new RuntimeException('The external browser runtime asset is unavailable.');
 }
-if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.4.min.js') {
+if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.5.min.js') {
     throw new RuntimeException('The minified browser runtime filename is inconsistent.');
 }
-if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.4.min.js" data-aml-engine></script>') {
+if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.5.min.js" data-aml-engine></script>') {
     throw new RuntimeException('The external browser runtime tag is inconsistent.');
 }
 foreach (['https://example.test/assets', '//cdn.example.test', '/assets?version=1', '/\\evil.example/assets'] as $unsafeBase) {
@@ -133,7 +142,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.4') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.5') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 $package = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -232,7 +241,7 @@ if (!str_contains($scriptFeatures, "error?.name === 'AbortError'") || !str_conta
 if (!str_contains($scriptFeatures, 'data-aml-list') || !str_contains($scriptFeatures, "action.type === 'append'")) {
     throw new RuntimeException('Reactive collection support is missing.');
 }
-$localActions = substr($scriptFeatures, strpos($scriptFeatures, 'const apply ='), strpos($scriptFeatures, 'const resolveData =') - strpos($scriptFeatures, 'const apply ='));
+$localActions = substr($scriptFeatures, strpos($scriptFeatures, 'const apply ='), strpos($scriptFeatures, 'const CSRF_SELECTOR') - strpos($scriptFeatures, 'const apply ='));
 if (str_contains($localActions, 'fetch(')) {
     throw new RuntimeException('Local client actions must not contact the server.');
 }

@@ -17,4 +17,14 @@ final readonly class StateRef
     {
         return new self($name, $initial);
     }
+
+    public function plus(mixed $value): StateExpression
+    {
+        return new StateExpression('add', $this, $value);
+    }
+
+    public function minus(mixed $value): StateExpression
+    {
+        return new StateExpression('subtract', $this, $value);
+    }
 }

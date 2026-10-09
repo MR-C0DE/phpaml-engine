@@ -2,6 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.5 — 2026-10-07
+
+- add safe arithmetic state expressions through `StateRef::plus()` and
+  `StateRef::minus()`;
+- evaluate expressions from an explicit operation allowlist without `eval` or
+  executable client code;
+- allow `set` actions to derive their next value from current reactive state.
+
 ## 0.1.0-beta.4 — 2026-09-26
 
 - add typed, declarative browser-console actions without inline JavaScript;

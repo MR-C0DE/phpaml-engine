@@ -12,6 +12,18 @@ test('updates local state without a page reload', async ({ page }) => {
   expect(await navigation).toBeNull();
 });
 
+test('evaluates safe arithmetic state expressions', async ({ page }) => {
+  const counter = page.locator('#root-b output[data-aml-bind="counter"]');
+
+  await page.locator('#expression-add').click();
+  await expect(counter).toHaveText('1');
+  await expect(page.locator('#counter-progress')).toHaveJSProperty('value', 1);
+
+  await page.locator('#expression-subtract').click();
+  await expect(counter).toHaveText('0');
+  await expect(page.locator('#counter-progress')).toHaveJSProperty('value', 0);
+});
+
 test('writes resolved values to the browser console', async ({ page }) => {
   const message = page.waitForEvent('console');
   await page.locator('#console-log').click();

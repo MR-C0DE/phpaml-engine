@@ -111,18 +111,11 @@ export const apply = (scope, state, action, executionContext = null) => {
     else throw new Error(`Unknown AML client action: ${action.type}`);
     commit(scope, state, action.target, next, executionContext);
   };
-export const resolveData = (value, state, eventData = null) => {
-    if (Array.isArray(value)) return value.map((item) => resolveData(item, state, eventData));
-    if (value && typeof value === 'object') {
-      if (typeof value.$state === 'string') return readPath(state, value.$state);
-      if (typeof value.$event === 'string') return readPath(eventData || {}, value.$event);
-      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveData(item, state, eventData)]));
-    }
-    return value;
-  };
 import { mountedRoots, pendingBatches, pendingEffectOrigins, rootConfigs, rootStates, sharedState, transactions } from './context.js';
 import { clone, owningTarget, readPath, recomputeComputed, writePath } from './core/state.js';
+import { resolveData } from './core/value.js';
 import { indexedState, persistedPayload } from './storage.js';
 import { render } from './rendering.js';
 import { lifecycle, remember } from './lifecycle.js';
 import { runEffects } from './effects-runtime.js';
+export { resolveData } from './core/value.js';
