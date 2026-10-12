@@ -41,18 +41,74 @@ export const request = async (root, state, action, trigger, executionContext = n
     }
   };
 export const matches = (state, action) => {
-    const current = readPath(state, action.state);
-    if (action.operator === 'eq') return current === action.value;
-    if (action.operator === 'neq') return current !== action.value;
-    if (action.operator === 'gt') return current > action.value;
-    if (action.operator === 'gte') return current >= action.value;
-    if (action.operator === 'lt') return current < action.value;
-    if (action.operator === 'lte') return current <= action.value;
+    const current = Object.hasOwn(action, 'left') ? resolveData(action.left, state) : readPath(state, action.state);
+    const expected = resolveData(action.value, state);
+    if (action.operator === 'eq') return current === expected;
+    if (action.operator === 'neq') return current !== expected;
+    if (action.operator === 'gt') return current > expected;
+    if (action.operator === 'gte') return current >= expected;
+    if (action.operator === 'lt') return current < expected;
+    if (action.operator === 'lte') return current <= expected;
     if (action.operator === 'truthy') return Boolean(current);
     if (action.operator === 'falsy') return !Boolean(current);
     return false;
   };
 export const execute = async (root, state, action, trigger = null, executionContext = null) => {
+    if (action.type === 'element-ref') {
+      const element = root.querySelector(`[data-aml-ref="${CSS.escape(String(action.ref || ''))}"]`);
+      if (!element) throw new Error(`Unknown AML element ref: ${action.ref}`);
+      if (!['focus', 'blur', 'select', 'play', 'pause'].includes(action.operation)) throw new Error(`Unsupported AML ref operation: ${action.operation}`);
+      if (typeof element[action.operation] !== 'function') throw new Error(`Element ref does not support ${action.operation}`);
+      const result = element[action.operation]();
+      if (result && typeof result.then === 'function') await result;
+      return;
+    }
+    if (action.type === 'form-state-reset') {
+      const form = trigger?.closest?.('form[data-aml-form-state]');
+      form?.reset();
+      if (form) queueMicrotask(() => form.querySelectorAll('[data-aml-model]').forEach((control) => updateModel(root, state, control)));
+      commit(root, state, action.dirty, false, executionContext);
+      commit(root, state, action.touched, false, executionContext);
+      commit(root, state, action.valid, true, executionContext);
+      commit(root, state, action.invalid, false, executionContext);
+      commit(root, state, action.submitting, false, executionContext);
+      commit(root, state, action.submitted, false, executionContext);
+      commit(root, state, action.error, '', executionContext);
+      return;
+    }
+    if (action.type === 'form-state-action') {
+      const childContext = executionContext || {};
+      commit(root, state, action.submitting, true, executionContext);
+      commit(root, state, action.submitted, true, executionContext);
+      commit(root, state, action.error, '', executionContext);
+      try {
+        await execute(root, state, action.action, trigger, childContext);
+        root.dispatchEvent(new CustomEvent('aml:form-success', {detail: {action}}));
+      } catch (error) {
+        commit(root, state, action.error, error?.message || String(error), executionContext);
+        root.dispatchEvent(new CustomEvent('aml:form-error', {detail: {action, error}}));
+      } finally {
+        commit(root, state, action.submitting, false, executionContext);
+      }
+      return;
+    }
+    if (action.type === 'action-state') {
+      const childContext = executionContext || {};
+      commit(root, state, action.pending, true, executionContext);
+      commit(root, state, action.success, false, executionContext);
+      commit(root, state, action.error, '', executionContext);
+      try {
+        await execute(root, state, action.action, trigger, childContext);
+        commit(root, state, action.success, true, executionContext);
+        root.dispatchEvent(new CustomEvent('aml:action-success', {detail: {action}}));
+      } catch (error) {
+        commit(root, state, action.error, error?.message || String(error), executionContext);
+        root.dispatchEvent(new CustomEvent('aml:action-error', {detail: {action, error}}));
+      } finally {
+        commit(root, state, action.pending, false, executionContext);
+      }
+      return;
+    }
     if (action.type === 'transaction') {
       const parent = transactions.get(root);
       const context = parent || {changes: new Map(), snapshot: clone(state)};
@@ -108,3 +164,4 @@ import { csrfToken, prepareApiRequest, refreshCsrfToken } from './http.js';
 import { hasAsyncAction } from './core/action-analysis.js';
 import { render } from './rendering.js';
 import { navigate } from './navigation.js';
+import { updateModel } from './forms-runtime.js';

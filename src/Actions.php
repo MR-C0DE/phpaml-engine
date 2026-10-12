@@ -25,4 +25,14 @@ final class Actions
     ): ConditionalAction {
         return new ConditionalAction($state, $operator, $value, $then, $otherwise);
     }
+
+    public static function whenValue(
+        StateRef|StateExpression $left,
+        string $operator,
+        mixed $value,
+        ClientInstruction $then,
+        ?ClientInstruction $otherwise = null,
+    ): ConditionalAction {
+        return new ConditionalAction($left, $operator, $value, $then, $otherwise);
+    }
 }

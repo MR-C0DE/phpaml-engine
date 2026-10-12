@@ -116,6 +116,7 @@ final readonly class ClientAction implements ClientInstruction
     {
         if ($value instanceof StateRef) return ['$state' => $value->name];
         if ($value instanceof StateExpression) return self::normalize($value->payload());
+        if ($value instanceof StateConditional) return self::normalize($value->payload());
         if ($value instanceof EventRef) return ['$event' => $value->path];
         if (!is_array($value)) return $value;
         $normalized = [];

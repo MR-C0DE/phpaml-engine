@@ -2,6 +2,23 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.6 — 2026-10-12
+
+- extend safe state expressions with multiplication, division and modulo;
+- add safe string concatenation and boolean negation expressions;
+- allow conditional actions to compare safe state expressions;
+- add safe conditional values for PHP-style ternary expressions;
+- add `choose()` for concise conditional values in reactive view output;
+- add `prefixedBy()` for readable prefix-first reactive concatenation;
+- support negative `remove-at` indexes so `-1` consistently removes the final item;
+- reject division and modulo by zero in the browser runtime.
+- add action-state execution with automatic pending, success, and error
+  transitions for synchronous and asynchronous client actions;
+- add tracked native-form lifecycle state, submission errors, validation
+  synchronization and reactive reset behavior;
+- add CSP-safe, allowlisted element-reference operations for focus, selection,
+  and native media playback controls;
+
 ## 0.1.0-beta.5 — 2026-10-07
 
 - add safe arithmetic state expressions through `StateRef::plus()` and

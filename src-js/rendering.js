@@ -242,6 +242,10 @@ export const renderContexts = (root, state, target = null) => {
     });
   };
 export const render = (scope, state, target = null) => {
+    scope.querySelectorAll('[data-aml-bind-value]').forEach((node) => {
+      const value = resolveData(JSON.parse(node.dataset.amlBindValue), state);
+      node.textContent = value ?? '';
+    });
     scope.querySelectorAll('[data-aml-bind]').forEach((node) => {
       if (target && !pathAffects(node.dataset.amlBind, target)) return;
       const value = readPath(state, node.dataset.amlBind);
@@ -335,4 +339,4 @@ export const render = (scope, state, target = null) => {
 import { effectRuntimes, rootConfigs, toastTimers } from './context.js';
 import { deletePath, pathAffects, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
 import { cleanupEffect, registerEffect } from './effects-runtime.js';
-import { commit } from './state-runtime.js';
+import { commit, resolveData } from './state-runtime.js';

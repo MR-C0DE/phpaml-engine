@@ -7,7 +7,7 @@ namespace AML\Engine;
 /** A safe, serializable state expression evaluated by AML Engine. */
 final readonly class StateExpression
 {
-    private const OPERATIONS = ['add', 'subtract'];
+    private const OPERATIONS = ['add', 'subtract', 'multiply', 'divide', 'modulo', 'concat', 'not'];
 
     public function __construct(
         public string $operation,
@@ -27,6 +27,18 @@ final readonly class StateExpression
     public function minus(mixed $value): self
     {
         return new self('subtract', $this, $value);
+    }
+
+    public function times(mixed $value): self { return new self('multiply', $this, $value); }
+    public function dividedBy(mixed $value): self { return new self('divide', $this, $value); }
+    public function modulo(mixed $value): self { return new self('modulo', $this, $value); }
+    public function concat(mixed $value): self { return new self('concat', $this, $value); }
+    public function prefixedBy(mixed $value): self { return new self('concat', $value, $this); }
+    public function negated(): self { return new self('not', $this, null); }
+
+    public function choose(mixed $then, mixed $otherwise): StateConditional
+    {
+        return new StateConditional($this, 'truthy', true, $then, $otherwise);
     }
 
     /** @return array{\$expression: array{operation: string, left: mixed, right: mixed}} */

@@ -84,6 +84,23 @@ test('drives rich components from declarative state', async ({ page }) => {
   await expect(page.getByText('Accordion content')).toBeVisible();
 });
 
+test('tracks native forms and controls allowlisted element refs', async ({ page }) => {
+  const root = page.locator('#root-hooks');
+  await expect(root.locator('[data-aml-bind="form.invalid"]')).toHaveText('true');
+  await page.locator('#focus-tracked').click();
+  await expect(page.locator('#tracked-name')).toBeFocused();
+  await page.locator('#tracked-name').fill('André');
+  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('true');
+  await page.locator('#tracked-name').blur();
+  await expect(root.locator('[data-aml-bind="form.touched"]')).toHaveText('true');
+  await page.getByRole('button', {name: 'Submit tracked form'}).click();
+  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('true');
+  await expect(root.locator('[data-aml-bind="name"]')).toHaveText('saved');
+  await page.locator('#reset-tracked').click();
+  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('false');
+  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('false');
+});
+
 test('changes themes and navigates without replacing the document', async ({ page }) => {
   await page.goto('/navigation-fixture.php?page=home');
   const documentId = await page.locator('html').getAttribute('data-document-id');

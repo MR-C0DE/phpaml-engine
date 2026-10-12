@@ -89,7 +89,12 @@ export const apply = (scope, state, action, executionContext = null) => {
     else if (action.type === 'set') next = value;
     else if (action.type === 'append') next = [...(Array.isArray(current) ? current : []), value];
     else if (action.type === 'prepend') next = [value, ...(Array.isArray(current) ? current : [])];
-    else if (action.type === 'remove-at') next = (Array.isArray(current) ? current : []).filter((_, index) => index !== Number(value));
+    else if (action.type === 'remove-at') {
+      const items = Array.isArray(current) ? current : [];
+      const requested = Number(value);
+      const index = requested < 0 ? items.length + requested : requested;
+      next = items.filter((_, itemIndex) => itemIndex !== index);
+    }
     else if (action.type === 'remove-by') next = (Array.isArray(current) ? current : []).filter((item) => readPath(item, value.key) !== value.value);
     else if (action.type === 'update-by') next = (Array.isArray(current) ? current : []).map((item) => readPath(item, value.key) === value.value ? {...item, ...value.changes} : item);
     else if (action.type === 'sort-by') next = [...(Array.isArray(current) ? current : [])].sort((left, right) => {

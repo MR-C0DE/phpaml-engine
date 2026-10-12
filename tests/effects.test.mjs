@@ -33,5 +33,9 @@ test('detects asynchronous actions recursively', () => {
   assert.equal(hasAsyncAction({type: 'set'}), false);
   assert.equal(hasAsyncAction({type: 'sequence', actions: [{type: 'set'}, {type: 'api'}]}), true);
   assert.equal(hasAsyncAction({type: 'condition', then: {type: 'set'}, otherwise: {type: 'api'}}), true);
+  assert.equal(hasAsyncAction({type: 'action-state', action: {type: 'api'}}), true);
+  assert.equal(hasAsyncAction({type: 'action-state', action: {type: 'set'}}), false);
+  assert.equal(hasAsyncAction({type: 'form-state-action', action: {type: 'api'}}), true);
+  assert.equal(hasAsyncAction({type: 'form-state-action', action: {type: 'set'}}), false);
   assert.equal(hasAsyncAction(null), false);
 });

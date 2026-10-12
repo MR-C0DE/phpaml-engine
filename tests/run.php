@@ -31,6 +31,28 @@ $subtraction = ClientAction::set('count', StateRef::to('count')->minus(1))->json
 if (!str_contains($subtraction, '"operation":"subtract"')) {
     throw new RuntimeException('State subtraction expression is invalid.');
 }
+$arithmetic = ClientAction::set('total', StateRef::to('price')->times(StateRef::to('quantity'))->minus(4))->json();
+if (!str_contains($arithmetic, '"operation":"multiply"') || !str_contains($arithmetic, '"operation":"subtract"')) {
+    throw new RuntimeException('Extended state arithmetic expression is invalid.');
+}
+$natural = ClientAction::set('message', StateRef::to('prefix')->concat(StateRef::to('count')))->json();
+if (!str_contains($natural, '"operation":"concat"')) throw new RuntimeException('State concatenation expression is invalid.');
+$ternary = ClientAction::set('discount', new \AML\Engine\StateConditional(StateRef::to('total'), 'gte', 100, 10, 0))->json();
+if (!str_contains($ternary, '"$conditional"') || !str_contains($ternary, '"operator":"gte"')) {
+    throw new RuntimeException('Conditional state value is invalid.');
+}
+$choice = ClientAction::set('label', StateRef::to('enabled')->choose('Active', 'Inactive'))->json();
+if (!str_contains($choice, '"$conditional"') || !str_contains($choice, '"then":"Active"')) {
+    throw new RuntimeException('Reactive state choice is invalid.');
+}
+$prefixed = ClientAction::set('label', StateRef::to('count')->prefixedBy('Count: '))->json();
+if (!str_contains($prefixed, '"operation":"concat"') || !str_contains($prefixed, '"left":"Count: "')) {
+    throw new RuntimeException('Reactive state prefix is invalid.');
+}
+$pop = ClientAction::removeAt('tasks', -1)->json();
+if ($pop !== '{"type":"remove-at","target":"tasks","value":-1}') {
+    throw new RuntimeException('Collection last-item removal is invalid.');
+}
 
 if (ConsoleAction::log('Count', \AML\Engine\StateRef::to('count'))->json()
     !== '{"type":"console","level":"log","values":["Count",{"$state":"count"}]}') {
@@ -60,6 +82,15 @@ if (!str_contains($composed, '"type":"sequence"')
     || !str_contains($composed, '"type":"condition"')
     || !str_contains($composed, '"operator":"gte"')) {
     throw new RuntimeException('Composed client actions are invalid.');
+}
+$expressionCondition = Actions::whenValue(
+    StateRef::to('price')->times(StateRef::to('quantity')),
+    'gte',
+    100,
+    ClientAction::set('discount', 10),
+)->json();
+if (!str_contains($expressionCondition, '"left":{"$expression"') || !str_contains($expressionCondition, '"operation":"multiply"')) {
+    throw new RuntimeException('Expression condition is invalid.');
 }
 $transaction = Actions::transaction(
     ClientAction::set('profile.address.city', 'Montréal'),
@@ -117,13 +148,13 @@ if (!str_contains($minifiedScript, 'window.AMLEngine') || strlen($minifiedScript
     throw new RuntimeException('The minified compatibility runtime is unavailable.');
 }
 $assetPath = EngineRuntime::assetPath();
-if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.5.js')) {
+if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.6.js')) {
     throw new RuntimeException('The external browser runtime asset is unavailable.');
 }
-if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.5.min.js') {
+if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.6.min.js') {
     throw new RuntimeException('The minified browser runtime filename is inconsistent.');
 }
-if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.5.min.js" data-aml-engine></script>') {
+if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.6.min.js" data-aml-engine></script>') {
     throw new RuntimeException('The external browser runtime tag is inconsistent.');
 }
 foreach (['https://example.test/assets', '//cdn.example.test', '/assets?version=1', '/\\evil.example/assets'] as $unsafeBase) {
@@ -142,7 +173,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.5') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.6') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 $package = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -174,6 +205,16 @@ if (!str_contains($scriptFeatures, "window.AMLEngine")
     || !str_contains($scriptFeatures, "addEventListener('storage'")
     || !str_contains($scriptFeatures, 'MutationObserver')
     || !str_contains($scriptFeatures, "action.type === 'transaction'")
+    || !str_contains($scriptFeatures, "action.type === 'action-state'")
+    || !str_contains($scriptFeatures, "aml:action-success")
+    || !str_contains($scriptFeatures, "aml:action-error")
+    || !str_contains($scriptFeatures, "action.type === 'form-state-action'")
+    || !str_contains($scriptFeatures, "action.type === 'form-state-reset'")
+    || !str_contains($scriptFeatures, "data-aml-form-state")
+    || !str_contains($scriptFeatures, "aml:form-success")
+    || !str_contains($scriptFeatures, "aml:form-error")
+    || !str_contains($scriptFeatures, "action.type === 'element-ref'")
+    || !str_contains($scriptFeatures, "Unsupported AML ref operation")
     || !str_contains($scriptFeatures, "action.type === 'update-by'")
     || !str_contains($scriptFeatures, "action.type === 'filter-by'")
     || !str_contains($scriptFeatures, "action.type === 'move'")
@@ -223,7 +264,7 @@ foreach (['renderRichComponents', 'renderVirtualLists', 'data-aml-modal', 'data-
 foreach (['data-aml-toast', 'toastTimers', 'data-aml-disclosure-trigger', "[role='menuitem']", 'data-aml-tooltip-trigger', 'data-aml-multi-step-form', 'preserveForm', 'restoreForm', "control.type === 'file'"] as $advancedUiFeature) {
     if (!str_contains($scriptFeatures, $advancedUiFeature)) throw new RuntimeException("Missing advanced UI/form support: {$advancedUiFeature}");
 }
-foreach (['clearFormDraft', 'new FormData(form)', 'data-aml-step-next', "[data-aml-validate]:not([disabled])", 'relatedTarget instanceof Node', "clearTimeout(toastTimers.get(toast))", "actionForm && !validateForm(actionForm)"] as $auditedUiGuard) {
+foreach (['clearFormDraft', 'new FormData(form)', 'data-aml-step-next', "[data-aml-validate]:not([disabled])", 'relatedTarget instanceof Node', "clearTimeout(toastTimers.get(toast))", "actionForm && action.type !== 'form-state-reset' && !validateForm(actionForm)"] as $auditedUiGuard) {
     if (!str_contains($scriptFeatures, $auditedUiGuard)) throw new RuntimeException("Missing audited UI guard: {$auditedUiGuard}");
 }
 foreach (["prefers-reduced-motion: reduce", 'ResizeObserver', "source.state !== list.dataset.amlList", "Array.from(event.dataTransfer.types).includes('text/x-aml-index')", "sort.closest('table')", "event.altKey", "input: 'keyboard'"] as $guard) {

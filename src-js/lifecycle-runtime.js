@@ -1,3 +1,21 @@
+const formState = (form) => {
+    if (!form?.dataset?.amlFormState) return null;
+    try { return JSON.parse(form.dataset.amlFormState); }
+    catch (_) { return null; }
+  };
+
+const commitFormState = (root, state, rule, target, value) => {
+    const path = rule?.[target];
+    if (path && !Object.is(readPath(state, path), value)) commit(root, state, path, value);
+  };
+
+const updateFormValidityState = (root, state, form, rule) => {
+    const valid = form.checkValidity() && !form.querySelector('[aria-invalid="true"]');
+    commitFormState(root, state, rule, 'valid', valid);
+    commitFormState(root, state, rule, 'invalid', !valid);
+    return valid;
+  };
+
 export const mount = (scope = document) => {
     scope.querySelectorAll('[data-aml-client]').forEach((root) => {
       if (root.dataset.amlEngineMounted === 'true') return;
@@ -44,6 +62,22 @@ export const mount = (scope = document) => {
       mountedRoots.add(root);
       rootControllers.set(root, new Set());
       rootCleanups.set(root, new Set());
+      const executeClientEvent = (target, eventName) => {
+        if (!target || !root.contains(target)) return Promise.resolve(false);
+        const encoded = target.getAttribute(`data-aml-client-${eventName}`);
+        if (!encoded) return Promise.resolve(false);
+        let action;
+        try { action = JSON.parse(encoded); }
+        catch (error) {
+          root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, event: eventName}}));
+          return Promise.reject(error);
+        }
+        return execute(root, state, action, target).then(() => true).catch((error) => {
+          root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, action, event: eventName}}));
+          console.error(error);
+          return false;
+        });
+      };
       if (typeof ResizeObserver === 'function') {
         const virtualResizeObserver = new ResizeObserver((entries) => {
           if (entries.some((entry) => entry.target.matches?.('[data-aml-virtual-list]'))) renderVirtualLists(root, state);
@@ -130,11 +164,14 @@ export const mount = (scope = document) => {
         if (!trigger || !root.contains(trigger)) return;
         event.preventDefault();
         const actionForm = trigger.closest('form');
-        if (actionForm && !validateForm(actionForm)) {
+        const action = JSON.parse(trigger.dataset.amlClientClick);
+        if (actionForm && action.type !== 'form-state-reset' && !validateForm(actionForm)) {
+          const rule = formState(actionForm);
+          commitFormState(root, state, rule, 'submitted', true);
+          updateFormValidityState(root, state, actionForm, rule);
           actionForm.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        const action = JSON.parse(trigger.dataset.amlClientClick);
         execute(root, state, action, trigger).catch((error) => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, action}}));
           console.error(error);
@@ -248,6 +285,13 @@ export const mount = (scope = document) => {
         }
         const preserved = event.target.closest('form[data-aml-form-preserve]');
         if (preserved) preserveForm(preserved);
+        const tracked = event.target.closest('form[data-aml-form-state]');
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, 'dirty', true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest('[data-aml-client-input]'), 'input');
       });
       root.addEventListener('change', (event) => {
         const control = event.target.closest('[data-aml-model]');
@@ -258,16 +302,46 @@ export const mount = (scope = document) => {
         }
         const preserved = event.target.closest('form[data-aml-form-preserve]');
         if (preserved) preserveForm(preserved);
+        const tracked = event.target.closest('form[data-aml-form-state]');
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, 'dirty', true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest('[data-aml-client-change]'), 'change');
+      });
+      root.addEventListener('focusin', (event) => {
+        executeClientEvent(event.target.closest('[data-aml-client-focus]'), 'focus');
+      });
+      root.addEventListener('focusout', (event) => {
+        const tracked = event.target.closest('form[data-aml-form-state]');
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, 'touched', true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest('[data-aml-client-blur]'), 'blur');
       });
       root.addEventListener('submit', async (event) => {
         const form = event.target.closest('form');
         if (!form || !root.contains(form)) return;
         if (form.dataset.amlValidationPassed === 'true') { delete form.dataset.amlValidationPassed; return; }
         event.preventDefault();
-        if (!validateForm(form)) return;
+        const rule = formState(form);
+        commitFormState(root, state, rule, 'submitted', true);
+        if (!validateForm(form)) {
+          updateFormValidityState(root, state, form, rule);
+          form.querySelector('[aria-invalid="true"]')?.focus();
+          return;
+        }
         const controls = [...form.querySelectorAll('[data-aml-validate-api]')];
         const valid = (await Promise.all(controls.map((control) => validateRemote(root, state, control)))).every(Boolean);
+        updateFormValidityState(root, state, form, rule);
         if (valid) {
+          if (form.hasAttribute('data-aml-client-submit')) {
+            await executeClientEvent(form, 'submit');
+            return;
+          }
           form.dataset.amlValidationPassed = 'true'; form.requestSubmit(event.submitter || undefined);
         }
       });
@@ -291,6 +365,9 @@ export const mount = (scope = document) => {
       document.addEventListener('click', closeOutsideDisclosures);
       rootCleanups.get(root).add(() => document.removeEventListener('click', closeOutsideDisclosures));
       render(root, state);
+      root.querySelectorAll('form[data-aml-form-state]').forEach((form) => {
+        updateFormValidityState(root, state, form, formState(form));
+      });
       root.querySelectorAll('form[data-aml-form-preserve]').forEach(restoreForm);
       root.querySelectorAll('template[data-aml-redirect]').forEach((redirect) => {
         const rule = JSON.parse(redirect.dataset.amlRedirect);

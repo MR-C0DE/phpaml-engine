@@ -197,7 +197,25 @@ if (!window.AMLEngine) {
         const right = resolveData(expression.right, state, eventData);
         if (expression.operation === "add") return Number(left ?? 0) + Number(right ?? 0);
         if (expression.operation === "subtract") return Number(left ?? 0) - Number(right ?? 0);
+        if (expression.operation === "multiply") return Number(left ?? 0) * Number(right ?? 0);
+        if (expression.operation === "divide") {
+          if (Number(right ?? 0) === 0) throw new Error("Division by zero in AML state expression");
+          return Number(left ?? 0) / Number(right);
+        }
+        if (expression.operation === "modulo") {
+          if (Number(right ?? 0) === 0) throw new Error("Modulo by zero in AML state expression");
+          return Number(left ?? 0) % Number(right);
+        }
+        if (expression.operation === "concat") return String(left ?? "") + String(right ?? "");
+        if (expression.operation === "not") return !Boolean(left);
         throw new Error(`Unknown AML state expression: ${expression.operation}`);
+      }
+      if (value.$conditional && typeof value.$conditional === "object") {
+        const condition = value.$conditional;
+        const left = resolveData(condition.left, state, eventData);
+        const right = resolveData(condition.right, state, eventData);
+        const matches2 = condition.operator === "eq" ? left === right : condition.operator === "neq" ? left !== right : condition.operator === "gt" ? left > right : condition.operator === "gte" ? left >= right : condition.operator === "lt" ? left < right : condition.operator === "lte" ? left <= right : condition.operator === "truthy" ? Boolean(left) : condition.operator === "falsy" ? !Boolean(left) : false;
+        return resolveData(matches2 ? condition.then : condition.otherwise, state, eventData);
       }
       return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveData(item, state, eventData)]));
     }
@@ -316,8 +334,12 @@ if (!window.AMLEngine) {
     else if (action.type === "set") next = value;
     else if (action.type === "append") next = [...Array.isArray(current) ? current : [], value];
     else if (action.type === "prepend") next = [value, ...Array.isArray(current) ? current : []];
-    else if (action.type === "remove-at") next = (Array.isArray(current) ? current : []).filter((_, index) => index !== Number(value));
-    else if (action.type === "remove-by") next = (Array.isArray(current) ? current : []).filter((item) => readPath(item, value.key) !== value.value);
+    else if (action.type === "remove-at") {
+      const items = Array.isArray(current) ? current : [];
+      const requested = Number(value);
+      const index = requested < 0 ? items.length + requested : requested;
+      next = items.filter((_, itemIndex) => itemIndex !== index);
+    } else if (action.type === "remove-by") next = (Array.isArray(current) ? current : []).filter((item) => readPath(item, value.key) !== value.value);
     else if (action.type === "update-by") next = (Array.isArray(current) ? current : []).map((item) => readPath(item, value.key) === value.value ? { ...item, ...value.changes } : item);
     else if (action.type === "sort-by") next = [...Array.isArray(current) ? current : []].sort((left, right) => {
       const a = readPath(left, value.key);
@@ -370,6 +392,8 @@ if (!window.AMLEngine) {
   var hasAsyncAction = (action) => {
     if (!action) return false;
     if (action.type === "api") return true;
+    if (action.type === "action-state") return hasAsyncAction(action.action);
+    if (action.type === "form-state-action") return hasAsyncAction(action.action);
     if (action.type === "sequence" || action.type === "transaction") return (action.actions || []).some(hasAsyncAction);
     if (action.type === "condition") return hasAsyncAction(action.then) || hasAsyncAction(action.otherwise);
     return false;
@@ -565,6 +589,134 @@ if (!window.AMLEngine) {
     return Object.freeze({ path: url.pathname, query: Object.freeze(query), hash: url.hash });
   };
 
+  // src-js/validation.js
+  var validateValue = (rules, value) => {
+    for (const rule of rules) {
+      if (rule.type === "required" && String(value ?? "").trim() === "") return rule.message;
+      if (rule.type === "min-length" && String(value ?? "").length > 0 && String(value).length < Number(rule.value)) return rule.message;
+      if (rule.type === "email" && String(value ?? "").length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) return rule.message;
+    }
+    return "";
+  };
+  var validationMessage = (control) => {
+    const rules = JSON.parse(control.dataset.amlValidate || "[]");
+    const value = control.type === "checkbox" ? control.checked ? control.value : "" : control.value;
+    return validateValue(rules, value);
+  };
+
+  // src-js/forms-runtime.js
+  var updateModel = (root, state, control) => {
+    const target = control.dataset.amlModel;
+    if (!target) return;
+    const raw = control.type === "file" ? [...control.files || []].map((file) => ({ name: file.name, size: file.size, type: file.type, lastModified: file.lastModified })) : control.type === "checkbox" ? control.checked : control.value;
+    const type = rootConfigs.get(root)?.types?.[target] || "string";
+    const value = coerce(type, raw);
+    commit(root, state, target, value);
+  };
+  var preserveForm = (form) => {
+    const values = {};
+    for (const [name, value] of new FormData(form).entries()) {
+      if (value instanceof File) continue;
+      if (Object.prototype.hasOwnProperty.call(values, name)) values[name] = Array.isArray(values[name]) ? [...values[name], value] : [values[name], value];
+      else values[name] = value;
+    }
+    [...form.querySelectorAll('input[type="checkbox"][name]')].forEach((control) => {
+      if (!Object.prototype.hasOwnProperty.call(values, control.name)) values[control.name] = false;
+    });
+    try {
+      sessionStorage.setItem(`phpaml.form.${form.dataset.amlFormPreserve}`, JSON.stringify(values));
+    } catch (error) {
+      form.dispatchEvent(new CustomEvent("aml:form-preserve-error", { detail: { error } }));
+    }
+  };
+  var restoreForm = (form) => {
+    try {
+      const saved = sessionStorage.getItem(`phpaml.form.${form.dataset.amlFormPreserve}`);
+      if (!saved) return;
+      const values = JSON.parse(saved);
+      const positions = {};
+      [...form.elements].forEach((control) => {
+        if (!control.name || !Object.prototype.hasOwnProperty.call(values, control.name) || control.type === "file") return;
+        const stored = values[control.name];
+        const list = Array.isArray(stored) ? stored : [stored];
+        if (control.type === "checkbox") control.checked = stored === true || list.map(String).includes(control.value);
+        else if (control.type === "radio") control.checked = list.map(String).includes(control.value);
+        else if (control.matches("select[multiple]")) [...control.options].forEach((option) => option.selected = list.map(String).includes(option.value));
+        else {
+          const index = positions[control.name] || 0;
+          control.value = list[Math.min(index, list.length - 1)] ?? "";
+          positions[control.name] = index + 1;
+        }
+        control.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    } catch (error) {
+      form.dispatchEvent(new CustomEvent("aml:form-preserve-error", { detail: { error } }));
+    }
+  };
+  var showValidation = (control, message) => {
+    const base = control.dataset.amlModel || control.name || "field";
+    const id = `aml-error-${base.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+    let error = control.parentElement?.querySelector(`:scope > [data-aml-validation-for="${CSS.escape(base)}"]`);
+    control.setAttribute("aria-invalid", message ? "true" : "false");
+    if (!message) {
+      if (control.getAttribute("aria-describedby") === id) control.removeAttribute("aria-describedby");
+      error?.remove();
+      return true;
+    }
+    control.setAttribute("aria-describedby", id);
+    if (!error) {
+      error = document.createElement("small");
+      error.id = id;
+      error.dataset.amlValidationFor = base;
+      error.setAttribute("role", "alert");
+      control.insertAdjacentElement("afterend", error);
+    }
+    error.textContent = message;
+    return false;
+  };
+  var validateControl = (control) => showValidation(control, validationMessage(control));
+  var validateRemote = async (root, state, control) => {
+    if (!control.dataset.amlValidateApi || !validateControl(control)) return !control.matches('[aria-invalid="true"]');
+    const config = JSON.parse(control.dataset.amlValidateApi);
+    const action = config.request;
+    const data = resolveData(action.data || {}, state);
+    const url = new URL(action.url, location.origin);
+    if (url.origin !== location.origin) return showValidation(control, "Validation API must remain same-origin.");
+    validationControllers2.get(control)?.abort();
+    const controller = new AbortController();
+    validationControllers2.set(control, controller);
+    control.setAttribute("aria-busy", "true");
+    const options = prepareApiRequest(url, action, data, controller.signal, "", "validation");
+    try {
+      const response = await fetch(url, options);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || result.error || `Validation failed: ${response.status}`);
+      return showValidation(control, result.valid === true ? "" : result.message || config.message);
+    } catch (error) {
+      if (error.name === "AbortError") return false;
+      return showValidation(control, error.message || config.message);
+    } finally {
+      if (validationControllers2.get(control) === controller) {
+        validationControllers2.delete(control);
+        control.removeAttribute("aria-busy");
+      }
+    }
+  };
+  var scheduleRemoteValidation = (root, state, control) => {
+    if (!control.dataset.amlValidateApi || !validateControl(control)) return;
+    clearTimeout(validationTimers2.get(control));
+    const config = JSON.parse(control.dataset.amlValidateApi);
+    validationTimers2.set(control, setTimeout(() => validateRemote(root, state, control), Number(config.debounce ?? 400)));
+  };
+  var validateForm = (form) => {
+    let valid = true;
+    form.querySelectorAll("[data-aml-validate]:not([disabled])").forEach((control) => {
+      if (!validateControl(control)) valid = false;
+    });
+    if (!valid) form.querySelector('[aria-invalid="true"]')?.focus();
+    return valid;
+  };
+
   // src-js/actions-runtime.js
   var request = async (root, state, action, trigger, executionContext = null) => {
     const owner = executionContext?.owner || executionContext;
@@ -607,18 +759,74 @@ if (!window.AMLEngine) {
     }
   };
   var matches = (state, action) => {
-    const current = readPath(state, action.state);
-    if (action.operator === "eq") return current === action.value;
-    if (action.operator === "neq") return current !== action.value;
-    if (action.operator === "gt") return current > action.value;
-    if (action.operator === "gte") return current >= action.value;
-    if (action.operator === "lt") return current < action.value;
-    if (action.operator === "lte") return current <= action.value;
+    const current = Object.hasOwn(action, "left") ? resolveData(action.left, state) : readPath(state, action.state);
+    const expected = resolveData(action.value, state);
+    if (action.operator === "eq") return current === expected;
+    if (action.operator === "neq") return current !== expected;
+    if (action.operator === "gt") return current > expected;
+    if (action.operator === "gte") return current >= expected;
+    if (action.operator === "lt") return current < expected;
+    if (action.operator === "lte") return current <= expected;
     if (action.operator === "truthy") return Boolean(current);
     if (action.operator === "falsy") return !Boolean(current);
     return false;
   };
   var execute = async (root, state, action, trigger = null, executionContext = null) => {
+    if (action.type === "element-ref") {
+      const element = root.querySelector(`[data-aml-ref="${CSS.escape(String(action.ref || ""))}"]`);
+      if (!element) throw new Error(`Unknown AML element ref: ${action.ref}`);
+      if (!["focus", "blur", "select", "play", "pause"].includes(action.operation)) throw new Error(`Unsupported AML ref operation: ${action.operation}`);
+      if (typeof element[action.operation] !== "function") throw new Error(`Element ref does not support ${action.operation}`);
+      const result = element[action.operation]();
+      if (result && typeof result.then === "function") await result;
+      return;
+    }
+    if (action.type === "form-state-reset") {
+      const form = trigger?.closest?.("form[data-aml-form-state]");
+      form?.reset();
+      if (form) queueMicrotask(() => form.querySelectorAll("[data-aml-model]").forEach((control) => updateModel(root, state, control)));
+      commit(root, state, action.dirty, false, executionContext);
+      commit(root, state, action.touched, false, executionContext);
+      commit(root, state, action.valid, true, executionContext);
+      commit(root, state, action.invalid, false, executionContext);
+      commit(root, state, action.submitting, false, executionContext);
+      commit(root, state, action.submitted, false, executionContext);
+      commit(root, state, action.error, "", executionContext);
+      return;
+    }
+    if (action.type === "form-state-action") {
+      const childContext = executionContext || {};
+      commit(root, state, action.submitting, true, executionContext);
+      commit(root, state, action.submitted, true, executionContext);
+      commit(root, state, action.error, "", executionContext);
+      try {
+        await execute(root, state, action.action, trigger, childContext);
+        root.dispatchEvent(new CustomEvent("aml:form-success", { detail: { action } }));
+      } catch (error) {
+        commit(root, state, action.error, error?.message || String(error), executionContext);
+        root.dispatchEvent(new CustomEvent("aml:form-error", { detail: { action, error } }));
+      } finally {
+        commit(root, state, action.submitting, false, executionContext);
+      }
+      return;
+    }
+    if (action.type === "action-state") {
+      const childContext = executionContext || {};
+      commit(root, state, action.pending, true, executionContext);
+      commit(root, state, action.success, false, executionContext);
+      commit(root, state, action.error, "", executionContext);
+      try {
+        await execute(root, state, action.action, trigger, childContext);
+        commit(root, state, action.success, true, executionContext);
+        root.dispatchEvent(new CustomEvent("aml:action-success", { detail: { action } }));
+      } catch (error) {
+        commit(root, state, action.error, error?.message || String(error), executionContext);
+        root.dispatchEvent(new CustomEvent("aml:action-error", { detail: { action, error } }));
+      } finally {
+        commit(root, state, action.pending, false, executionContext);
+      }
+      return;
+    }
     if (action.type === "transaction") {
       const parent = transactions.get(root);
       const context2 = parent || { changes: /* @__PURE__ */ new Map(), snapshot: clone(state) };
@@ -1045,6 +1253,10 @@ if (!window.AMLEngine) {
     });
   };
   var render = (scope, state, target = null) => {
+    scope.querySelectorAll("[data-aml-bind-value]").forEach((node) => {
+      const value = resolveData(JSON.parse(node.dataset.amlBindValue), state);
+      node.textContent = value ?? "";
+    });
     scope.querySelectorAll("[data-aml-bind]").forEach((node) => {
       if (target && !pathAffects(node.dataset.amlBind, target)) return;
       const value = readPath(state, node.dataset.amlBind);
@@ -1142,135 +1354,25 @@ if (!window.AMLEngine) {
     renderContexts(scope, state, target);
   };
 
-  // src-js/validation.js
-  var validateValue = (rules, value) => {
-    for (const rule of rules) {
-      if (rule.type === "required" && String(value ?? "").trim() === "") return rule.message;
-      if (rule.type === "min-length" && String(value ?? "").length > 0 && String(value).length < Number(rule.value)) return rule.message;
-      if (rule.type === "email" && String(value ?? "").length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) return rule.message;
-    }
-    return "";
-  };
-  var validationMessage = (control) => {
-    const rules = JSON.parse(control.dataset.amlValidate || "[]");
-    const value = control.type === "checkbox" ? control.checked ? control.value : "" : control.value;
-    return validateValue(rules, value);
-  };
-
-  // src-js/forms-runtime.js
-  var updateModel = (root, state, control) => {
-    const target = control.dataset.amlModel;
-    if (!target) return;
-    const raw = control.type === "file" ? [...control.files || []].map((file) => ({ name: file.name, size: file.size, type: file.type, lastModified: file.lastModified })) : control.type === "checkbox" ? control.checked : control.value;
-    const type = rootConfigs.get(root)?.types?.[target] || "string";
-    const value = coerce(type, raw);
-    commit(root, state, target, value);
-  };
-  var preserveForm = (form) => {
-    const values = {};
-    for (const [name, value] of new FormData(form).entries()) {
-      if (value instanceof File) continue;
-      if (Object.prototype.hasOwnProperty.call(values, name)) values[name] = Array.isArray(values[name]) ? [...values[name], value] : [values[name], value];
-      else values[name] = value;
-    }
-    [...form.querySelectorAll('input[type="checkbox"][name]')].forEach((control) => {
-      if (!Object.prototype.hasOwnProperty.call(values, control.name)) values[control.name] = false;
-    });
+  // src-js/lifecycle-runtime.js
+  var formState = (form) => {
+    if (!form?.dataset?.amlFormState) return null;
     try {
-      sessionStorage.setItem(`phpaml.form.${form.dataset.amlFormPreserve}`, JSON.stringify(values));
-    } catch (error) {
-      form.dispatchEvent(new CustomEvent("aml:form-preserve-error", { detail: { error } }));
+      return JSON.parse(form.dataset.amlFormState);
+    } catch (_) {
+      return null;
     }
   };
-  var restoreForm = (form) => {
-    try {
-      const saved = sessionStorage.getItem(`phpaml.form.${form.dataset.amlFormPreserve}`);
-      if (!saved) return;
-      const values = JSON.parse(saved);
-      const positions = {};
-      [...form.elements].forEach((control) => {
-        if (!control.name || !Object.prototype.hasOwnProperty.call(values, control.name) || control.type === "file") return;
-        const stored = values[control.name];
-        const list = Array.isArray(stored) ? stored : [stored];
-        if (control.type === "checkbox") control.checked = stored === true || list.map(String).includes(control.value);
-        else if (control.type === "radio") control.checked = list.map(String).includes(control.value);
-        else if (control.matches("select[multiple]")) [...control.options].forEach((option) => option.selected = list.map(String).includes(option.value));
-        else {
-          const index = positions[control.name] || 0;
-          control.value = list[Math.min(index, list.length - 1)] ?? "";
-          positions[control.name] = index + 1;
-        }
-        control.dispatchEvent(new Event("input", { bubbles: true }));
-      });
-    } catch (error) {
-      form.dispatchEvent(new CustomEvent("aml:form-preserve-error", { detail: { error } }));
-    }
+  var commitFormState = (root, state, rule, target, value) => {
+    const path = rule?.[target];
+    if (path && !Object.is(readPath(state, path), value)) commit(root, state, path, value);
   };
-  var showValidation = (control, message) => {
-    const base = control.dataset.amlModel || control.name || "field";
-    const id = `aml-error-${base.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-    let error = control.parentElement?.querySelector(`:scope > [data-aml-validation-for="${CSS.escape(base)}"]`);
-    control.setAttribute("aria-invalid", message ? "true" : "false");
-    if (!message) {
-      if (control.getAttribute("aria-describedby") === id) control.removeAttribute("aria-describedby");
-      error?.remove();
-      return true;
-    }
-    control.setAttribute("aria-describedby", id);
-    if (!error) {
-      error = document.createElement("small");
-      error.id = id;
-      error.dataset.amlValidationFor = base;
-      error.setAttribute("role", "alert");
-      control.insertAdjacentElement("afterend", error);
-    }
-    error.textContent = message;
-    return false;
-  };
-  var validateControl = (control) => showValidation(control, validationMessage(control));
-  var validateRemote = async (root, state, control) => {
-    if (!control.dataset.amlValidateApi || !validateControl(control)) return !control.matches('[aria-invalid="true"]');
-    const config = JSON.parse(control.dataset.amlValidateApi);
-    const action = config.request;
-    const data = resolveData(action.data || {}, state);
-    const url = new URL(action.url, location.origin);
-    if (url.origin !== location.origin) return showValidation(control, "Validation API must remain same-origin.");
-    validationControllers2.get(control)?.abort();
-    const controller = new AbortController();
-    validationControllers2.set(control, controller);
-    control.setAttribute("aria-busy", "true");
-    const options = prepareApiRequest(url, action, data, controller.signal, "", "validation");
-    try {
-      const response = await fetch(url, options);
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || result.error || `Validation failed: ${response.status}`);
-      return showValidation(control, result.valid === true ? "" : result.message || config.message);
-    } catch (error) {
-      if (error.name === "AbortError") return false;
-      return showValidation(control, error.message || config.message);
-    } finally {
-      if (validationControllers2.get(control) === controller) {
-        validationControllers2.delete(control);
-        control.removeAttribute("aria-busy");
-      }
-    }
-  };
-  var scheduleRemoteValidation = (root, state, control) => {
-    if (!control.dataset.amlValidateApi || !validateControl(control)) return;
-    clearTimeout(validationTimers2.get(control));
-    const config = JSON.parse(control.dataset.amlValidateApi);
-    validationTimers2.set(control, setTimeout(() => validateRemote(root, state, control), Number(config.debounce ?? 400)));
-  };
-  var validateForm = (form) => {
-    let valid = true;
-    form.querySelectorAll("[data-aml-validate]:not([disabled])").forEach((control) => {
-      if (!validateControl(control)) valid = false;
-    });
-    if (!valid) form.querySelector('[aria-invalid="true"]')?.focus();
+  var updateFormValidityState = (root, state, form, rule) => {
+    const valid = form.checkValidity() && !form.querySelector('[aria-invalid="true"]');
+    commitFormState(root, state, rule, "valid", valid);
+    commitFormState(root, state, rule, "invalid", !valid);
     return valid;
   };
-
-  // src-js/lifecycle-runtime.js
   var mount = (scope = document) => {
     scope.querySelectorAll("[data-aml-client]").forEach((root) => {
       if (root.dataset.amlEngineMounted === "true") return;
@@ -1319,6 +1421,23 @@ if (!window.AMLEngine) {
       mountedRoots.add(root);
       rootControllers.set(root, /* @__PURE__ */ new Set());
       rootCleanups.set(root, /* @__PURE__ */ new Set());
+      const executeClientEvent = (target, eventName) => {
+        if (!target || !root.contains(target)) return Promise.resolve(false);
+        const encoded = target.getAttribute(`data-aml-client-${eventName}`);
+        if (!encoded) return Promise.resolve(false);
+        let action;
+        try {
+          action = JSON.parse(encoded);
+        } catch (error) {
+          root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, event: eventName } }));
+          return Promise.reject(error);
+        }
+        return execute(root, state, action, target).then(() => true).catch((error) => {
+          root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, action, event: eventName } }));
+          console.error(error);
+          return false;
+        });
+      };
       if (typeof ResizeObserver === "function") {
         const virtualResizeObserver = new ResizeObserver((entries) => {
           if (entries.some((entry) => entry.target.matches?.("[data-aml-virtual-list]"))) renderVirtualLists(root, state);
@@ -1414,11 +1533,14 @@ if (!window.AMLEngine) {
         if (!trigger || !root.contains(trigger)) return;
         event.preventDefault();
         const actionForm = trigger.closest("form");
-        if (actionForm && !validateForm(actionForm)) {
+        const action = JSON.parse(trigger.dataset.amlClientClick);
+        if (actionForm && action.type !== "form-state-reset" && !validateForm(actionForm)) {
+          const rule = formState(actionForm);
+          commitFormState(root, state, rule, "submitted", true);
+          updateFormValidityState(root, state, actionForm, rule);
           actionForm.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        const action = JSON.parse(trigger.dataset.amlClientClick);
         execute(root, state, action, trigger).catch((error) => {
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, action } }));
           console.error(error);
@@ -1552,6 +1674,13 @@ if (!window.AMLEngine) {
         }
         const preserved = event.target.closest("form[data-aml-form-preserve]");
         if (preserved) preserveForm(preserved);
+        const tracked = event.target.closest("form[data-aml-form-state]");
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, "dirty", true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest("[data-aml-client-input]"), "input");
       });
       root.addEventListener("change", (event) => {
         const control = event.target.closest("[data-aml-model]");
@@ -1562,6 +1691,25 @@ if (!window.AMLEngine) {
         }
         const preserved = event.target.closest("form[data-aml-form-preserve]");
         if (preserved) preserveForm(preserved);
+        const tracked = event.target.closest("form[data-aml-form-state]");
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, "dirty", true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest("[data-aml-client-change]"), "change");
+      });
+      root.addEventListener("focusin", (event) => {
+        executeClientEvent(event.target.closest("[data-aml-client-focus]"), "focus");
+      });
+      root.addEventListener("focusout", (event) => {
+        const tracked = event.target.closest("form[data-aml-form-state]");
+        if (tracked) {
+          const rule = formState(tracked);
+          commitFormState(root, state, rule, "touched", true);
+          updateFormValidityState(root, state, tracked, rule);
+        }
+        executeClientEvent(event.target.closest("[data-aml-client-blur]"), "blur");
       });
       root.addEventListener("submit", async (event) => {
         const form = event.target.closest("form");
@@ -1571,10 +1719,21 @@ if (!window.AMLEngine) {
           return;
         }
         event.preventDefault();
-        if (!validateForm(form)) return;
+        const rule = formState(form);
+        commitFormState(root, state, rule, "submitted", true);
+        if (!validateForm(form)) {
+          updateFormValidityState(root, state, form, rule);
+          form.querySelector('[aria-invalid="true"]')?.focus();
+          return;
+        }
         const controls = [...form.querySelectorAll("[data-aml-validate-api]")];
         const valid = (await Promise.all(controls.map((control) => validateRemote(root, state, control)))).every(Boolean);
+        updateFormValidityState(root, state, form, rule);
         if (valid) {
+          if (form.hasAttribute("data-aml-client-submit")) {
+            await executeClientEvent(form, "submit");
+            return;
+          }
           form.dataset.amlValidationPassed = "true";
           form.requestSubmit(event.submitter || void 0);
         }
@@ -1599,6 +1758,9 @@ if (!window.AMLEngine) {
       document.addEventListener("click", closeOutsideDisclosures);
       rootCleanups.get(root).add(() => document.removeEventListener("click", closeOutsideDisclosures));
       render(root, state);
+      root.querySelectorAll("form[data-aml-form-state]").forEach((form) => {
+        updateFormValidityState(root, state, form, formState(form));
+      });
       root.querySelectorAll("form[data-aml-form-preserve]").forEach(restoreForm);
       root.querySelectorAll("template[data-aml-redirect]").forEach((redirect) => {
         const rule = JSON.parse(redirect.dataset.amlRedirect);
