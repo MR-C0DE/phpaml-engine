@@ -391,6 +391,7 @@ $richState = htmlspecialchars(json_encode([
     <output data-aml-bind="name"></output><output data-aml-bind="form.dirty"></output><output data-aml-bind="form.touched"></output><output data-aml-bind="form.invalid"></output><output data-aml-bind="form.submitted"></output>
   </section>
 </main>
+<?php if (isset($_GET['reserved'])): ?><script>window.AMLEngine = {};</script><?php endif; ?>
 <?= EngineRuntime::script(null, isset($_GET['minified'])) ?>
 <script>
 const rootA = document.querySelector('#root-a');

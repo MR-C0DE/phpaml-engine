@@ -1,7 +1,9 @@
 import { mount, on, unmount } from './lifecycle-runtime.js';
 import { context, navigate, route, updateActiveLinks } from './navigation.js';
 import { clearFormDraft, clearPersisted, effects, inspect, pauseEffect, restore, resumeEffect, runEffect, stateHistory } from './diagnostics.js';
+import { installDevelopmentErrorOverlay } from './development-errors.js';
 
+installDevelopmentErrorOverlay();
 window.AMLEngine = {mount, unmount, on, navigate, context, route, clearPersisted, clearFormDraft, inspect, effects, pauseEffect, resumeEffect, runEffect, history: stateHistory, restore};
 mount();
 updateActiveLinks();

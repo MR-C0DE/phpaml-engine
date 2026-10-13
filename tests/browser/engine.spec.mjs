@@ -93,6 +93,13 @@ test('runs the minified versioned runtime', async ({ page }) => {
   await expect(page.locator('#root-b output[data-aml-bind="counter"]')).toHaveText('1');
 });
 
+test('replaces an incomplete reserved Engine browser global', async ({ page }) => {
+  await page.goto('/browser-fixture.php?minified=1&reserved=1');
+  await expect.poll(() => page.evaluate(() => typeof window.AMLEngine?.mount)).toBe('function');
+  await page.locator('#increment-b').click();
+  await expect(page.locator('#root-b output[data-aml-bind="counter"]')).toHaveText('1');
+});
+
 test('commits rich transactions atomically', async ({ page }) => {
   await page.locator('#run-transaction').click();
   await expect(page.locator('[data-aml-bind="profile.name"]')).toHaveText('Updated');

@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.8 — 2026-10-13
+
+- initialize Engine when another script has reserved `window.AMLEngine` without
+  providing a working `mount()` implementation;
+- preserve the duplicate-runtime guard when a complete Engine instance is
+  already mounted;
+- cover this browser-global collision with a regression test.
+- display browser, promise, rendering, effect, storage and client-action errors
+  in a development-only full-screen overlay;
+- keep the overlay disabled unless the server explicitly emits `aml-debug`.
+
 ## 0.1.0-beta.7 — 2026-10-13
 
 - execute keyboard, mouse and drag-and-drop handlers with a restricted browser

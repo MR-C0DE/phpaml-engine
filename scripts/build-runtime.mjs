@@ -20,7 +20,7 @@ const compile = async (minify, sourcemap) => build({
   outfile: `assets/engine-${version}${minify ? '.min' : ''}.js`,
   format: 'iife',
   target: ['es2020'],
-  banner: {js: 'if (!window.AMLEngine) {'},
+  banner: {js: 'if (!window.AMLEngine?.mount) {'},
   footer: {js: '}'},
 });
 
