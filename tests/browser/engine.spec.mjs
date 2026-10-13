@@ -24,10 +24,67 @@ test('evaluates safe arithmetic state expressions', async ({ page }) => {
   await expect(page.locator('#counter-progress')).toHaveJSProperty('value', 0);
 });
 
+test('executes reactive foreach actions with conditions, continue and break', async ({ page }) => {
+  await page.locator('#foreach-total').click();
+  await expect(page.locator('#foreach-result')).toHaveText('3');
+});
+
+test('executes nested reactive foreach actions with isolated loop control', async ({ page }) => {
+  await page.locator('#nested-foreach-total').click();
+  await expect(page.locator('#nested-foreach-result')).toHaveText('100');
+});
+
+test('filters maps and reduces reactive collections', async ({ page }) => {
+  await page.locator('#transform-collections').click();
+  await expect(page.locator('#collection-names')).toContainText('André');
+  await expect(page.locator('#collection-names')).not.toContainText('Marie');
+  await expect(page.locator('#collection-total')).toHaveText('14');
+});
+
+test('sorts state collections with sort and usort expressions', async ({ page }) => {
+  await page.locator('#sort-collections').click();
+  await expect(page.locator('#sorted-numbers')).toHaveText('1210');
+  await expect(page.locator('#sorted-users')).toHaveText('AndréMarie');
+});
+
+test('updates and removes precise nested collection values', async ({ page }) => {
+  await page.locator('#mutate-nested-collection').click();
+  await expect(page.locator('#editable-users')).toHaveText('AndréAlex');
+  await expect(page.locator('#editable-users span')).toHaveCount(2);
+  await expect(page.locator('#editable-score')).toHaveText('3');
+});
+
+test('reverses slices and merges collections in the rendered interface', async ({ page }) => {
+  await page.locator('#project-collections').click();
+  await expect(page.locator('#reversed-items')).toHaveText('4321');
+  await expect(page.locator('#sliced-items')).toHaveText('23');
+  await expect(page.locator('#merged-items')).toHaveText('123456');
+});
+
+test('reads nested collection state in assignments calculations and conditions', async ({ page }) => {
+  await page.locator('#read-nested-state').click();
+  await expect(page.locator('#read-name')).toHaveText('André');
+  await expect(page.locator('#read-total')).toHaveText('5');
+  await expect(page.locator('#read-status')).toHaveText('active');
+});
+
 test('writes resolved values to the browser console', async ({ page }) => {
   const message = page.waitForEvent('console');
   await page.locator('#console-log').click();
   expect((await message).text()).toBe('Count 0');
+});
+
+test('handles keyboard mouse and drag events with browser event data', async ({ page }) => {
+  await page.locator('#keyboard-event').press('A');
+  await expect(page.locator('#last-key')).toHaveText('A');
+
+  await page.locator('#mouse-event').hover();
+  await expect(page.locator('#hovered')).toHaveText('true');
+  await page.locator('#keyboard-event').hover();
+  await expect(page.locator('#hovered')).toHaveText('false');
+
+  await page.locator('#drag-source').dragTo(page.locator('#drop-target'));
+  await expect(page.locator('#drag-status')).toHaveText('dropped');
 });
 
 test('runs the minified versioned runtime', async ({ page }) => {

@@ -62,7 +62,7 @@ export const mount = (scope = document) => {
       mountedRoots.add(root);
       rootControllers.set(root, new Set());
       rootCleanups.set(root, new Set());
-      const executeClientEvent = (target, eventName) => {
+      const executeClientEvent = (target, eventName, event = null) => {
         if (!target || !root.contains(target)) return Promise.resolve(false);
         const encoded = target.getAttribute(`data-aml-client-${eventName}`);
         if (!encoded) return Promise.resolve(false);
@@ -72,7 +72,7 @@ export const mount = (scope = document) => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, event: eventName}}));
           return Promise.reject(error);
         }
-        return execute(root, state, action, target).then(() => true).catch((error) => {
+        return execute(root, state, action, target, {eventData: eventPayload(event)}).then(() => true).catch((error) => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, action, event: eventName}}));
           console.error(error);
           return false;
@@ -172,7 +172,7 @@ export const mount = (scope = document) => {
           actionForm.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        execute(root, state, action, trigger).catch((error) => {
+        execute(root, state, action, trigger, {eventData: eventPayload(event)}).catch((error) => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, action}}));
           console.error(error);
         });
@@ -230,6 +230,7 @@ export const mount = (scope = document) => {
           }
           return;
         }
+        executeClientEvent(event.target.closest('[data-aml-client-keydown]'), 'keydown', event);
         const tab = event.target.closest('[data-aml-tab]');
         if (!tab || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
         const tabs = [...tab.closest('[role="tablist"]').querySelectorAll('[data-aml-tab]')];
@@ -239,6 +240,17 @@ export const mount = (scope = document) => {
         else index = (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + tabs.length) % tabs.length;
         event.preventDefault(); tabs[index].focus(); tabs[index].click();
       });
+      root.addEventListener('keyup', (event) => {
+        executeClientEvent(event.target.closest('[data-aml-client-keyup]'), 'keyup', event);
+      });
+      root.addEventListener('mouseover', (event) => {
+        const target = event.target.closest('[data-aml-client-mouseenter]');
+        if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, 'mouseenter', event);
+      });
+      root.addEventListener('mouseout', (event) => {
+        const target = event.target.closest('[data-aml-client-mouseleave]');
+        if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, 'mouseleave', event);
+      });
       root.addEventListener('cancel', (event) => {
         const dialog = event.target.closest('[data-aml-modal]');
         if (!dialog) return;
@@ -247,6 +259,7 @@ export const mount = (scope = document) => {
         commit(root, state, rule.state, false);
       });
       root.addEventListener('dragstart', (event) => {
+        executeClientEvent(event.target.closest('[data-aml-client-dragstart]'), 'dragstart', event);
         const item = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
         if (!item || !event.dataTransfer) return;
         const list = item.parentElement;
@@ -254,11 +267,18 @@ export const mount = (scope = document) => {
         event.dataTransfer.setData('text/x-aml-index', JSON.stringify({index: Number(item.dataset.amlListIndex), state: list.dataset.amlList}));
         item.setAttribute('aria-grabbed', 'true');
       });
-      root.addEventListener('dragend', (event) => event.target.closest('[aria-grabbed="true"]')?.removeAttribute('aria-grabbed'));
+      root.addEventListener('dragend', (event) => {
+        event.target.closest('[aria-grabbed="true"]')?.removeAttribute('aria-grabbed');
+        executeClientEvent(event.target.closest('[data-aml-client-dragend]'), 'dragend', event);
+      });
       root.addEventListener('dragover', (event) => {
+        const clientTarget = event.target.closest('[data-aml-client-dragover]');
+        if (clientTarget) { event.preventDefault(); executeClientEvent(clientTarget, 'dragover', event); }
         if (event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]')) event.preventDefault();
       });
       root.addEventListener('drop', (event) => {
+        const clientTarget = event.target.closest('[data-aml-client-drop]');
+        if (clientTarget) { event.preventDefault(); executeClientEvent(clientTarget, 'drop', event); }
         const destination = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
         if (!destination || !event.dataTransfer || !Array.from(event.dataTransfer.types).includes('text/x-aml-index')) return;
         event.preventDefault();
@@ -291,7 +311,7 @@ export const mount = (scope = document) => {
           commitFormState(root, state, rule, 'dirty', true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest('[data-aml-client-input]'), 'input');
+        executeClientEvent(event.target.closest('[data-aml-client-input]'), 'input', event);
       });
       root.addEventListener('change', (event) => {
         const control = event.target.closest('[data-aml-model]');
@@ -308,10 +328,10 @@ export const mount = (scope = document) => {
           commitFormState(root, state, rule, 'dirty', true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest('[data-aml-client-change]'), 'change');
+        executeClientEvent(event.target.closest('[data-aml-client-change]'), 'change', event);
       });
       root.addEventListener('focusin', (event) => {
-        executeClientEvent(event.target.closest('[data-aml-client-focus]'), 'focus');
+        executeClientEvent(event.target.closest('[data-aml-client-focus]'), 'focus', event);
       });
       root.addEventListener('focusout', (event) => {
         const tracked = event.target.closest('form[data-aml-form-state]');
@@ -320,7 +340,7 @@ export const mount = (scope = document) => {
           commitFormState(root, state, rule, 'touched', true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest('[data-aml-client-blur]'), 'blur');
+        executeClientEvent(event.target.closest('[data-aml-client-blur]'), 'blur', event);
       });
       root.addEventListener('submit', async (event) => {
         const form = event.target.closest('form');
@@ -339,7 +359,7 @@ export const mount = (scope = document) => {
         updateFormValidityState(root, state, form, rule);
         if (valid) {
           if (form.hasAttribute('data-aml-client-submit')) {
-            await executeClientEvent(form, 'submit');
+            await executeClientEvent(form, 'submit', event);
             return;
           }
           form.dataset.amlValidationPassed = 'true'; form.requestSubmit(event.submitter || undefined);
@@ -438,7 +458,7 @@ import { clone, readPath, recomputeComputed, writePath } from './core/state.js';
 import { indexedState, restoredValue } from './storage.js';
 import { matchingContextProvider, render, renderContexts, renderVirtualLists, restoreContexts } from './rendering.js';
 import { activateEffect, cleanupEffect } from './effects-runtime.js';
-import { newEffectRuntime } from './effects.js';
+import { eventPayload, newEffectRuntime } from './effects.js';
 import { apply, commit, scheduleUpdate } from './state-runtime.js';
 import { execute } from './actions-runtime.js';
 import { preserveForm, restoreForm, scheduleRemoteValidation, updateModel, validateControl, validateForm, validateRemote } from './forms-runtime.js';

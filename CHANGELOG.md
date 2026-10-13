@@ -2,6 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
+## 0.1.0-beta.7 — 2026-10-13
+
+- execute keyboard, mouse and drag-and-drop handlers with a restricted browser
+  event payload;
+- add safe PHP-compatible search, key inspection, null checks, numeric bounds,
+  rounding and scalar conversion expressions;
+- extend collection actions, bounded loops and asynchronous request execution
+  while preserving the no-`eval`, same-origin runtime contract;
+- validate the runtime on Chromium, Firefox and WebKit.
+
 ## 0.1.0-beta.6 — 2026-10-12
 
 - extend safe state expressions with multiplication, division and modulo;

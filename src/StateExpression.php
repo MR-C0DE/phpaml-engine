@@ -7,7 +7,14 @@ namespace AML\Engine;
 /** A safe, serializable state expression evaluated by AML Engine. */
 final readonly class StateExpression
 {
-    private const OPERATIONS = ['add', 'subtract', 'multiply', 'divide', 'modulo', 'concat', 'not'];
+    private const OPERATIONS = [
+        'add', 'subtract', 'multiply', 'divide', 'modulo', 'concat', 'not',
+        'count', 'sum', 'contains', 'filter', 'map', 'reduce',
+        'find', 'any', 'all', 'column', 'unique', 'sort', 'sortBy', 'compare',
+        'reverse', 'slice', 'merge', 'search', 'keyExists', 'isset',
+        'ceil', 'floor', 'round', 'min', 'max',
+        'toInt', 'toFloat', 'toString', 'toBool',
+    ];
 
     public function __construct(
         public string $operation,

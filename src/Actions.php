@@ -16,6 +16,26 @@ final class Actions
         return new StateTransaction(...$actions);
     }
 
+    public static function each(
+        mixed $source,
+        string $value,
+        ?string $key,
+        ClientInstruction $action,
+        int $limit = 1000,
+    ): ForEachAction {
+        return new ForEachAction($source, $value, $key, $action, $limit);
+    }
+
+    public static function breakLoop(): LoopControlAction
+    {
+        return new LoopControlAction('break');
+    }
+
+    public static function continueLoop(): LoopControlAction
+    {
+        return new LoopControlAction('continue');
+    }
+
     public static function when(
         string $state,
         string $operator,
@@ -27,7 +47,7 @@ final class Actions
     }
 
     public static function whenValue(
-        StateRef|StateExpression $left,
+        mixed $left,
         string $operator,
         mixed $value,
         ClientInstruction $then,

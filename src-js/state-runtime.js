@@ -80,6 +80,18 @@ export const commit = (root, state, target, value, executionContext = null) => {
     scheduleUpdate(root, state, changes, (executionContext?.owner || executionContext)?.id);
   };
 export const apply = (scope, state, action, executionContext = null) => {
+    if (action.type === 'remove-path') {
+      const segments = safeSegments(action.target);
+      if (segments.length < 2) throw new Error('AML remove-path requires a nested state path');
+      const rootTarget = segments.shift();
+      const next = clone(readPath(state, rootTarget));
+      const leaf = segments.pop();
+      const parent = segments.reduce((current, key) => current?.[key], next);
+      if (Array.isArray(parent) && /^\d+$/.test(leaf)) parent.splice(Number(leaf), 1);
+      else if (parent && typeof parent === 'object') delete parent[leaf];
+      commit(scope, state, rootTarget, next, executionContext);
+      return;
+    }
     const current = readPath(state, action.target);
     const value = resolveData(action.value, state, executionContext?.eventData);
     let next;
@@ -117,7 +129,7 @@ export const apply = (scope, state, action, executionContext = null) => {
     commit(scope, state, action.target, next, executionContext);
   };
 import { mountedRoots, pendingBatches, pendingEffectOrigins, rootConfigs, rootStates, sharedState, transactions } from './context.js';
-import { clone, owningTarget, readPath, recomputeComputed, writePath } from './core/state.js';
+import { clone, owningTarget, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
 import { resolveData } from './core/value.js';
 import { indexedState, persistedPayload } from './storage.js';
 import { render } from './rendering.js';

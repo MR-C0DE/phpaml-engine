@@ -191,9 +191,54 @@ if (!window.AMLEngine) {
     if (value && typeof value === "object") {
       if (typeof value.$state === "string") return readPath(state, value.$state);
       if (typeof value.$event === "string") return readPath(eventData || {}, value.$event);
+      if (typeof value.$loop === "string") return readPath(eventData?.loop || {}, value.$loop);
+      if (typeof value.$collection === "string") return readPath(eventData?.collection || {}, value.$collection);
       if (value.$expression && typeof value.$expression === "object") {
         const expression = value.$expression;
         const left = resolveData(expression.left, state, eventData);
+        if (["filter", "map", "reduce", "find", "any", "all", "sortBy"].includes(expression.operation)) {
+          const callback = expression.right?.$callback;
+          if (!callback || !Array.isArray(callback.parameters) || callback.parameters.length === 0) {
+            throw new Error(`Invalid AML ${expression.operation} callback`);
+          }
+          if (!Array.isArray(left)) {
+            if (expression.operation === "all") return true;
+            if (expression.operation === "any") return false;
+            if (["find", "reduce"].includes(expression.operation)) return null;
+            return [];
+          }
+          const evaluate = (values) => resolveData(callback.expression, state, {
+            ...eventData || {},
+            collection: { ...eventData?.collection || {}, ...values }
+          });
+          if (expression.operation === "filter") {
+            return left.filter((item) => Boolean(evaluate({ [callback.parameters[0]]: item })));
+          }
+          if (expression.operation === "map") {
+            return left.map((item) => evaluate({ [callback.parameters[0]]: item }));
+          }
+          if (expression.operation === "find") {
+            return left.find((item) => Boolean(evaluate({ [callback.parameters[0]]: item }))) ?? null;
+          }
+          if (expression.operation === "any") {
+            return left.some((item) => Boolean(evaluate({ [callback.parameters[0]]: item })));
+          }
+          if (expression.operation === "all") {
+            return left.every((item) => Boolean(evaluate({ [callback.parameters[0]]: item })));
+          }
+          if (expression.operation === "sortBy") {
+            if (callback.parameters.length !== 2) throw new Error("Invalid AML sortBy callback");
+            return [...left].sort((first, second) => Number(evaluate({
+              [callback.parameters[0]]: first,
+              [callback.parameters[1]]: second
+            })) || 0);
+          }
+          if (callback.parameters.length !== 2) throw new Error("Invalid AML reduce callback");
+          return left.reduce(
+            (carry, item) => evaluate({ [callback.parameters[0]]: carry, [callback.parameters[1]]: item }),
+            resolveData(expression.right.initial, state, eventData)
+          );
+        }
         const right = resolveData(expression.right, state, eventData);
         if (expression.operation === "add") return Number(left ?? 0) + Number(right ?? 0);
         if (expression.operation === "subtract") return Number(left ?? 0) - Number(right ?? 0);
@@ -208,6 +253,75 @@ if (!window.AMLEngine) {
         }
         if (expression.operation === "concat") return String(left ?? "") + String(right ?? "");
         if (expression.operation === "not") return !Boolean(left);
+        if (expression.operation === "count") {
+          if (Array.isArray(left) || typeof left === "string") return left.length;
+          if (left && typeof left === "object") return Object.keys(left).length;
+          return 0;
+        }
+        if (expression.operation === "sum") {
+          if (!Array.isArray(left)) return 0;
+          return left.reduce((total, item) => total + Number(item || 0), 0);
+        }
+        if (expression.operation === "contains") {
+          return Array.isArray(left) && left.includes(right);
+        }
+        if (expression.operation === "column") {
+          if (!Array.isArray(left) || typeof right !== "string") return [];
+          return left.map((item) => item && typeof item === "object" ? readPath(item, right) : null);
+        }
+        if (expression.operation === "unique") {
+          return Array.isArray(left) ? [...new Set(left)] : [];
+        }
+        if (expression.operation === "reverse") {
+          return Array.isArray(left) ? [...left].reverse() : [];
+        }
+        if (expression.operation === "slice") {
+          if (!Array.isArray(left)) return [];
+          const offset = Number(resolveData(expression.right?.offset, state, eventData) ?? 0);
+          const length = expression.right && Object.hasOwn(expression.right, "length") ? Number(resolveData(expression.right.length, state, eventData)) : null;
+          if (!Number.isInteger(offset) || length !== null && !Number.isInteger(length)) return [];
+          if (length === null) return left.slice(offset);
+          const start = offset < 0 ? Math.max(0, left.length + offset) : offset;
+          const end = length >= 0 ? start + length : Math.max(start, left.length + length);
+          return left.slice(start, end);
+        }
+        if (expression.operation === "merge") {
+          const collections = Array.isArray(expression.right) ? expression.right : [];
+          return [left, ...collections].map((collection) => resolveData(collection, state, eventData)).filter(Array.isArray).flat();
+        }
+        if (expression.operation === "search") {
+          if (!Array.isArray(left)) return false;
+          const position = left.findIndex((item) => item === right);
+          return position === -1 ? false : position;
+        }
+        if (expression.operation === "keyExists") {
+          return left !== null && typeof left === "object" && Object.hasOwn(left, String(right));
+        }
+        if (expression.operation === "isset") return left !== null && left !== void 0;
+        if (expression.operation === "ceil") return Math.ceil(Number(left ?? 0));
+        if (expression.operation === "floor") return Math.floor(Number(left ?? 0));
+        if (expression.operation === "round") {
+          const precision = Number(right ?? 0);
+          const factor = 10 ** precision;
+          return Math.round((Number(left ?? 0) + Number.EPSILON) * factor) / factor;
+        }
+        if (expression.operation === "min") return Math.min(Number(left ?? 0), Number(right ?? 0));
+        if (expression.operation === "max") return Math.max(Number(left ?? 0), Number(right ?? 0));
+        if (expression.operation === "toInt") return Math.trunc(Number(left ?? 0));
+        if (expression.operation === "toFloat") return Number(left ?? 0);
+        if (expression.operation === "toString") return String(left ?? "");
+        if (expression.operation === "toBool") return Boolean(left);
+        if (expression.operation === "sort") {
+          if (!Array.isArray(left)) return [];
+          return [...left].sort((first, second) => {
+            if (first === second) return 0;
+            return first < second ? -1 : 1;
+          });
+        }
+        if (expression.operation === "compare") {
+          if (left === right) return 0;
+          return left < right ? -1 : 1;
+        }
         throw new Error(`Unknown AML state expression: ${expression.operation}`);
       }
       if (value.$conditional && typeof value.$conditional === "object") {
@@ -325,6 +439,18 @@ if (!window.AMLEngine) {
     scheduleUpdate(root, state, changes, (executionContext?.owner || executionContext)?.id);
   };
   var apply = (scope, state, action, executionContext = null) => {
+    if (action.type === "remove-path") {
+      const segments = safeSegments(action.target);
+      if (segments.length < 2) throw new Error("AML remove-path requires a nested state path");
+      const rootTarget = segments.shift();
+      const next2 = clone(readPath(state, rootTarget));
+      const leaf = segments.pop();
+      const parent = segments.reduce((current2, key) => current2?.[key], next2);
+      if (Array.isArray(parent) && /^\d+$/.test(leaf)) parent.splice(Number(leaf), 1);
+      else if (parent && typeof parent === "object") delete parent[leaf];
+      commit(scope, state, rootTarget, next2, executionContext);
+      return;
+    }
     const current = readPath(state, action.target);
     const value = resolveData(action.value, state, executionContext?.eventData);
     let next;
@@ -396,6 +522,7 @@ if (!window.AMLEngine) {
     if (action.type === "form-state-action") return hasAsyncAction(action.action);
     if (action.type === "sequence" || action.type === "transaction") return (action.actions || []).some(hasAsyncAction);
     if (action.type === "condition") return hasAsyncAction(action.then) || hasAsyncAction(action.otherwise);
+    if (action.type === "foreach") return hasAsyncAction(action.action);
     return false;
   };
 
@@ -723,44 +850,72 @@ if (!window.AMLEngine) {
     const data = resolveData(action.data || {}, state, executionContext?.eventData);
     const url = new URL(action.url, location.origin);
     if (url.origin !== location.origin) throw new Error("AML API requests must remain same-origin.");
-    const controller = new AbortController();
     const executionGeneration = owner?.generation;
     const isCurrent = () => !owner || owner.concurrency === "parallel" || owner.generation === executionGeneration;
     const controllers = rootControllers.get(root) || /* @__PURE__ */ new Set();
-    controllers.add(controller);
-    owner?.controllers?.add(controller);
     rootControllers.set(root, controllers);
-    const options = prepareApiRequest(url, action, data, controller.signal, csrfToken());
     if (action.loading) commit(root, state, action.loading, true, executionContext);
     if (action.error) commit(root, state, action.error, "", executionContext);
     trigger?.setAttribute("aria-busy", "true");
     if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
     try {
-      const response = await fetch(url, options);
-      refreshCsrfToken(response);
-      const contentType = response.headers.get("content-type") || "";
-      const result = contentType.includes("application/json") ? await response.json() : await response.text();
-      if (!response.ok) throw new Error(typeof result === "object" ? result.message || result.error || `API request failed: ${response.status}` : result);
-      if (!isCurrent()) return;
-      const selected = action.select ? readPath(result, action.select) : result;
-      if (action.result) commit(root, state, action.result, selected, executionContext);
-      root.dispatchEvent(new CustomEvent("aml:api-success", { detail: { url: url.href, result } }));
+      const retries = Math.max(0, Math.min(5, Number(action.retries || 0)));
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        if (!isCurrent()) return;
+        const controller = new AbortController();
+        controllers.add(controller);
+        owner?.controllers?.add(controller);
+        let timeout = null;
+        let timedOut = false;
+        const timeoutMs = Number(action.timeout || 0);
+        if (timeoutMs > 0) timeout = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs);
+        try {
+          const options = prepareApiRequest(url, action, data, controller.signal, csrfToken());
+          const response = await fetch(url, options);
+          refreshCsrfToken(response);
+          const contentType = response.headers.get("content-type") || "";
+          const result = contentType.includes("application/json") ? await response.json() : await response.text();
+          if (!response.ok) {
+            const error = new Error(typeof result === "object" ? result.message || result.error || `API request failed: ${response.status}` : result);
+            error.retryable = response.status === 429 || response.status >= 500;
+            throw error;
+          }
+          if (!isCurrent()) return;
+          const selected = action.select ? readPath(result, action.select) : result;
+          if (action.result) commit(root, state, action.result, selected, executionContext);
+          root.dispatchEvent(new CustomEvent("aml:api-success", { detail: { url: url.href, result, attempts: attempt + 1 } }));
+          return;
+        } catch (error) {
+          if (!isCurrent() || error?.name === "AbortError" && !timedOut) return;
+          const failure = timedOut ? new Error(`API request timed out after ${timeoutMs} ms`) : error;
+          const retryable = timedOut || error?.retryable === true || error instanceof TypeError;
+          if (attempt >= retries || !retryable) throw failure;
+          const delay = Math.min(3e4, Math.max(0, Number(action.retryDelay ?? 250)) * 2 ** attempt);
+          root.dispatchEvent(new CustomEvent("aml:api-retry", { detail: { url: url.href, attempt: attempt + 1, delay, error: failure } }));
+          if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+        } finally {
+          if (timeout !== null) clearTimeout(timeout);
+          controllers.delete(controller);
+          owner?.controllers?.delete(controller);
+        }
+      }
     } catch (error) {
       if (error?.name === "AbortError" || !isCurrent()) return;
       if (action.error) commit(root, state, action.error, error.message, executionContext);
       root.dispatchEvent(new CustomEvent("aml:api-error", { detail: { url: url.href, error } }));
       if (executionContext) throw error;
     } finally {
-      controllers.delete(controller);
-      owner?.controllers?.delete(controller);
       if (action.loading && isCurrent()) commit(root, state, action.loading, false, executionContext);
       trigger?.removeAttribute("aria-busy");
       if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
     }
   };
-  var matches = (state, action) => {
-    const current = Object.hasOwn(action, "left") ? resolveData(action.left, state) : readPath(state, action.state);
-    const expected = resolveData(action.value, state);
+  var matches = (state, action, eventData = null) => {
+    const current = Object.hasOwn(action, "left") ? resolveData(action.left, state, eventData) : readPath(state, action.state);
+    const expected = resolveData(action.value, state, eventData);
     if (action.operator === "eq") return current === expected;
     if (action.operator === "neq") return current !== expected;
     if (action.operator === "gt") return current > expected;
@@ -772,6 +927,7 @@ if (!window.AMLEngine) {
     return false;
   };
   var execute = async (root, state, action, trigger = null, executionContext = null) => {
+    if (action.type === "loop-control") return action.operation;
     if (action.type === "element-ref") {
       const element = root.querySelector(`[data-aml-ref="${CSS.escape(String(action.ref || ""))}"]`);
       if (!element) throw new Error(`Unknown AML element ref: ${action.ref}`);
@@ -818,12 +974,15 @@ if (!window.AMLEngine) {
       try {
         await execute(root, state, action.action, trigger, childContext);
         commit(root, state, action.success, true, executionContext);
+        if (action.onSuccess) await execute(root, state, action.onSuccess, trigger, childContext);
         root.dispatchEvent(new CustomEvent("aml:action-success", { detail: { action } }));
       } catch (error) {
         commit(root, state, action.error, error?.message || String(error), executionContext);
+        if (action.onError) await execute(root, state, action.onError, trigger, childContext);
         root.dispatchEvent(new CustomEvent("aml:action-error", { detail: { action, error } }));
       } finally {
         commit(root, state, action.pending, false, executionContext);
+        if (action.onFinally) await execute(root, state, action.onFinally, trigger, childContext);
       }
       return;
     }
@@ -832,7 +991,16 @@ if (!window.AMLEngine) {
       const context2 = parent || { changes: /* @__PURE__ */ new Map(), snapshot: clone(state) };
       transactions.set(root, context2);
       try {
-        for (const child of action.actions || []) await execute(root, state, child, trigger, executionContext);
+        for (const child of action.actions || []) {
+          const signal = await execute(root, state, child, trigger, executionContext);
+          if (signal === "break" || signal === "continue") {
+            if (!parent) {
+              transactions.delete(root);
+              context2.changes.forEach((_, target) => commit(root, state, target, readPath(state, target), executionContext));
+            }
+            return signal;
+          }
+        }
       } catch (error) {
         if (!parent) {
           transactions.delete(root);
@@ -855,15 +1023,40 @@ if (!window.AMLEngine) {
     }
     if (action.type === "sequence") {
       if (!transactions.has(root) && !hasAsyncAction(action)) {
-        await execute(root, state, { type: "transaction", actions: action.actions || [] }, trigger, executionContext);
-        return;
+        return await execute(root, state, { type: "transaction", actions: action.actions || [] }, trigger, executionContext);
       }
-      for (const child of action.actions || []) await execute(root, state, child, trigger, executionContext);
+      for (const child of action.actions || []) {
+        const signal = await execute(root, state, child, trigger, executionContext);
+        if (signal === "break" || signal === "continue") return signal;
+      }
+      return;
+    }
+    if (action.type === "foreach") {
+      const collection = typeof action.source === "string" ? readPath(state, action.source) : resolveData(action.source, state, executionContext?.eventData);
+      const entries = Array.isArray(collection) ? collection.map((value, key) => [key, value]) : collection && typeof collection === "object" ? Object.entries(collection) : [];
+      const limit = Math.max(1, Math.min(1e4, Number(action.limit || 1e3)));
+      if (entries.length > limit) throw new Error(`AML foreach exceeds its safe limit of ${limit} iterations`);
+      for (const [key, value] of entries) {
+        const childContext = {
+          ...executionContext || {},
+          eventData: {
+            ...executionContext?.eventData || {},
+            loop: {
+              ...executionContext?.eventData?.loop || {},
+              [action.value]: value,
+              ...action.key ? { [action.key]: key } : {}
+            }
+          }
+        };
+        const signal = await execute(root, state, action.action, trigger, childContext);
+        if (signal === "break") break;
+        if (signal === "continue") continue;
+      }
       return;
     }
     if (action.type === "condition") {
-      const selected = matches(state, action) ? action.then : action.otherwise;
-      if (selected) await execute(root, state, selected, trigger, executionContext);
+      const selected = matches(state, action, executionContext?.eventData) ? action.then : action.otherwise;
+      if (selected) return await execute(root, state, selected, trigger, executionContext);
       return;
     }
     if (action.type === "console") {
@@ -1421,7 +1614,7 @@ if (!window.AMLEngine) {
       mountedRoots.add(root);
       rootControllers.set(root, /* @__PURE__ */ new Set());
       rootCleanups.set(root, /* @__PURE__ */ new Set());
-      const executeClientEvent = (target, eventName) => {
+      const executeClientEvent = (target, eventName, event = null) => {
         if (!target || !root.contains(target)) return Promise.resolve(false);
         const encoded = target.getAttribute(`data-aml-client-${eventName}`);
         if (!encoded) return Promise.resolve(false);
@@ -1432,7 +1625,7 @@ if (!window.AMLEngine) {
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, event: eventName } }));
           return Promise.reject(error);
         }
-        return execute(root, state, action, target).then(() => true).catch((error) => {
+        return execute(root, state, action, target, { eventData: eventPayload(event) }).then(() => true).catch((error) => {
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, action, event: eventName } }));
           console.error(error);
           return false;
@@ -1541,7 +1734,7 @@ if (!window.AMLEngine) {
           actionForm.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        execute(root, state, action, trigger).catch((error) => {
+        execute(root, state, action, trigger, { eventData: eventPayload(event) }).catch((error) => {
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, action } }));
           console.error(error);
         });
@@ -1613,6 +1806,7 @@ if (!window.AMLEngine) {
           }
           return;
         }
+        executeClientEvent(event.target.closest("[data-aml-client-keydown]"), "keydown", event);
         const tab = event.target.closest("[data-aml-tab]");
         if (!tab || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
         const tabs = [...tab.closest('[role="tablist"]').querySelectorAll("[data-aml-tab]")];
@@ -1624,6 +1818,17 @@ if (!window.AMLEngine) {
         tabs[index].focus();
         tabs[index].click();
       });
+      root.addEventListener("keyup", (event) => {
+        executeClientEvent(event.target.closest("[data-aml-client-keyup]"), "keyup", event);
+      });
+      root.addEventListener("mouseover", (event) => {
+        const target = event.target.closest("[data-aml-client-mouseenter]");
+        if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, "mouseenter", event);
+      });
+      root.addEventListener("mouseout", (event) => {
+        const target = event.target.closest("[data-aml-client-mouseleave]");
+        if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, "mouseleave", event);
+      });
       root.addEventListener("cancel", (event) => {
         const dialog = event.target.closest("[data-aml-modal]");
         if (!dialog) return;
@@ -1632,6 +1837,7 @@ if (!window.AMLEngine) {
         commit(root, state, rule.state, false);
       });
       root.addEventListener("dragstart", (event) => {
+        executeClientEvent(event.target.closest("[data-aml-client-dragstart]"), "dragstart", event);
         const item = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
         if (!item || !event.dataTransfer) return;
         const list = item.parentElement;
@@ -1639,11 +1845,24 @@ if (!window.AMLEngine) {
         event.dataTransfer.setData("text/x-aml-index", JSON.stringify({ index: Number(item.dataset.amlListIndex), state: list.dataset.amlList }));
         item.setAttribute("aria-grabbed", "true");
       });
-      root.addEventListener("dragend", (event) => event.target.closest('[aria-grabbed="true"]')?.removeAttribute("aria-grabbed"));
+      root.addEventListener("dragend", (event) => {
+        event.target.closest('[aria-grabbed="true"]')?.removeAttribute("aria-grabbed");
+        executeClientEvent(event.target.closest("[data-aml-client-dragend]"), "dragend", event);
+      });
       root.addEventListener("dragover", (event) => {
+        const clientTarget = event.target.closest("[data-aml-client-dragover]");
+        if (clientTarget) {
+          event.preventDefault();
+          executeClientEvent(clientTarget, "dragover", event);
+        }
         if (event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]')) event.preventDefault();
       });
       root.addEventListener("drop", (event) => {
+        const clientTarget = event.target.closest("[data-aml-client-drop]");
+        if (clientTarget) {
+          event.preventDefault();
+          executeClientEvent(clientTarget, "drop", event);
+        }
         const destination = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
         if (!destination || !event.dataTransfer || !Array.from(event.dataTransfer.types).includes("text/x-aml-index")) return;
         event.preventDefault();
@@ -1680,7 +1899,7 @@ if (!window.AMLEngine) {
           commitFormState(root, state, rule, "dirty", true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest("[data-aml-client-input]"), "input");
+        executeClientEvent(event.target.closest("[data-aml-client-input]"), "input", event);
       });
       root.addEventListener("change", (event) => {
         const control = event.target.closest("[data-aml-model]");
@@ -1697,10 +1916,10 @@ if (!window.AMLEngine) {
           commitFormState(root, state, rule, "dirty", true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest("[data-aml-client-change]"), "change");
+        executeClientEvent(event.target.closest("[data-aml-client-change]"), "change", event);
       });
       root.addEventListener("focusin", (event) => {
-        executeClientEvent(event.target.closest("[data-aml-client-focus]"), "focus");
+        executeClientEvent(event.target.closest("[data-aml-client-focus]"), "focus", event);
       });
       root.addEventListener("focusout", (event) => {
         const tracked = event.target.closest("form[data-aml-form-state]");
@@ -1709,7 +1928,7 @@ if (!window.AMLEngine) {
           commitFormState(root, state, rule, "touched", true);
           updateFormValidityState(root, state, tracked, rule);
         }
-        executeClientEvent(event.target.closest("[data-aml-client-blur]"), "blur");
+        executeClientEvent(event.target.closest("[data-aml-client-blur]"), "blur", event);
       });
       root.addEventListener("submit", async (event) => {
         const form = event.target.closest("form");
@@ -1731,7 +1950,7 @@ if (!window.AMLEngine) {
         updateFormValidityState(root, state, form, rule);
         if (valid) {
           if (form.hasAttribute("data-aml-client-submit")) {
-            await executeClientEvent(form, "submit");
+            await executeClientEvent(form, "submit", event);
             return;
           }
           form.dataset.amlValidationPassed = "true";

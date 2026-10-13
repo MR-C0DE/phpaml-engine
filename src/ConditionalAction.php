@@ -10,7 +10,7 @@ final readonly class ConditionalAction implements ClientInstruction
     private mixed $left;
 
     public function __construct(
-        string|StateRef|StateExpression $state,
+        mixed $state,
         private string $operator,
         private mixed $value,
         private ClientInstruction $then,

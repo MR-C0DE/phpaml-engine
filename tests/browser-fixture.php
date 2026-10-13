@@ -38,6 +38,120 @@ $transaction = htmlspecialchars(json_encode([
         ['type' => 'update-by', 'target' => 'tasks', 'value' => ['key' => 'id', 'value' => 2, 'changes' => ['title' => 'Gamma']]],
     ],
 ], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$nestedForeach = htmlspecialchars(json_encode([
+    'type' => 'foreach',
+    'source' => 'categories',
+    'value' => 'category',
+    'key' => null,
+    'limit' => 1000,
+    'action' => [
+        'type' => 'foreach',
+        'source' => ['$loop' => 'category.products'],
+        'value' => 'product',
+        'key' => null,
+        'limit' => 1000,
+        'action' => [
+            'type' => 'sequence',
+            'actions' => [
+                ['type' => 'condition', 'operator' => 'eq', 'value' => false, 'then' => ['type' => 'loop-control', 'operation' => 'continue'], 'otherwise' => null, 'left' => ['$loop' => 'product.available']],
+                ['type' => 'condition', 'operator' => 'gt', 'value' => 1000, 'then' => ['type' => 'loop-control', 'operation' => 'break'], 'otherwise' => null, 'left' => ['$loop' => 'product.price']],
+                ['type' => 'set', 'target' => 'nestedTotal', 'value' => ['$expression' => ['operation' => 'add', 'left' => ['$state' => 'nestedTotal'], 'right' => ['$loop' => 'product.price']]]],
+            ],
+        ],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$collectionsAction = htmlspecialchars(json_encode([
+    'type' => 'sequence',
+    'actions' => [
+        [
+            'type' => 'set',
+            'target' => 'collectionNames',
+            'value' => ['$expression' => [
+                'operation' => 'map',
+                'left' => ['$expression' => [
+                    'operation' => 'filter',
+                    'left' => ['$state' => 'collectionUsers'],
+                    'right' => ['$callback' => [
+                        'parameters' => ['user'],
+                        'expression' => ['$conditional' => [
+                            'left' => ['$collection' => 'user.active'], 'operator' => 'truthy', 'right' => true,
+                            'then' => true, 'otherwise' => false,
+                        ]],
+                    ]],
+                ]],
+                'right' => ['$callback' => ['parameters' => ['user'], 'expression' => ['$collection' => 'user.name']]],
+            ]],
+        ],
+        [
+            'type' => 'set',
+            'target' => 'collectionTotal',
+            'value' => ['$expression' => [
+                'operation' => 'reduce',
+                'left' => ['$state' => 'prices'],
+                'right' => [
+                    'initial' => 0,
+                    '$callback' => [
+                        'parameters' => ['sum', 'price'],
+                        'expression' => ['$expression' => [
+                            'operation' => 'add', 'left' => ['$collection' => 'sum'], 'right' => ['$collection' => 'price'],
+                        ]],
+                    ],
+                ],
+            ]],
+        ],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$sortCollectionsAction = htmlspecialchars(json_encode([
+    'type' => 'sequence',
+    'actions' => [
+        ['type' => 'set', 'target' => 'sortedNumbers', 'value' => ['$expression' => [
+            'operation' => 'sort', 'left' => ['$state' => 'sortedNumbers'], 'right' => null,
+        ]]],
+        ['type' => 'set', 'target' => 'sortedUsers', 'value' => ['$expression' => [
+            'operation' => 'sortBy',
+            'left' => ['$state' => 'sortedUsers'],
+            'right' => ['$callback' => [
+                'parameters' => ['a', 'b'],
+                'expression' => ['$expression' => [
+                    'operation' => 'compare', 'left' => ['$collection' => 'a.name'], 'right' => ['$collection' => 'b.name'],
+                ]],
+            ]],
+        ]]],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$nestedMutationAction = htmlspecialchars(json_encode([
+    'type' => 'sequence',
+    'actions' => [
+        ['type' => 'set', 'target' => 'editableUsers.0.name', 'value' => 'André'],
+        ['type' => 'increment', 'target' => 'editableUsers.1.score', 'value' => 1],
+        ['type' => 'remove-path', 'target' => 'editableUsers.2', 'value' => null],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$collectionProjectionAction = htmlspecialchars(json_encode([
+    'type' => 'sequence',
+    'actions' => [
+        ['type' => 'set', 'target' => 'reversedItems', 'value' => ['$expression' => [
+            'operation' => 'reverse', 'left' => ['$state' => 'projectionItems'], 'right' => null,
+        ]]],
+        ['type' => 'set', 'target' => 'slicedItems', 'value' => ['$expression' => [
+            'operation' => 'slice', 'left' => ['$state' => 'projectionItems'], 'right' => ['offset' => 1, 'length' => 2],
+        ]]],
+        ['type' => 'set', 'target' => 'mergedItems', 'value' => ['$expression' => [
+            'operation' => 'merge', 'left' => ['$state' => 'projectionItems'], 'right' => [['$state' => 'projectionMore']],
+        ]]],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
+$nestedReadAction = htmlspecialchars(json_encode([
+    'type' => 'sequence',
+    'actions' => [
+        ['type' => 'set', 'target' => 'readName', 'value' => ['$state' => 'readUsers.0.name']],
+        ['type' => 'set', 'target' => 'readTotal', 'value' => ['$expression' => [
+            'operation' => 'add', 'left' => ['$state' => 'readUsers.0.score'], 'right' => ['$state' => 'readUsers.1.score'],
+        ]]],
+        ['type' => 'condition', 'state' => 'readUsers.0.active', 'operator' => 'truthy', 'value' => true,
+            'then' => ['type' => 'set', 'target' => 'readStatus', 'value' => 'active'], 'otherwise' => null],
+    ],
+], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8');
 $stressState = htmlspecialchars(json_encode([
     'first' => 'AML',
     'last' => 'View',
@@ -89,15 +203,46 @@ $richState = htmlspecialchars(json_encode([
     </ul>
   </section>
   <section data-aml-client id="root-b">
-    <template data-aml-state="{&quot;counter&quot;:0,&quot;csrfStatus&quot;:&quot;pending&quot;}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;counter&quot;:&quot;int&quot;,&quot;csrfStatus&quot;:&quot;string&quot;}}"></template>
+    <template data-aml-state="{&quot;counter&quot;:0,&quot;csrfStatus&quot;:&quot;pending&quot;,&quot;prices&quot;:[2,3,4,5],&quot;total&quot;:0,&quot;categories&quot;:[{&quot;products&quot;:[{&quot;price&quot;:80,&quot;available&quot;:true},{&quot;price&quot;:2000,&quot;available&quot;:true}]},{&quot;products&quot;:[{&quot;price&quot;:40,&quot;available&quot;:false},{&quot;price&quot;:20,&quot;available&quot;:true}]}],&quot;nestedTotal&quot;:0,&quot;collectionUsers&quot;:[{&quot;name&quot;:&quot;André&quot;,&quot;active&quot;:true},{&quot;name&quot;:&quot;Marie&quot;,&quot;active&quot;:false}],&quot;collectionNames&quot;:[],&quot;collectionTotal&quot;:0,&quot;sortedNumbers&quot;:[10,2,1],&quot;sortedUsers&quot;:[{&quot;name&quot;:&quot;Marie&quot;},{&quot;name&quot;:&quot;André&quot;}],&quot;editableUsers&quot;:[{&quot;name&quot;:&quot;Marie&quot;,&quot;score&quot;:1},{&quot;name&quot;:&quot;Alex&quot;,&quot;score&quot;:2},{&quot;name&quot;:&quot;Sam&quot;,&quot;score&quot;:3}],&quot;projectionItems&quot;:[1,2,3,4],&quot;projectionMore&quot;:[5,6],&quot;reversedItems&quot;:[],&quot;slicedItems&quot;:[],&quot;mergedItems&quot;:[],&quot;readUsers&quot;:[{&quot;name&quot;:&quot;André&quot;,&quot;score&quot;:2,&quot;active&quot;:true},{&quot;name&quot;:&quot;Marie&quot;,&quot;score&quot;:3,&quot;active&quot;:false}],&quot;readName&quot;:&quot;&quot;,&quot;readTotal&quot;:0,&quot;readStatus&quot;:&quot;&quot;}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;counter&quot;:&quot;int&quot;,&quot;csrfStatus&quot;:&quot;string&quot;,&quot;prices&quot;:&quot;array&quot;,&quot;total&quot;:&quot;int&quot;,&quot;categories&quot;:&quot;array&quot;,&quot;nestedTotal&quot;:&quot;int&quot;,&quot;collectionUsers&quot;:&quot;array&quot;,&quot;collectionNames&quot;:&quot;array&quot;,&quot;collectionTotal&quot;:&quot;int&quot;,&quot;sortedNumbers&quot;:&quot;array&quot;,&quot;sortedUsers&quot;:&quot;array&quot;,&quot;editableUsers&quot;:&quot;array&quot;,&quot;projectionItems&quot;:&quot;array&quot;,&quot;projectionMore&quot;:&quot;array&quot;,&quot;reversedItems&quot;:&quot;array&quot;,&quot;slicedItems&quot;:&quot;array&quot;,&quot;mergedItems&quot;:&quot;array&quot;,&quot;readUsers&quot;:&quot;array&quot;,&quot;readName&quot;:&quot;string&quot;,&quot;readTotal&quot;:&quot;int&quot;,&quot;readStatus&quot;:&quot;string&quot;}}"></template>
     <button id="increment-b" data-aml-client-click="{&quot;type&quot;:&quot;increment&quot;,&quot;target&quot;:&quot;counter&quot;,&quot;value&quot;:1}">Increment B</button>
     <button id="expression-add" data-aml-client-click="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;counter&quot;,&quot;value&quot;:{&quot;$expression&quot;:{&quot;operation&quot;:&quot;add&quot;,&quot;left&quot;:{&quot;$state&quot;:&quot;counter&quot;},&quot;right&quot;:1}}}">Add with expression</button>
     <button id="expression-subtract" data-aml-client-click="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;counter&quot;,&quot;value&quot;:{&quot;$expression&quot;:{&quot;operation&quot;:&quot;subtract&quot;,&quot;left&quot;:{&quot;$state&quot;:&quot;counter&quot;},&quot;right&quot;:1}}}">Subtract with expression</button>
     <button id="console-log" data-aml-client-click="{&quot;type&quot;:&quot;console&quot;,&quot;level&quot;:&quot;log&quot;,&quot;values&quot;:[&quot;Count&quot;,{&quot;$state&quot;:&quot;counter&quot;}]}">Log counter</button>
     <button id="csrf-request" data-aml-client-click="{&quot;type&quot;:&quot;api&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;url&quot;:&quot;/browser-fixture.php?api=csrf&quot;,&quot;data&quot;:{},&quot;result&quot;:&quot;csrfStatus&quot;,&quot;error&quot;:null,&quot;loading&quot;:null,&quot;select&quot;:&quot;token&quot;}">CSRF request</button>
+    <button id="foreach-total" data-aml-client-click="{&quot;type&quot;:&quot;foreach&quot;,&quot;source&quot;:&quot;prices&quot;,&quot;value&quot;:&quot;price&quot;,&quot;key&quot;:&quot;index&quot;,&quot;limit&quot;:1000,&quot;action&quot;:{&quot;type&quot;:&quot;sequence&quot;,&quot;actions&quot;:[{&quot;type&quot;:&quot;condition&quot;,&quot;operator&quot;:&quot;eq&quot;,&quot;value&quot;:2,&quot;then&quot;:{&quot;type&quot;:&quot;loop-control&quot;,&quot;operation&quot;:&quot;continue&quot;},&quot;otherwise&quot;:null,&quot;left&quot;:{&quot;$loop&quot;:&quot;price&quot;}},{&quot;type&quot;:&quot;condition&quot;,&quot;operator&quot;:&quot;eq&quot;,&quot;value&quot;:4,&quot;then&quot;:{&quot;type&quot;:&quot;loop-control&quot;,&quot;operation&quot;:&quot;break&quot;},&quot;otherwise&quot;:null,&quot;left&quot;:{&quot;$loop&quot;:&quot;price&quot;}},{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;total&quot;,&quot;value&quot;:{&quot;$expression&quot;:{&quot;operation&quot;:&quot;add&quot;,&quot;left&quot;:{&quot;$state&quot;:&quot;total&quot;},&quot;right&quot;:{&quot;$loop&quot;:&quot;price&quot;}}}}]}}">Calculate total</button>
+    <button id="nested-foreach-total" data-aml-client-click="<?= $nestedForeach ?>">Calculate nested total</button>
+    <button id="transform-collections" data-aml-client-click="<?= $collectionsAction ?>">Transform collections</button>
+    <button id="sort-collections" data-aml-client-click="<?= $sortCollectionsAction ?>">Sort collections</button>
+    <button id="mutate-nested-collection" data-aml-client-click="<?= $nestedMutationAction ?>">Mutate nested collection</button>
+    <button id="project-collections" data-aml-client-click="<?= $collectionProjectionAction ?>">Project collections</button>
+    <button id="read-nested-state" data-aml-client-click="<?= $nestedReadAction ?>">Read nested state</button>
     <output data-aml-bind="counter"></output>
     <progress id="counter-progress" value="0" max="10" data-aml-bind="counter" aria-label="Counter progress"></progress>
     <output id="csrf-status" data-aml-bind="csrfStatus"></output>
+    <output id="foreach-result" data-aml-bind="total"></output>
+    <output id="nested-foreach-result" data-aml-bind="nestedTotal"></output>
+    <span id="collection-names" data-aml-list="collectionNames" data-aml-list-label="" data-aml-list-item-tag="span"></span>
+    <span id="sorted-numbers" data-aml-list="sortedNumbers" data-aml-list-label="" data-aml-list-item-tag="span"></span>
+    <span id="sorted-users" data-aml-list="sortedUsers" data-aml-list-label="name" data-aml-list-item-tag="span"></span>
+    <span id="editable-users" data-aml-list="editableUsers" data-aml-list-label="name" data-aml-list-item-tag="span"></span>
+    <output id="editable-score" data-aml-bind="editableUsers.1.score">2</output>
+    <span id="reversed-items" data-aml-list="reversedItems" data-aml-list-label="" data-aml-list-item-tag="span"></span>
+    <span id="sliced-items" data-aml-list="slicedItems" data-aml-list-label="" data-aml-list-item-tag="span"></span>
+    <span id="merged-items" data-aml-list="mergedItems" data-aml-list-label="" data-aml-list-item-tag="span"></span>
+    <output id="read-name" data-aml-bind="readName"></output>
+    <output id="read-total" data-aml-bind="readTotal">0</output>
+    <output id="read-status" data-aml-bind="readStatus"></output>
+    <output id="collection-total" data-aml-bind="collectionTotal"></output>
+  </section>
+  <section data-aml-client id="root-events">
+    <template data-aml-state="{&quot;lastKey&quot;:&quot;&quot;,&quot;hovered&quot;:false,&quot;dragStatus&quot;:&quot;idle&quot;}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{},&quot;types&quot;:{&quot;lastKey&quot;:&quot;string&quot;,&quot;hovered&quot;:&quot;bool&quot;,&quot;dragStatus&quot;:&quot;string&quot;}}"></template>
+    <input id="keyboard-event" data-aml-client-keydown="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;lastKey&quot;,&quot;value&quot;:{&quot;$event&quot;:&quot;key&quot;}}">
+    <div id="mouse-event" data-aml-client-mouseenter="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;hovered&quot;,&quot;value&quot;:true}" data-aml-client-mouseleave="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;hovered&quot;,&quot;value&quot;:false}">Hover</div>
+    <div id="drag-source" draggable="true" data-aml-client-dragstart="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;dragStatus&quot;,&quot;value&quot;:&quot;started&quot;}">Drag</div>
+    <div id="drop-target" data-aml-client-dragover="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;dragStatus&quot;,&quot;value&quot;:&quot;over&quot;}" data-aml-client-drop="{&quot;type&quot;:&quot;set&quot;,&quot;target&quot;:&quot;dragStatus&quot;,&quot;value&quot;:&quot;dropped&quot;}">Drop</div>
+    <output id="last-key" data-aml-bind="lastKey"></output>
+    <output id="hovered" data-aml-bind="hovered"></output>
+    <output id="drag-status" data-aml-bind="dragStatus"></output>
   </section>
   <section data-aml-client id="root-c">
     <template data-aml-state="{&quot;account&quot;:{&quot;profile&quot;:{&quot;name&quot;:&quot;Default&quot;},&quot;active&quot;:false}}" data-aml-state-config="{&quot;shared&quot;:{},&quot;persisted&quot;:{&quot;account&quot;:{&quot;storage&quot;:&quot;indexeddb&quot;,&quot;key&quot;:&quot;fixture.account&quot;,&quot;version&quot;:2,&quot;expiresAfter&quot;:null,&quot;migrations&quot;:{&quot;2&quot;:{&quot;rename&quot;:{&quot;name&quot;:&quot;profile.name&quot;},&quot;defaults&quot;:{&quot;active&quot;:true},&quot;remove&quot;:[&quot;legacyToken&quot;]}}}},&quot;types&quot;:{&quot;account&quot;:&quot;array&quot;}}"></template>

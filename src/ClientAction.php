@@ -51,6 +51,11 @@ final readonly class ClientAction implements ClientInstruction
         return new self('remove-at', $target, $index);
     }
 
+    public static function removePath(string $target): self
+    {
+        return new self('remove-path', $target);
+    }
+
     public static function removeBy(string $target, string $key, mixed $value): self
     {
         StateNamespace::assertSafe($key);

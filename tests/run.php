@@ -37,6 +37,16 @@ if (!str_contains($arithmetic, '"operation":"multiply"') || !str_contains($arith
 }
 $natural = ClientAction::set('message', StateRef::to('prefix')->concat(StateRef::to('count')))->json();
 if (!str_contains($natural, '"operation":"concat"')) throw new RuntimeException('State concatenation expression is invalid.');
+$collectionExpressions = ClientAction::set('summary', new \AML\Engine\StateExpression(
+    'add',
+    new \AML\Engine\StateExpression('count', StateRef::to('items'), null),
+    new \AML\Engine\StateExpression('sum', StateRef::to('prices'), null),
+))->json();
+if (!str_contains($collectionExpressions, '"operation":"count"') || !str_contains($collectionExpressions, '"operation":"sum"')) {
+    throw new RuntimeException('Collection count or sum expression is invalid.');
+}
+$contains = ClientAction::set('selected', new \AML\Engine\StateExpression('contains', StateRef::to('items'), 'target'))->json();
+if (!str_contains($contains, '"operation":"contains"')) throw new RuntimeException('Collection contains expression is invalid.');
 $ternary = ClientAction::set('discount', new \AML\Engine\StateConditional(StateRef::to('total'), 'gte', 100, 10, 0))->json();
 if (!str_contains($ternary, '"$conditional"') || !str_contains($ternary, '"operator":"gte"')) {
     throw new RuntimeException('Conditional state value is invalid.');
@@ -52,6 +62,10 @@ if (!str_contains($prefixed, '"operation":"concat"') || !str_contains($prefixed,
 $pop = ClientAction::removeAt('tasks', -1)->json();
 if ($pop !== '{"type":"remove-at","target":"tasks","value":-1}') {
     throw new RuntimeException('Collection last-item removal is invalid.');
+}
+$removePath = ClientAction::removePath('users.2')->json();
+if ($removePath !== '{"type":"remove-path","target":"users.2","value":null}') {
+    throw new RuntimeException('Nested collection removal is invalid.');
 }
 
 if (ConsoleAction::log('Count', \AML\Engine\StateRef::to('count'))->json()
@@ -74,6 +88,27 @@ if (!str_contains($api, '"type":"api"')
     || !str_contains($api, '"result":"profile"')) {
     throw new RuntimeException('API action is invalid.');
 }
+$resilientApi = Api::get('/api/search')
+    ->timeout(5_000)
+    ->retry(3, 200)
+    ->json();
+if (!str_contains($resilientApi, '"timeout":5000')
+    || !str_contains($resilientApi, '"retries":3')
+    || !str_contains($resilientApi, '"retryDelay":200')) {
+    throw new RuntimeException('Resilient API options are invalid.');
+}
+foreach ([0, 120_001] as $invalidTimeout) {
+    try {
+        Api::get('/api/search')->timeout($invalidTimeout);
+        throw new RuntimeException("Invalid API timeout was accepted: {$invalidTimeout}");
+    } catch (InvalidArgumentException) {
+    }
+}
+try {
+    Api::post('/api/orders')->retry();
+    throw new RuntimeException('Automatic retries were accepted for a mutating API request.');
+} catch (LogicException) {
+}
 $composed = Actions::sequence(
     ClientAction::increment('count'),
     Actions::when('count', 'gte', 1, ClientAction::set('message', 'ready')),
@@ -82,6 +117,32 @@ if (!str_contains($composed, '"type":"sequence"')
     || !str_contains($composed, '"type":"condition"')
     || !str_contains($composed, '"operator":"gte"')) {
     throw new RuntimeException('Composed client actions are invalid.');
+}
+$foreach = Actions::each(
+    'prices',
+    'price',
+    'index',
+    ClientAction::set('total', StateRef::to('total')->plus(['$loop' => 'price'])),
+)->json();
+if (!str_contains($foreach, '"type":"foreach"')
+    || !str_contains($foreach, '"source":"prices"')
+    || !str_contains($foreach, '"$loop":"price"')) {
+    throw new RuntimeException('Frontend foreach action is invalid.');
+}
+
+$nestedForeach = Actions::each(
+    ['$loop' => 'category.products'],
+    'product',
+    null,
+    ClientAction::append('selected', ['$loop' => 'product.name']),
+)->json();
+if (!str_contains($nestedForeach, '"source":{"$loop":"category.products"}')
+    || !str_contains($nestedForeach, '"$loop":"product.name"')) {
+    throw new RuntimeException('Nested frontend foreach source is invalid.');
+}
+$loopControl = Actions::sequence(Actions::continueLoop(), Actions::breakLoop())->json();
+if (!str_contains($loopControl, '"operation":"continue"') || !str_contains($loopControl, '"operation":"break"')) {
+    throw new RuntimeException('Frontend loop control actions are invalid.');
 }
 $expressionCondition = Actions::whenValue(
     StateRef::to('price')->times(StateRef::to('quantity')),
@@ -148,13 +209,13 @@ if (!str_contains($minifiedScript, 'window.AMLEngine') || strlen($minifiedScript
     throw new RuntimeException('The minified compatibility runtime is unavailable.');
 }
 $assetPath = EngineRuntime::assetPath();
-if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.6.js')) {
+if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.7.js')) {
     throw new RuntimeException('The external browser runtime asset is unavailable.');
 }
-if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.6.min.js') {
+if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.7.min.js') {
     throw new RuntimeException('The minified browser runtime filename is inconsistent.');
 }
-if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.6.min.js" data-aml-engine></script>') {
+if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.7.min.js" data-aml-engine></script>') {
     throw new RuntimeException('The external browser runtime tag is inconsistent.');
 }
 foreach (['https://example.test/assets', '//cdn.example.test', '/assets?version=1', '/\\evil.example/assets'] as $unsafeBase) {
@@ -173,7 +234,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.6') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.7') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 $package = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -238,6 +299,11 @@ if (!str_contains($scriptFeatures, "window.AMLEngine")
     || !str_contains($scriptFeatures, 'releaseDynamicItem')
     || !str_contains($scriptFeatures, 'Duplicate AML collection key')
     || !str_contains($scriptFeatures, 'hasAsyncAction')
+    || !str_contains($scriptFeatures, 'aml:api-retry')
+    || !str_contains($scriptFeatures, 'API request timed out after')
+    || !str_contains($scriptFeatures, 'action.onSuccess')
+    || !str_contains($scriptFeatures, 'action.onError')
+    || !str_contains($scriptFeatures, 'action.onFinally')
     || !str_contains($scriptFeatures, 'data-aml-list-template')
     || !str_contains($scriptFeatures, 'clearPersisted')
     || !str_contains($scriptFeatures, 'aml:storage-migration-required')

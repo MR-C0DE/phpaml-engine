@@ -10,6 +10,9 @@ final class ApiAction implements ClientInstruction
     private ?string $errorState = null;
     private ?string $loadingState = null;
     private ?string $select = null;
+    private ?int $timeoutMs = null;
+    private int $retries = 0;
+    private int $retryDelayMs = 250;
 
     /** @param array<string, mixed> $data */
     public function __construct(
@@ -49,6 +52,33 @@ final class ApiAction implements ClientInstruction
         return $clone;
     }
 
+    public function timeout(int $milliseconds): self
+    {
+        if ($milliseconds < 1 || $milliseconds > 120_000) {
+            throw new \InvalidArgumentException('API timeout must be between 1 and 120000 milliseconds.');
+        }
+        $clone = clone $this;
+        $clone->timeoutMs = $milliseconds;
+        return $clone;
+    }
+
+    public function retry(int $attempts = 2, int $delayMilliseconds = 250): self
+    {
+        if ($this->method !== 'GET') {
+            throw new \LogicException('Automatic API retries are limited to GET requests to avoid repeating mutations.');
+        }
+        if ($attempts < 0 || $attempts > 5) {
+            throw new \InvalidArgumentException('API retry attempts must be between 0 and 5.');
+        }
+        if ($delayMilliseconds < 0 || $delayMilliseconds > 30_000) {
+            throw new \InvalidArgumentException('API retry delay must be between 0 and 30000 milliseconds.');
+        }
+        $clone = clone $this;
+        $clone->retries = $attempts;
+        $clone->retryDelayMs = $delayMilliseconds;
+        return $clone;
+    }
+
     public function json(): string
     {
         return json_encode([
@@ -60,6 +90,9 @@ final class ApiAction implements ClientInstruction
             'error' => $this->errorState,
             'loading' => $this->loadingState,
             'select' => $this->select,
+            'timeout' => $this->timeoutMs,
+            'retries' => $this->retries,
+            'retryDelay' => $this->retryDelayMs,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
