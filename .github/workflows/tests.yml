@@ -2,7 +2,17 @@ name: Tests
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      view_ref:
+        description: Matching View revision for candidate verification
+        type: string
+        required: false
+
+permissions:
+  contents: read
 
 jobs:
   php:
@@ -16,16 +26,82 @@ jobs:
 
   browser:
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [full, modules]
+        browser: [chromium, firefox, webkit]
+    defaults:
+      run:
+        working-directory: phpaml-engine
+    env:
+      PHPAML_BROWSER_RUNTIME: ${{ matrix.runtime }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: phpaml-engine
+      - uses: actions/checkout@v4
+        with:
+          repository: MR-C0DE/phpaml-view
+          ref: ${{ inputs.view_ref || vars.PHPAML_VIEW_TEST_REF || 'main' }}
+          path: phpaml-view
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.4'
+          extensions: mbstring, bcmath, intl
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm ci
       - run: npm run build:check
       - run: npm test
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test:browser -- --project=${{ matrix.browser }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-${{ matrix.runtime }}-${{ matrix.browser }}
+          path: phpaml-engine/test-results/
+          retention-days: 7
+
+  packages:
+    name: Composer distributions (${{ matrix.runtime }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [full, modules]
+    defaults:
+      run:
+        working-directory: phpaml-engine
+    env:
+      PHPAML_BROWSER_RUNTIME: ${{ matrix.runtime }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: phpaml-engine
+      - uses: actions/checkout@v4
+        with:
+          repository: MR-C0DE/phpaml-view
+          ref: ${{ inputs.view_ref || vars.PHPAML_VIEW_TEST_REF || 'main' }}
+          path: phpaml-view
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, intl, zip
+          tools: composer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build:check
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run test:browser
+      - run: npm run test:packages
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: distributions-${{ matrix.runtime }}
+          path: phpaml-engine/test-results/
+          retention-days: 7

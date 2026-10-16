@@ -5,7 +5,7 @@ export const observer = new MutationObserver((records) => records.forEach((recor
   })));
   observer.observe(document.documentElement, {childList: true, subtree: true});
 export const clearPersisted = (key, storage = 'local') => storage === 'indexeddb'
-    ? indexedState('delete', key)
+    ? Promise.resolve(prepareModules(['browser'])).then(() => indexedState('delete', key))
     : (storage === 'session' ? sessionStorage : localStorage).removeItem(key);
 export const clearFormDraft = (formOrKey) => {
     const key = typeof formOrKey === 'string' ? formOrKey : formOrKey?.dataset?.amlFormPreserve;
@@ -78,3 +78,5 @@ import { activateEffect, cleanupEffect, runEffects } from './effects-runtime.js'
 import { render } from './rendering.js';
 import { lifecycle, remember } from './lifecycle.js';
 import { unmount } from './lifecycle-runtime.js';
+
+import {prepareModules} from './modules/runtime.js';

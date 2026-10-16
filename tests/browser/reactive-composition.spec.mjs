@@ -1,0 +1,40 @@
+import {assetFile, viewFile} from './test-environment.mjs';
+import {browserRuntime} from './runtime-source.mjs';
+import {expect, test} from './runtime-test.mjs';
+import {execFileSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
+const fixture = viewFile('tests/reactive-composition.php');
+const sample = JSON.parse(execFileSync(process.env.PHP_BINARY || 'php', [fixture, '--json'], {encoding: 'utf8', maxBuffer: 16 * 1024 * 1024}));
+const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.9.min.js'), 'utf8'));
+
+test('reactive component inputs, named unpacking and variadic tails update without crossing instance scopes', async ({page}) => {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/composition', route => route.fulfill({contentType: 'text/html', headers: {'Content-Security-Policy': "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'unsafe-inline'"}, body: `<meta charset="utf-8"><link rel="icon" href="/favicon.ico"><main data-aml-client>${sample.html}</main><script defer data-aml-engine src="/engine.js"></script>`}));
+  await page.route('**/engine.js', route => route.fulfill({contentType: 'text/javascript', body: runtime}));
+  await page.addInitScript(() => {
+    window.renderErrors = []; window.csp = [];
+    document.addEventListener('aml:render-error', ({detail: {error}}) => window.renderErrors.push(error.message), true);
+    document.addEventListener('securitypolicyviolation', event => window.csp.push(event.blockedURI));
+  });
+  await page.goto('/composition');
+  await expect(page.locator('[data-aml-client]')).toHaveAttribute('data-aml-engine-mounted', 'true');
+  const texts = () => page.locator('[data-test]').evaluateAll(nodes => Object.fromEntries(nodes.map(node => [node.dataset.test, node.textContent])));
+  expect(await texts()).toEqual(sample.before);
+  await page.getByRole('button', {name: 'Changer', exact: true}).click();
+  expect(await texts()).toEqual(sample.after);
+  await page.getByRole('button', {name: 'Compter counter-a', exact: true}).click();
+  expect(await texts()).toEqual({...sample.after, 'counter-a': '<b>Marie</b>: 2'});
+  await page.getByRole('button', {name: 'Lire counter-a', exact: true}).click();
+  expect(await texts()).toEqual({...sample.after, 'counter-a': '<b>Marie</b>: 2', 'counter-a-observed': 'Lu <b>Marie</b>'});
+  await expect(page.locator('[data-test] b')).toHaveCount(0);
+  expect(await page.evaluate(() => window.renderErrors)).toEqual([]);
+  await page.getByRole('button', {name: 'Type invalide', exact: true}).click();
+  expect(await texts()).toEqual({...sample.after, 'counter-a': '<b>Marie</b>: 2', 'counter-a-observed': 'Lu <b>Marie</b>'});
+  expect(await page.evaluate(() => window.renderErrors)).toHaveLength(1);
+  await page.getByRole('button', {name: 'Réparer type', exact: true}).click();
+  expect(await texts()).toEqual({...sample.after, 'counter-a': '<b>Marie</b>: 2', 'counter-a-observed': 'Lu <b>Marie</b>', 'typed-child':'6'});
+  await page.getByRole('button', {name: 'Vider extras', exact: true}).click();
+  expect(await texts()).toEqual({...sample.after, 'counter-a': '<b>Marie</b>: 2', 'counter-a-observed': 'Lu <b>Marie</b>', 'typed-child':'6', 'spread-keys':'fixe:  / 0 / 0'});
+  expect(await page.evaluate(() => window.csp)).toEqual([]);
+  expect(errors).toEqual([]);
+});

@@ -1,0 +1,4411 @@
+{
+    "ctype_alnum": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_alpha": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_cntrl": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_graph": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_lower": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_print": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_punct": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_space": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_upper": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "ctype_xdigit": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "hash": [
+        {
+            "name": "algo",
+            "types": "string"
+        },
+        {
+            "name": "data",
+            "types": "string"
+        },
+        {
+            "name": "binary",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "options",
+            "types": "array",
+            "default": []
+        }
+    ],
+    "hash_hmac": [
+        {
+            "name": "algo",
+            "types": "string"
+        },
+        {
+            "name": "data",
+            "types": "string"
+        },
+        {
+            "name": "key",
+            "types": "string"
+        },
+        {
+            "name": "binary",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "hash_equals": [
+        {
+            "name": "known_string",
+            "types": "string"
+        },
+        {
+            "name": "user_string",
+            "types": "string"
+        }
+    ],
+    "hash_algos": [],
+    "hash_hmac_algos": [],
+    "is_callable": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "syntax_only",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "callable_name",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "function_exists": [
+        {
+            "name": "function",
+            "types": "string"
+        }
+    ],
+    "call_user_func": [
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "args",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "call_user_func_array": [
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "args",
+            "types": "array"
+        }
+    ],
+    "filter_var": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "filter",
+            "types": "int",
+            "default": 516
+        },
+        {
+            "name": "options",
+            "types": "array|int",
+            "default": 0
+        }
+    ],
+    "filter_var_array": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "options",
+            "types": "array|int",
+            "default": 516
+        },
+        {
+            "name": "add_empty",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "get_debug_type": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "settype": [
+        {
+            "name": "var",
+            "types": "mixed",
+            "reference": true
+        },
+        {
+            "name": "type",
+            "types": "string"
+        }
+    ],
+    "get_defined_vars": [],
+    "compact": [
+        {
+            "name": "var_name",
+            "types": "mixed"
+        },
+        {
+            "name": "var_names",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "extract": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "prefix",
+            "types": "string",
+            "default": ""
+        }
+    ],
+    "rand": [
+        {
+            "name": "min",
+            "types": "int",
+            "optional": true
+        },
+        {
+            "name": "max",
+            "types": "int",
+            "optional": true
+        }
+    ],
+    "mt_rand": [
+        {
+            "name": "min",
+            "types": "int",
+            "optional": true
+        },
+        {
+            "name": "max",
+            "types": "int",
+            "optional": true
+        }
+    ],
+    "srand": [
+        {
+            "name": "seed",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "mt_srand": [
+        {
+            "name": "seed",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "getrandmax": [],
+    "mt_getrandmax": [],
+    "preg_replace_callback_array": [
+        {
+            "name": "pattern",
+            "types": "array"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": -1
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "serialize": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "unserialize": [
+        {
+            "name": "data",
+            "types": "string"
+        },
+        {
+            "name": "options",
+            "types": "array",
+            "default": []
+        }
+    ],
+    "is_object": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "get_class": [
+        {
+            "name": "object",
+            "types": "object",
+            "optional": true
+        }
+    ],
+    "get_parent_class": [
+        {
+            "name": "object_or_class",
+            "types": "object|string",
+            "optional": true
+        }
+    ],
+    "get_called_class": [],
+    "class_exists": [
+        {
+            "name": "class",
+            "types": "string"
+        },
+        {
+            "name": "autoload",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "enum_exists": [
+        {
+            "name": "enum",
+            "types": "string"
+        },
+        {
+            "name": "autoload",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "interface_exists": [
+        {
+            "name": "interface",
+            "types": "string"
+        },
+        {
+            "name": "autoload",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "method_exists": [
+        {
+            "name": "object_or_class",
+            "types": "mixed"
+        },
+        {
+            "name": "method",
+            "types": "string"
+        }
+    ],
+    "property_exists": [
+        {
+            "name": "object_or_class",
+            "types": "mixed"
+        },
+        {
+            "name": "property",
+            "types": "string"
+        }
+    ],
+    "is_a": [
+        {
+            "name": "object_or_class",
+            "types": "mixed"
+        },
+        {
+            "name": "class",
+            "types": "string"
+        },
+        {
+            "name": "allow_string",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "is_subclass_of": [
+        {
+            "name": "object_or_class",
+            "types": "mixed"
+        },
+        {
+            "name": "class",
+            "types": "string"
+        },
+        {
+            "name": "allow_string",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "get_object_vars": [
+        {
+            "name": "object",
+            "types": "object"
+        }
+    ],
+    "get_class_methods": [
+        {
+            "name": "object_or_class",
+            "types": "object|string"
+        }
+    ],
+    "parse_url": [
+        {
+            "name": "url",
+            "types": "string"
+        },
+        {
+            "name": "component",
+            "types": "int",
+            "default": -1
+        }
+    ],
+    "http_build_query": [
+        {
+            "name": "data",
+            "types": "object|array"
+        },
+        {
+            "name": "numeric_prefix",
+            "types": "string",
+            "default": ""
+        },
+        {
+            "name": "arg_separator",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "encoding_type",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "urlencode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "urldecode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "rawurlencode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "rawurldecode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "base64_encode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "base64_decode": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "strict",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "grapheme_strlen": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "grapheme_substr": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "grapheme_str_split": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "grapheme_strpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "grapheme_stripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "grapheme_strrpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "grapheme_strripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "grapheme_strstr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "beforeNeedle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "grapheme_stristr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "beforeNeedle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "grapheme_extract": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "size",
+            "types": "int"
+        },
+        {
+            "name": "type",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "next",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "numfmt_create": [
+        {
+            "name": "locale",
+            "types": "string"
+        },
+        {
+            "name": "style",
+            "types": "int"
+        },
+        {
+            "name": "pattern",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "numfmt_format": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "num",
+            "types": "int|float"
+        },
+        {
+            "name": "type",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "numfmt_format_currency": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "amount",
+            "types": "float"
+        },
+        {
+            "name": "currency",
+            "types": "string"
+        }
+    ],
+    "numfmt_get_attribute": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "attribute",
+            "types": "int"
+        }
+    ],
+    "numfmt_set_attribute": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "attribute",
+            "types": "int"
+        },
+        {
+            "name": "value",
+            "types": "int|float"
+        }
+    ],
+    "numfmt_get_text_attribute": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "attribute",
+            "types": "int"
+        }
+    ],
+    "numfmt_set_text_attribute": [
+        {
+            "name": "formatter",
+            "types": "NumberFormatter"
+        },
+        {
+            "name": "attribute",
+            "types": "int"
+        },
+        {
+            "name": "value",
+            "types": "string"
+        }
+    ],
+    "normalizer_normalize": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "form",
+            "types": "int",
+            "default": 16
+        }
+    ],
+    "normalizer_is_normalized": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "form",
+            "types": "int",
+            "default": 16
+        }
+    ],
+    "normalizer_get_raw_decomposition": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "form",
+            "types": "int",
+            "default": 16
+        }
+    ],
+    "func_get_args": [],
+    "func_num_args": [],
+    "func_get_arg": [
+        {
+            "name": "position",
+            "types": "int"
+        }
+    ],
+    "iterator_to_array": [
+        {
+            "name": "iterator",
+            "types": "Traversable|array"
+        },
+        {
+            "name": "preserve_keys",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "iterator_count": [
+        {
+            "name": "iterator",
+            "types": "Traversable|array"
+        }
+    ],
+    "iterator_apply": [
+        {
+            "name": "iterator",
+            "types": "Traversable"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "args",
+            "types": "?array",
+            "default": null
+        }
+    ],
+    "json_encode": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "depth",
+            "types": "int",
+            "default": 512
+        }
+    ],
+    "json_decode": [
+        {
+            "name": "json",
+            "types": "string"
+        },
+        {
+            "name": "associative",
+            "types": "?bool",
+            "default": null
+        },
+        {
+            "name": "depth",
+            "types": "int",
+            "default": 512
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "json_validate": [
+        {
+            "name": "json",
+            "types": "string"
+        },
+        {
+            "name": "depth",
+            "types": "int",
+            "default": 512
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "json_last_error": [],
+    "json_last_error_msg": [],
+    "preg_match": [
+        {
+            "name": "pattern",
+            "types": "string"
+        },
+        {
+            "name": "subject",
+            "types": "string"
+        },
+        {
+            "name": "matches",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "preg_match_all": [
+        {
+            "name": "pattern",
+            "types": "string"
+        },
+        {
+            "name": "subject",
+            "types": "string"
+        },
+        {
+            "name": "matches",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "preg_replace": [
+        {
+            "name": "pattern",
+            "types": "array|string"
+        },
+        {
+            "name": "replacement",
+            "types": "array|string"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": -1
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "preg_replace_callback": [
+        {
+            "name": "pattern",
+            "types": "array|string"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": -1
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "preg_filter": [
+        {
+            "name": "pattern",
+            "types": "array|string"
+        },
+        {
+            "name": "replacement",
+            "types": "array|string"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": -1
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "preg_split": [
+        {
+            "name": "pattern",
+            "types": "string"
+        },
+        {
+            "name": "subject",
+            "types": "string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": -1
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "preg_grep": [
+        {
+            "name": "pattern",
+            "types": "string"
+        },
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "preg_quote": [
+        {
+            "name": "str",
+            "types": "string"
+        },
+        {
+            "name": "delimiter",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "preg_last_error": [],
+    "preg_last_error_msg": [],
+    "time": [],
+    "microtime": [
+        {
+            "name": "as_float",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "date": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "timestamp",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "gmdate": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "timestamp",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "strtotime": [
+        {
+            "name": "datetime",
+            "types": "string"
+        },
+        {
+            "name": "baseTimestamp",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "mktime": [
+        {
+            "name": "hour",
+            "types": "int"
+        },
+        {
+            "name": "minute",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "second",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "month",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "day",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "year",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "gmmktime": [
+        {
+            "name": "hour",
+            "types": "int"
+        },
+        {
+            "name": "minute",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "second",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "month",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "day",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "year",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "checkdate": [
+        {
+            "name": "month",
+            "types": "int"
+        },
+        {
+            "name": "day",
+            "types": "int"
+        },
+        {
+            "name": "year",
+            "types": "int"
+        }
+    ],
+    "getdate": [
+        {
+            "name": "timestamp",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "date_default_timezone_get": [],
+    "date_default_timezone_set": [
+        {
+            "name": "timezoneId",
+            "types": "string"
+        }
+    ],
+    "date_create": [
+        {
+            "name": "datetime",
+            "types": "string",
+            "default": "now"
+        },
+        {
+            "name": "timezone",
+            "types": "?DateTimeZone",
+            "default": null
+        }
+    ],
+    "date_create_immutable": [
+        {
+            "name": "datetime",
+            "types": "string",
+            "default": "now"
+        },
+        {
+            "name": "timezone",
+            "types": "?DateTimeZone",
+            "default": null
+        }
+    ],
+    "date_format": [
+        {
+            "name": "object",
+            "types": "DateTimeInterface"
+        },
+        {
+            "name": "format",
+            "types": "string"
+        }
+    ],
+    "date_timestamp_get": [
+        {
+            "name": "object",
+            "types": "DateTimeInterface"
+        }
+    ],
+    "date_timestamp_set": [
+        {
+            "name": "object",
+            "types": "DateTime"
+        },
+        {
+            "name": "timestamp",
+            "types": "int"
+        }
+    ],
+    "date_modify": [
+        {
+            "name": "object",
+            "types": "DateTime"
+        },
+        {
+            "name": "modifier",
+            "types": "string"
+        }
+    ],
+    "date_timezone_get": [
+        {
+            "name": "object",
+            "types": "DateTimeInterface"
+        }
+    ],
+    "date_timezone_set": [
+        {
+            "name": "object",
+            "types": "DateTime"
+        },
+        {
+            "name": "timezone",
+            "types": "DateTimeZone"
+        }
+    ],
+    "timezone_open": [
+        {
+            "name": "timezone",
+            "types": "string"
+        }
+    ],
+    "timezone_name_get": [
+        {
+            "name": "object",
+            "types": "DateTimeZone"
+        }
+    ],
+    "timezone_offset_get": [
+        {
+            "name": "object",
+            "types": "DateTimeZone"
+        },
+        {
+            "name": "datetime",
+            "types": "DateTimeInterface"
+        }
+    ],
+    "date_create_from_format": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "datetime",
+            "types": "string"
+        },
+        {
+            "name": "timezone",
+            "types": "?DateTimeZone",
+            "default": null
+        }
+    ],
+    "date_create_immutable_from_format": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "datetime",
+            "types": "string"
+        },
+        {
+            "name": "timezone",
+            "types": "?DateTimeZone",
+            "default": null
+        }
+    ],
+    "date_get_last_errors": [],
+    "date_diff": [
+        {
+            "name": "baseObject",
+            "types": "DateTimeInterface"
+        },
+        {
+            "name": "targetObject",
+            "types": "DateTimeInterface"
+        },
+        {
+            "name": "absolute",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "date_add": [
+        {
+            "name": "object",
+            "types": "DateTime"
+        },
+        {
+            "name": "interval",
+            "types": "DateInterval"
+        }
+    ],
+    "date_sub": [
+        {
+            "name": "object",
+            "types": "DateTime"
+        },
+        {
+            "name": "interval",
+            "types": "DateInterval"
+        }
+    ],
+    "date_interval_format": [
+        {
+            "name": "object",
+            "types": "DateInterval"
+        },
+        {
+            "name": "format",
+            "types": "string"
+        }
+    ],
+    "strlen": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "str_contains": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        }
+    ],
+    "str_starts_with": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        }
+    ],
+    "str_ends_with": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        }
+    ],
+    "substr": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "str_replace": [
+        {
+            "name": "search",
+            "types": "array|string"
+        },
+        {
+            "name": "replace",
+            "types": "array|string"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "explode": [
+        {
+            "name": "separator",
+            "types": "string"
+        },
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "limit",
+            "types": "int",
+            "default": 9007199254740991
+        }
+    ],
+    "implode": [
+        {
+            "name": "separator",
+            "types": "array|string"
+        },
+        {
+            "name": "array",
+            "types": "?array",
+            "default": null
+        }
+    ],
+    "strtolower": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "strtoupper": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "ucfirst": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "lcfirst": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "ucwords": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "separators",
+            "types": "string",
+            "default": " \t\r\n\f\u000b"
+        }
+    ],
+    "trim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string",
+            "default": " \n\r\t\u000b\u0000"
+        }
+    ],
+    "ltrim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string",
+            "default": " \n\r\t\u000b\u0000"
+        }
+    ],
+    "rtrim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string",
+            "default": " \n\r\t\u000b\u0000"
+        }
+    ],
+    "is_numeric": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "ctype_digit": [
+        {
+            "name": "text",
+            "types": "mixed"
+        }
+    ],
+    "abs": [
+        {
+            "name": "num",
+            "types": "int|float"
+        }
+    ],
+    "ceil": [
+        {
+            "name": "num",
+            "types": "int|float"
+        }
+    ],
+    "floor": [
+        {
+            "name": "num",
+            "types": "int|float"
+        }
+    ],
+    "round": [
+        {
+            "name": "num",
+            "types": "int|float"
+        },
+        {
+            "name": "precision",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "intdiv": [
+        {
+            "name": "num1",
+            "types": "int"
+        },
+        {
+            "name": "num2",
+            "types": "int"
+        }
+    ],
+    "random_int": [
+        {
+            "name": "min",
+            "types": "int"
+        },
+        {
+            "name": "max",
+            "types": "int"
+        }
+    ],
+    "number_format": [
+        {
+            "name": "num",
+            "types": "float"
+        },
+        {
+            "name": "decimals",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "decimal_separator",
+            "types": "?string",
+            "default": "."
+        },
+        {
+            "name": "thousands_separator",
+            "types": "?string",
+            "default": ","
+        }
+    ],
+    "acos": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "acosh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "asin": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "asinh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "atan": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "atan2": [
+        {
+            "name": "y",
+            "types": "float"
+        },
+        {
+            "name": "x",
+            "types": "float"
+        }
+    ],
+    "atanh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "base_convert": [
+        {
+            "name": "num",
+            "types": "string"
+        },
+        {
+            "name": "from_base",
+            "types": "int"
+        },
+        {
+            "name": "to_base",
+            "types": "int"
+        }
+    ],
+    "bindec": [
+        {
+            "name": "binary_string",
+            "types": "string"
+        }
+    ],
+    "cos": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "cosh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "decbin": [
+        {
+            "name": "num",
+            "types": "int"
+        }
+    ],
+    "dechex": [
+        {
+            "name": "num",
+            "types": "int"
+        }
+    ],
+    "decoct": [
+        {
+            "name": "num",
+            "types": "int"
+        }
+    ],
+    "deg2rad": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "exp": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "expm1": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "fdiv": [
+        {
+            "name": "num1",
+            "types": "float"
+        },
+        {
+            "name": "num2",
+            "types": "float"
+        }
+    ],
+    "fmod": [
+        {
+            "name": "num1",
+            "types": "float"
+        },
+        {
+            "name": "num2",
+            "types": "float"
+        }
+    ],
+    "fpow": [
+        {
+            "name": "num",
+            "types": "float"
+        },
+        {
+            "name": "exponent",
+            "types": "float"
+        }
+    ],
+    "hexdec": [
+        {
+            "name": "hex_string",
+            "types": "string"
+        }
+    ],
+    "hypot": [
+        {
+            "name": "x",
+            "types": "float"
+        },
+        {
+            "name": "y",
+            "types": "float"
+        }
+    ],
+    "is_finite": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "is_infinite": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "is_nan": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "log": [
+        {
+            "name": "num",
+            "types": "float"
+        },
+        {
+            "name": "base",
+            "types": "float",
+            "default": 2.718281828459045
+        }
+    ],
+    "log10": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "log1p": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "max": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "min": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "octdec": [
+        {
+            "name": "octal_string",
+            "types": "string"
+        }
+    ],
+    "pi": [],
+    "pow": [
+        {
+            "name": "num",
+            "types": "mixed"
+        },
+        {
+            "name": "exponent",
+            "types": "mixed"
+        }
+    ],
+    "rad2deg": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "sin": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "sinh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "sqrt": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "tan": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "tanh": [
+        {
+            "name": "num",
+            "types": "float"
+        }
+    ],
+    "addcslashes": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string"
+        }
+    ],
+    "addslashes": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "bin2hex": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "chop": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string",
+            "default": " \n\r\t\u000b\u0000"
+        }
+    ],
+    "chr": [
+        {
+            "name": "codepoint",
+            "types": "int"
+        }
+    ],
+    "chunk_split": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int",
+            "default": 76
+        },
+        {
+            "name": "separator",
+            "types": "string",
+            "default": "\r\n"
+        }
+    ],
+    "convert_uudecode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "convert_uuencode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "count_chars": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "crc32": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "get_html_translation_table": [
+        {
+            "name": "table",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 11
+        },
+        {
+            "name": "encoding",
+            "types": "string",
+            "default": "UTF-8"
+        }
+    ],
+    "hex2bin": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "html_entity_decode": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 11
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "htmlentities": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 11
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "double_encode",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "htmlspecialchars": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 11
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "double_encode",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "htmlspecialchars_decode": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 11
+        }
+    ],
+    "join": [
+        {
+            "name": "separator",
+            "types": "array|string"
+        },
+        {
+            "name": "array",
+            "types": "?array",
+            "default": null
+        }
+    ],
+    "levenshtein": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        },
+        {
+            "name": "insertion_cost",
+            "types": "int",
+            "default": 1
+        },
+        {
+            "name": "replacement_cost",
+            "types": "int",
+            "default": 1
+        },
+        {
+            "name": "deletion_cost",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "md5": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "binary",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "metaphone": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "max_phonemes",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "nl2br": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "use_xhtml",
+            "types": "bool",
+            "default": true
+        }
+    ],
+    "ord": [
+        {
+            "name": "character",
+            "types": "string"
+        }
+    ],
+    "parse_str": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "result",
+            "types": "mixed",
+            "reference": true
+        }
+    ],
+    "printf": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "quoted_printable_decode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "quoted_printable_encode": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "quotemeta": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "sha1": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "binary",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "similar_text": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        },
+        {
+            "name": "percent",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "soundex": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "sprintf": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "sscanf": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "vars",
+            "types": "mixed",
+            "variadic": true,
+            "reference": true
+        }
+    ],
+    "str_decrement": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "str_getcsv": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "separator",
+            "types": "string",
+            "default": ","
+        },
+        {
+            "name": "enclosure",
+            "types": "string",
+            "default": "\""
+        },
+        {
+            "name": "escape",
+            "types": "string",
+            "default": "\\"
+        }
+    ],
+    "str_increment": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "str_ireplace": [
+        {
+            "name": "search",
+            "types": "array|string"
+        },
+        {
+            "name": "replace",
+            "types": "array|string"
+        },
+        {
+            "name": "subject",
+            "types": "array|string"
+        },
+        {
+            "name": "count",
+            "types": "mixed",
+            "default": null,
+            "reference": true
+        }
+    ],
+    "str_pad": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        },
+        {
+            "name": "pad_string",
+            "types": "string",
+            "default": " "
+        },
+        {
+            "name": "pad_type",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "str_repeat": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "times",
+            "types": "int"
+        }
+    ],
+    "str_rot13": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "str_shuffle": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "str_split": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "str_word_count": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "format",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "characters",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "strcasecmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        }
+    ],
+    "strchr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "strcmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        }
+    ],
+    "strcspn": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "strip_tags": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "allowed_tags",
+            "types": "array|string|null",
+            "default": null
+        }
+    ],
+    "stripcslashes": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "stripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "stripslashes": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "stristr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "strnatcasecmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        }
+    ],
+    "strnatcmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        }
+    ],
+    "strncasecmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        }
+    ],
+    "strncmp": [
+        {
+            "name": "string1",
+            "types": "string"
+        },
+        {
+            "name": "string2",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        }
+    ],
+    "strpbrk": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string"
+        }
+    ],
+    "strpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "strrchr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "strrev": [
+        {
+            "name": "string",
+            "types": "string"
+        }
+    ],
+    "strripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "strrpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "strspn": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "strstr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "strtok": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "token",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "strtr": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "from",
+            "types": "array|string"
+        },
+        {
+            "name": "to",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "substr_compare": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "case_insensitive",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "substr_count": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "substr_replace": [
+        {
+            "name": "string",
+            "types": "array|string"
+        },
+        {
+            "name": "replace",
+            "types": "array|string"
+        },
+        {
+            "name": "offset",
+            "types": "array|int"
+        },
+        {
+            "name": "length",
+            "types": "array|int|null",
+            "default": null
+        }
+    ],
+    "vprintf": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "values",
+            "types": "array"
+        }
+    ],
+    "vsprintf": [
+        {
+            "name": "format",
+            "types": "string"
+        },
+        {
+            "name": "values",
+            "types": "array"
+        }
+    ],
+    "wordwrap": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "width",
+            "types": "int",
+            "default": 75
+        },
+        {
+            "name": "break",
+            "types": "string",
+            "default": "\n"
+        },
+        {
+            "name": "cut_long_words",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_all": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "array_any": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "array_change_key_case": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "case",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "array_chunk": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        },
+        {
+            "name": "preserve_keys",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_column": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "column_key",
+            "types": "string|int|null"
+        },
+        {
+            "name": "index_key",
+            "types": "string|int|null",
+            "default": null
+        }
+    ],
+    "array_combine": [
+        {
+            "name": "keys",
+            "types": "array"
+        },
+        {
+            "name": "values",
+            "types": "array"
+        }
+    ],
+    "array_count_values": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_diff": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_diff_assoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_diff_key": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_diff_uassoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_diff_ukey": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_fill": [
+        {
+            "name": "start_index",
+            "types": "int"
+        },
+        {
+            "name": "count",
+            "types": "int"
+        },
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "array_fill_keys": [
+        {
+            "name": "keys",
+            "types": "array"
+        },
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "array_filter": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "?callable",
+            "default": null
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "array_find": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "array_find_key": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "array_flip": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_intersect": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_intersect_assoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_intersect_key": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_intersect_uassoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_intersect_ukey": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_is_list": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_key_exists": [
+        {
+            "name": "key",
+            "types": "mixed"
+        },
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_key_first": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_key_last": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_keys": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "filter_value",
+            "types": "mixed",
+            "optional": true
+        },
+        {
+            "name": "strict",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_map": [
+        {
+            "name": "callback",
+            "types": "?callable"
+        },
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_merge": [
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_merge_recursive": [
+        {
+            "name": "arrays",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_multisort": [
+        {
+            "name": "array",
+            "types": "mixed",
+            "reference": true
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true,
+            "reference": true
+        }
+    ],
+    "array_pad": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        },
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "array_pop": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "array_product": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_push": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_rand": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "num",
+            "types": "int",
+            "default": 1
+        }
+    ],
+    "array_reduce": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "initial",
+            "types": "mixed",
+            "default": null
+        }
+    ],
+    "array_replace": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "replacements",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_replace_recursive": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "replacements",
+            "types": "array",
+            "variadic": true
+        }
+    ],
+    "array_reverse": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "preserve_keys",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_search": [
+        {
+            "name": "needle",
+            "types": "mixed"
+        },
+        {
+            "name": "haystack",
+            "types": "array"
+        },
+        {
+            "name": "strict",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_shift": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "array_slice": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "offset",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "preserve_keys",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "array_splice": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "offset",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "replacement",
+            "types": "mixed",
+            "default": []
+        }
+    ],
+    "array_sum": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_udiff": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_udiff_assoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_udiff_uassoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_uintersect": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_uintersect_assoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_uintersect_uassoc": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "rest",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_unique": [
+        {
+            "name": "array",
+            "types": "array"
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 2
+        }
+    ],
+    "array_unshift": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "values",
+            "types": "mixed",
+            "variadic": true
+        }
+    ],
+    "array_values": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "array_walk": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "arg",
+            "types": "mixed",
+            "optional": true
+        }
+    ],
+    "array_walk_recursive": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        },
+        {
+            "name": "arg",
+            "types": "mixed",
+            "optional": true
+        }
+    ],
+    "arsort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "asort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "count": [
+        {
+            "name": "value",
+            "types": "Countable|array"
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "current": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "end": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "in_array": [
+        {
+            "name": "needle",
+            "types": "mixed"
+        },
+        {
+            "name": "haystack",
+            "types": "array"
+        },
+        {
+            "name": "strict",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "key": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "key_exists": [
+        {
+            "name": "key",
+            "types": "mixed"
+        },
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "krsort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "ksort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "natcasesort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "natsort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "next": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "pos": [
+        {
+            "name": "array",
+            "types": "array"
+        }
+    ],
+    "prev": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "range": [
+        {
+            "name": "start",
+            "types": "string|int|float"
+        },
+        {
+            "name": "end",
+            "types": "string|int|float"
+        },
+        {
+            "name": "step",
+            "types": "int|float",
+            "default": 1
+        }
+    ],
+    "reset": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "rsort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "shuffle": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        }
+    ],
+    "sizeof": [
+        {
+            "name": "value",
+            "types": "Countable|array"
+        },
+        {
+            "name": "mode",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "sort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "flags",
+            "types": "int",
+            "default": 0
+        }
+    ],
+    "uasort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "uksort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "usort": [
+        {
+            "name": "array",
+            "types": "array",
+            "reference": true
+        },
+        {
+            "name": "callback",
+            "types": "callable"
+        }
+    ],
+    "print_r": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "return",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "var_export": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "return",
+            "types": "bool",
+            "default": false
+        }
+    ],
+    "gettype": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "intval": [
+        {
+            "name": "value",
+            "types": "mixed"
+        },
+        {
+            "name": "base",
+            "types": "int",
+            "default": 10
+        }
+    ],
+    "floatval": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "doubleval": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "strval": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "boolval": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_array": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_bool": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_float": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_double": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_int": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_integer": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_long": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_null": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_scalar": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_string": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_countable": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "is_iterable": [
+        {
+            "name": "value",
+            "types": "mixed"
+        }
+    ],
+    "mb_strlen": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_substr": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "start",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strrpos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_stripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strripos": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "offset",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strstr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_stristr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strrchr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strrichr": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "before_needle",
+            "types": "bool",
+            "default": false
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_substr_count": [
+        {
+            "name": "haystack",
+            "types": "string"
+        },
+        {
+            "name": "needle",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strtolower": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strtoupper": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_convert_case": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "mode",
+            "types": "int"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_str_split": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int",
+            "default": 1
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strcut": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "start",
+            "types": "int"
+        },
+        {
+            "name": "length",
+            "types": "?int",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strwidth": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_strimwidth": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "start",
+            "types": "int"
+        },
+        {
+            "name": "width",
+            "types": "int"
+        },
+        {
+            "name": "trim_marker",
+            "types": "string",
+            "default": ""
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_ord": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_chr": [
+        {
+            "name": "codepoint",
+            "types": "int"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_check_encoding": [
+        {
+            "name": "value",
+            "types": "array|string|null",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_scrub": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_str_pad": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "length",
+            "types": "int"
+        },
+        {
+            "name": "pad_string",
+            "types": "string",
+            "default": " "
+        },
+        {
+            "name": "pad_type",
+            "types": "int",
+            "default": 1
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_ucfirst": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_lcfirst": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_trim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_ltrim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "mb_rtrim": [
+        {
+            "name": "string",
+            "types": "string"
+        },
+        {
+            "name": "characters",
+            "types": "?string",
+            "default": null
+        },
+        {
+            "name": "encoding",
+            "types": "?string",
+            "default": null
+        }
+    ],
+    "bcadd": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcsub": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcmul": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcdiv": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcmod": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcdivmod": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcpowmod": [
+        {
+            "name": "num",
+            "types": "string"
+        },
+        {
+            "name": "exponent",
+            "types": "string"
+        },
+        {
+            "name": "modulus",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcpow": [
+        {
+            "name": "num",
+            "types": "string"
+        },
+        {
+            "name": "exponent",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcsqrt": [
+        {
+            "name": "num",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bccomp": [
+        {
+            "name": "num1",
+            "types": "string"
+        },
+        {
+            "name": "num2",
+            "types": "string"
+        },
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcscale": [
+        {
+            "name": "scale",
+            "types": "?int",
+            "default": null
+        }
+    ],
+    "bcfloor": [
+        {
+            "name": "num",
+            "types": "string"
+        }
+    ],
+    "bcceil": [
+        {
+            "name": "num",
+            "types": "string"
+        }
+    ],
+    "bcround": [
+        {
+            "name": "num",
+            "types": "string"
+        },
+        {
+            "name": "precision",
+            "types": "int",
+            "default": 0
+        },
+        {
+            "name": "mode",
+            "types": "RoundingMode",
+            "default": {
+                "roundingMode": "HalfAwayFromZero"
+            }
+        }
+    ]
+}

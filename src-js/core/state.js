@@ -1,6 +1,5 @@
-export const clone = (value) => typeof structuredClone === 'function'
-  ? structuredClone(value)
-  : JSON.parse(JSON.stringify(value));
+import {clonePhp} from './php-arrays.js';
+export const clone = (value) => clonePhp(value);
 
 export const safeSegments = (path) => {
   const segments = String(path).split('.');

@@ -17,6 +17,12 @@ export const rewriteDynamic = (value, mapping) => {
 export const rewriteDynamicEffectId = (id, mapping) => {
     return rewriteDynamic(id, mapping);
   };
+export const releaseServiceScopes = (root, node) => {
+    const scopes = rootConfigs.get(root)?.serviceScopes;
+    if (!scopes) return;
+    if (node.matches?.('template[data-aml-service-scope]')) scopes.delete(node.dataset.amlServiceScope);
+    node.querySelectorAll('template[data-aml-service-scope]').forEach((marker) => scopes.delete(marker.dataset.amlServiceScope));
+  };
 export const hydrateDynamicItem = (root, state, node, key) => {
     const token = dynamicToken(key);
     const config = rootConfigs.get(root);
@@ -32,6 +38,13 @@ export const hydrateDynamicItem = (root, state, node, key) => {
         const scope = id.split('.').slice(0, -1).join('.');
         if (scope && !mapping[scope]) mapping[scope] = `${scope}.items.${token}`;
       });
+    });
+    node.querySelectorAll('template[data-aml-service-scope]').forEach((marker) => {
+      const scope = marker.dataset.amlServiceScope; mapping[scope] = `${scope}.items.${token}`;
+    });
+    node.querySelectorAll('[data-aml-file-source]').forEach((input) => {
+      const source = input.dataset.amlFileSource;
+      mapping[source] = `${source}.items.${token}`;
     });
     if (Object.keys(mapping).length === 0) return;
     node.querySelectorAll('template[data-aml-state]').forEach((manifest) => {
@@ -70,6 +83,7 @@ export const hydrateDynamicItem = (root, state, node, key) => {
     dynamicEffects.forEach((id) => registerEffect(root, state, id, config.effects[id], true));
   };
 export const releaseDynamicItem = (root, state, node) => {
+    releaseServiceScopes(root, node);
     const targets = JSON.parse(node.dataset.amlDynamicState || '[]');
     const effects = JSON.parse(node.dataset.amlDynamicEffects || '[]');
     const config = rootConfigs.get(root) || {};
@@ -83,16 +97,8 @@ export const releaseDynamicItem = (root, state, node) => {
       delete config.effects?.[id];
     });
   };
-export const animateIn = (node) => {
-    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const source = node.closest('[data-aml-transition]') || (node.matches?.('[data-aml-transition]') ? node : null);
-    if (!source || typeof node.animate !== 'function') return;
-    const duration = Number(source.dataset.amlTransitionDuration || 180);
-    const name = source.dataset.amlTransition || 'fade';
-    const from = name === 'slide' ? {opacity: 0, transform: 'translateY(10px)'}
-      : (name === 'scale' ? {opacity: 0, transform: 'scale(.97)'} : {opacity: 0});
-    node.animate([from, {opacity: 1, transform: 'none'}], {duration, easing: 'ease-out'});
-  };
+import {animateIn} from './animations-runtime.js';
+export {animateIn} from './animations-runtime.js';
 export const renderRichComponents = (root, state, target = null) => {
     root.querySelectorAll('[data-aml-modal]').forEach((dialog) => {
       const rule = JSON.parse(dialog.dataset.amlModal);
@@ -199,29 +205,14 @@ export const matchingContextProvider = (node, name, root = null) => {
     }
     return null;
   };
-export const restoreContexts = (root, state) => {
-    root.querySelectorAll('[data-aml-context-provider]').forEach((provider) => {
-      const rule = JSON.parse(provider.dataset.amlContextProvider);
-      if (!rule.persist) return;
-      try {
-        const stored = localStorage.getItem(rule.storageKey || `phpaml.context.${rule.name}`);
-        if (stored === null) return;
-        const value = JSON.parse(stored);
-        if (rule.state) writePath(state, rule.state, value);
-        else { rule.value = value; provider.dataset.amlContextProvider = JSON.stringify(rule); }
-      } catch (error) { root.dispatchEvent(new CustomEvent('aml:context-error', {detail: {name: rule.name, error}})); }
-    });
-  };
+export {restoreContexts} from './browser-storage.js';
+import {persistContext} from './browser-storage.js';
 export const renderContexts = (root, state, target = null) => {
     root.querySelectorAll('[data-aml-context-provider]').forEach((provider) => {
       const rule = JSON.parse(provider.dataset.amlContextProvider);
       if (target && rule.state && !pathAffects(rule.state, target)) return;
       let value = rule.state ? readPath(state, rule.state) : rule.value;
-      if (rule.persist) {
-        try {
-          localStorage.setItem(rule.storageKey || `phpaml.context.${rule.name}`, JSON.stringify(value));
-        } catch (error) { root.dispatchEvent(new CustomEvent('aml:context-error', {detail: {name: rule.name, error}})); }
-      }
+      if (rule.persist) persistContext(root, rule, value);
       provider.dataset.amlContextValue = JSON.stringify(value);
       provider.querySelectorAll('[data-aml-context-bind]').forEach((binding) => {
         const nearest = matchingContextProvider(binding, binding.dataset.amlContextBind, root);
@@ -242,9 +233,12 @@ export const renderContexts = (root, state, target = null) => {
     });
   };
 export const render = (scope, state, target = null) => {
+    const config = rootConfigs.get(scope) || rootConfigs.get(scope.closest?.('[data-aml-client]')) || {};
+    const textContext = {valueTypes: config.valueTypes || {}, stateTypes: config.types || {}};
     scope.querySelectorAll('[data-aml-bind-value]').forEach((node) => {
-      const value = resolveData(JSON.parse(node.dataset.amlBindValue), state);
-      node.textContent = value ?? '';
+      const expression = JSON.parse(node.dataset.amlBindValue), context = {...textContext};
+      const value = resolveData(expression, state, context);
+      node.textContent = phpString(value, resolveType(expression, state, context, value), context);
     });
     scope.querySelectorAll('[data-aml-bind]').forEach((node) => {
       if (target && !pathAffects(node.dataset.amlBind, target)) return;
@@ -252,10 +246,11 @@ export const render = (scope, state, target = null) => {
       if (node.matches('progress,meter')) {
         node.value = Number(value ?? 0);
       } else if (node.matches('input,textarea,select')) {
+        if (node.type === 'file') return; // Selection is owned by the browser; state contains metadata only.
         if (node.type === 'checkbox') node.checked = Boolean(value);
         else if (document.activeElement !== node) node.value = value ?? '';
       } else {
-        node.textContent = value ?? '';
+        node.textContent = phpString(value, resolveType({$state: node.dataset.amlBind}, state, textContext, value), textContext);
       }
     });
     scope.querySelectorAll('[data-aml-show-when]').forEach((node) => {
@@ -330,7 +325,7 @@ export const render = (scope, state, target = null) => {
       const template = readPath(state, rule.state) === rule.equals
         ? container.querySelector(':scope > template[data-aml-when-then]')
         : container.querySelector(':scope > template[data-aml-when-else]');
-      if (content && template) content.replaceChildren(template.content.cloneNode(true));
+      if (content && template) { releaseServiceScopes(scope, content); content.replaceChildren(template.content.cloneNode(true)); }
     });
     renderRichComponents(scope, state, target);
     renderVirtualLists(scope, state);
@@ -340,3 +335,5 @@ import { effectRuntimes, rootConfigs, toastTimers } from './context.js';
 import { deletePath, pathAffects, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
 import { cleanupEffect, registerEffect } from './effects-runtime.js';
 import { commit, resolveData } from './state-runtime.js';
+import {resolveType} from './core/value.js';
+import {phpString} from './core/php-values.js';

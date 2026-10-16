@@ -8,12 +8,21 @@ namespace AML\Engine;
 final readonly class StateExpression
 {
     private const OPERATIONS = [
-        'add', 'subtract', 'multiply', 'divide', 'modulo', 'concat', 'not',
+        'dynamicLocal', 'enumCase', 'enumCases', 'enumFrom', 'staticLocal',
+        'objectClass', 'objectConstant', 'isObject', 'nullsafeChain', 'objectClassName', 'objectDeclare', 'objectNew', 'objectThis', 'objectProperty', 'objectStaticProperty', 'objectCall', 'objectMethodRef', 'objectClone',
+        'exception', 'exceptionGet', 'exceptionIs', 'throw', 'assert',
+        'assignReference', 'splMethod', 'yield', 'yieldFrom', 'call', 'closure', 'functionRef', 'builtin', 'display', 'roundingMode', 'eval',
+        'array', 'match', 'empty', 'compoundAssign', 'appendOffset', 'unsetOffset', 'arrayMutate',
+        'keys', 'values',
+        'add', 'subtract', 'multiply', 'divide', 'modulo', 'power', 'concat', 'not',
+        'bitOr', 'bitAnd', 'bitXor', 'bitNot', 'shiftLeft', 'shiftRight', 'xor',
+        'and', 'or', 'coalesce', 'coalesceAssign', 'elvis', 'assign', 'preIncrement', 'postIncrement', 'preDecrement', 'postDecrement', 'incrementValue', 'decrementValue',
+        'equal', 'notEqual', 'identical', 'notIdentical', 'less', 'lessEqual', 'greater', 'greaterEqual',
         'count', 'sum', 'contains', 'filter', 'map', 'reduce',
         'find', 'any', 'all', 'column', 'unique', 'sort', 'sortBy', 'compare',
         'reverse', 'slice', 'merge', 'search', 'keyExists', 'isset',
         'ceil', 'floor', 'round', 'min', 'max',
-        'toInt', 'toFloat', 'toString', 'toBool',
+        'toInt', 'toFloat', 'toString', 'toBool', 'toArray', 'toObject', 'gettype', 'offset',
     ];
 
     public function __construct(

@@ -7,10 +7,15 @@
     "build:check": "node scripts/build-runtime.mjs --check",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
+    "test:browser:runtimes": "node scripts/test-runtimes.mjs",
+    "test:packages": "node scripts/test-packages.mjs",
+    "test:safari": "node tests/safari-applications.mjs",
     "benchmark:browser": "playwright test benchmarks/engine.spec.mjs --config=playwright.performance.config.mjs"
   },
   "devDependencies": {
+    "@noble/hashes": "2.0.1",
     "@playwright/test": "1.55.1",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "php-parser": "3.7.0"
   }
 }

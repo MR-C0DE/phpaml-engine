@@ -1,3 +1,5 @@
+import {formatThrowable} from './core/php-exceptions.js';
+
 let installed = false;
 let reporting = false;
 
@@ -39,7 +41,7 @@ export const showDevelopmentError = (reason, context = 'AML Engine') => {
       <div class="aml-error-content">
         <p>${escapeHtml(context)} · ${escapeHtml(error.name || 'Error')}</p>
         <h1 id="aml-client-error-title">${escapeHtml(error.message || 'Unknown browser error.')}</h1>
-        <pre>${escapeHtml(error.stack || error.message)}</pre>
+        <pre>${escapeHtml(error.source ? formatThrowable(error) + '\n\nBrowser stack:\n' + (error.stack || '') : error.stack || error.message)}</pre>
         <div class="aml-error-actions"><button type="button" data-aml-error-reload>Reload page</button><button type="button" data-aml-error-close>Close overlay</button></div>
       </div>
     </section>`;

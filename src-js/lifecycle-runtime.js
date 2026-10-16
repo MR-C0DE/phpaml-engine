@@ -1,3 +1,5 @@
+import {restoreArrayMetadata} from './core/php-arrays.js';
+import {prepareScopeModules} from './modules/runtime.js';
 const formState = (form) => {
     if (!form?.dataset?.amlFormState) return null;
     try { return JSON.parse(form.dataset.amlFormState); }
@@ -16,52 +18,66 @@ const updateFormValidityState = (root, state, form, rule) => {
     return valid;
   };
 
+const pendingMounts = new WeakMap();
 export const mount = (scope = document) => {
-    scope.querySelectorAll('[data-aml-client]').forEach((root) => {
+    const roots = [...scope.querySelectorAll('[data-aml-client]')];
+    const loading = prepareScopeModules(scope);
+    if (!loading) return mountRoots(roots);
+    const requests = roots.map(root => {
+      const request = {connected: root.isConnected};
+      pendingMounts.set(root, request); return [root, request];
+    });
+    return loading.then(() => mountRoots(requests.filter(([root, request]) => {
+      if (pendingMounts.get(root) !== request) return false;
+      pendingMounts.delete(root);
+      return !request.connected || root.isConnected;
+    }).map(([root]) => root)));
+};
+const mountRoots = roots => {
+    roots.forEach((root) => {
       if (root.dataset.amlEngineMounted === 'true') return;
       const manifests = [...root.querySelectorAll('template[data-aml-state]')];
       const state = {};
-      const config = {shared: {}, persisted: {}, types: {}, computed: {}, effects: {}};
+      const config = {shared: {}, persisted: {}, types: {}, typeRules: {}, valueTypes: {}, arrayMetadata: {}, computed: {}, effects: {}};
       manifests.forEach((manifest) => {
         const values = JSON.parse(manifest.dataset.amlState || '{}');
         const addition = JSON.parse(manifest.dataset.amlStateConfig || '{"shared":{},"persisted":{},"types":{},"computed":{},"effects":{}}');
         Object.entries(values).forEach(([target, value]) => {
           if (readPath(state, target) !== undefined) throw new Error(`Duplicate AML state target: ${target}`);
-          writePath(state, target, value);
+          writePath(state, target, restoreArrayMetadata(value, addition.arrayMetadata?.[target]));
         });
-        for (const group of ['shared', 'persisted', 'types', 'computed', 'effects']) {
+        for (const group of ['shared', 'persisted', 'types', 'typeRules', 'valueTypes', 'arrayMetadata', 'computed', 'effects']) {
           if (group === 'effects') Object.keys(addition.effects || {}).forEach((id) => {
             if (Object.prototype.hasOwnProperty.call(config.effects, id)) throw new Error(`Duplicate AML effect identifier: ${id}`);
           });
           Object.assign(config[group], addition[group] || {});
         }
       });
-      Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
-        if (persisted.storage === 'indexeddb') return;
-        try {
-          const storage = persisted.storage === 'session' ? sessionStorage : localStorage;
-          const saved = storage.getItem(persisted.key);
-          if (saved !== null) {
-            const restored = restoredValue(root, target, persisted, saved, config.types?.[target]);
-            if (restored === undefined) storage.removeItem(persisted.key);
-            else writePath(state, target, restored);
-          }
-        } catch (error) { root.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target, error}})); }
-      });
+      restorePersisted(root, state, config);
       Object.entries(config.shared || {}).forEach(([target, key]) => {
         const type = config.types?.[target] || 'mixed';
         if (sharedTypes[key] && sharedTypes[key] !== type) throw new Error(`Incompatible AML shared state types for ${key}: ${sharedTypes[key]} and ${type}`);
         sharedTypes[key] = type;
-        if (Object.prototype.hasOwnProperty.call(sharedState, key)) writePath(state, target, sharedState[key]);
-        else sharedState[key] = readPath(state, target);
+        if (Object.prototype.hasOwnProperty.call(sharedState, key)) {
+          writePath(state, target, sharedState[key]);
+          config.valueTypes[target] = sharedValueTypes[key] || phpType(sharedState[key]);
+        } else {
+          sharedState[key] = readPath(state, target);
+          sharedValueTypes[key] = config.valueTypes[target] || phpType(sharedState[key]);
+        }
       });
       restoreContexts(root, state);
       recomputeComputed(root, state, config);
       rootStates.set(root, state);
+      config.arrayMetadataApplied = true;
       rootConfigs.set(root, config);
       mountedRoots.add(root);
       rootControllers.set(root, new Set());
       rootCleanups.set(root, new Set());
+      const listen = (type, listener, options) => {
+        root.addEventListener(type, listener, options);
+        rootCleanups.get(root).add(() => root.removeEventListener(type, listener, options));
+      };
       const executeClientEvent = (target, eventName, event = null) => {
         if (!target || !root.contains(target)) return Promise.resolve(false);
         const encoded = target.getAttribute(`data-aml-client-${eventName}`);
@@ -88,7 +104,7 @@ export const mount = (scope = document) => {
       effectRuntimes.set(root, new Map());
       stateHistories.set(root, []);
       root.dataset.amlEngineMounted = 'true';
-      root.addEventListener('click', async (event) => {
+      listen('click', async (event) => {
         const stepControl = event.target.closest('[data-aml-step-next],[data-aml-step-previous]');
         if (stepControl && root.contains(stepControl)) {
           event.preventDefault();
@@ -177,7 +193,7 @@ export const mount = (scope = document) => {
           console.error(error);
         });
       });
-      root.addEventListener('keydown', (event) => {
+      listen('keydown', (event) => {
         if (event.key === 'Escape') {
           const openTriggers = [...root.querySelectorAll('[data-aml-disclosure-trigger][aria-expanded="true"]')];
           const focusedPanel = document.activeElement?.closest?.('[data-aml-disclosure-panel]');
@@ -240,25 +256,25 @@ export const mount = (scope = document) => {
         else index = (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + tabs.length) % tabs.length;
         event.preventDefault(); tabs[index].focus(); tabs[index].click();
       });
-      root.addEventListener('keyup', (event) => {
+      listen('keyup', (event) => {
         executeClientEvent(event.target.closest('[data-aml-client-keyup]'), 'keyup', event);
       });
-      root.addEventListener('mouseover', (event) => {
+      listen('mouseover', (event) => {
         const target = event.target.closest('[data-aml-client-mouseenter]');
         if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, 'mouseenter', event);
       });
-      root.addEventListener('mouseout', (event) => {
+      listen('mouseout', (event) => {
         const target = event.target.closest('[data-aml-client-mouseleave]');
         if (target && !target.contains(event.relatedTarget)) executeClientEvent(target, 'mouseleave', event);
       });
-      root.addEventListener('cancel', (event) => {
+      listen('cancel', (event) => {
         const dialog = event.target.closest('[data-aml-modal]');
         if (!dialog) return;
         event.preventDefault();
         const rule = JSON.parse(dialog.dataset.amlModal);
         commit(root, state, rule.state, false);
       });
-      root.addEventListener('dragstart', (event) => {
+      listen('dragstart', (event) => {
         executeClientEvent(event.target.closest('[data-aml-client-dragstart]'), 'dragstart', event);
         const item = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
         if (!item || !event.dataTransfer) return;
@@ -267,16 +283,16 @@ export const mount = (scope = document) => {
         event.dataTransfer.setData('text/x-aml-index', JSON.stringify({index: Number(item.dataset.amlListIndex), state: list.dataset.amlList}));
         item.setAttribute('aria-grabbed', 'true');
       });
-      root.addEventListener('dragend', (event) => {
+      listen('dragend', (event) => {
         event.target.closest('[aria-grabbed="true"]')?.removeAttribute('aria-grabbed');
         executeClientEvent(event.target.closest('[data-aml-client-dragend]'), 'dragend', event);
       });
-      root.addEventListener('dragover', (event) => {
+      listen('dragover', (event) => {
         const clientTarget = event.target.closest('[data-aml-client-dragover]');
         if (clientTarget) { event.preventDefault(); executeClientEvent(clientTarget, 'dragover', event); }
         if (event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]')) event.preventDefault();
       });
-      root.addEventListener('drop', (event) => {
+      listen('drop', (event) => {
         const clientTarget = event.target.closest('[data-aml-client-drop]');
         if (clientTarget) { event.preventDefault(); executeClientEvent(clientTarget, 'drop', event); }
         const destination = event.target.closest('[data-aml-sortable="true"] > [data-aml-list-index]');
@@ -293,10 +309,10 @@ export const mount = (scope = document) => {
           root.dispatchEvent(new CustomEvent('aml:sort', {detail: {state: list.dataset.amlList, from, to, input: 'pointer'}}));
         }
       });
-      root.addEventListener('scroll', (event) => {
+      listen('scroll', (event) => {
         if (event.target.matches?.('[data-aml-virtual-list]')) renderVirtualLists(root, state);
       }, true);
-      root.addEventListener('input', (event) => {
+      listen('input', (event) => {
         const control = event.target.closest('[data-aml-model]');
         if (control && root.contains(control) && control.type !== 'checkbox') {
           updateModel(root, state, control);
@@ -313,7 +329,7 @@ export const mount = (scope = document) => {
         }
         executeClientEvent(event.target.closest('[data-aml-client-input]'), 'input', event);
       });
-      root.addEventListener('change', (event) => {
+      listen('change', (event) => {
         const control = event.target.closest('[data-aml-model]');
         if (control && root.contains(control)) {
           updateModel(root, state, control);
@@ -330,10 +346,10 @@ export const mount = (scope = document) => {
         }
         executeClientEvent(event.target.closest('[data-aml-client-change]'), 'change', event);
       });
-      root.addEventListener('focusin', (event) => {
+      listen('focusin', (event) => {
         executeClientEvent(event.target.closest('[data-aml-client-focus]'), 'focus', event);
       });
-      root.addEventListener('focusout', (event) => {
+      listen('focusout', (event) => {
         const tracked = event.target.closest('form[data-aml-form-state]');
         if (tracked) {
           const rule = formState(tracked);
@@ -342,7 +358,7 @@ export const mount = (scope = document) => {
         }
         executeClientEvent(event.target.closest('[data-aml-client-blur]'), 'blur', event);
       });
-      root.addEventListener('submit', async (event) => {
+      listen('submit', async (event) => {
         const form = event.target.closest('form');
         if (!form || !root.contains(form)) return;
         if (form.dataset.amlValidationPassed === 'true') { delete form.dataset.amlValidationPassed; return; }
@@ -372,10 +388,10 @@ export const mount = (scope = document) => {
         const content = document.getElementById(trigger.getAttribute('aria-describedby'));
         if (content) content.hidden = !visible;
       };
-      root.addEventListener('pointerover', (event) => revealTooltip(event, true));
-      root.addEventListener('pointerout', (event) => revealTooltip(event, false));
-      root.addEventListener('focusin', (event) => revealTooltip(event, true));
-      root.addEventListener('focusout', (event) => revealTooltip(event, false));
+      listen('pointerover', (event) => revealTooltip(event, true));
+      listen('pointerout', (event) => revealTooltip(event, false));
+      listen('focusin', (event) => revealTooltip(event, true));
+      listen('focusout', (event) => revealTooltip(event, false));
       const closeOutsideDisclosures = (event) => root.querySelectorAll('[data-aml-disclosure-trigger][aria-expanded="true"]').forEach((trigger) => {
         const panel = document.getElementById(trigger.getAttribute('aria-controls'));
         if (trigger.contains(event.target) || panel?.contains(event.target)) return;
@@ -396,20 +412,7 @@ export const mount = (scope = document) => {
       remember(root, state, 'mount');
       lifecycle(root, 'mount', {state: clone(state)});
       Object.entries(config.effects).forEach(([id, definition]) => effectRuntimes.get(root).set(id, newEffectRuntime(id, definition)));
-      const indexedRestores = Object.entries(config.persisted || {}).filter(([, persisted]) => persisted.storage === 'indexeddb').map(async ([target, persisted]) => {
-        try {
-          const saved = await indexedState('get', persisted.key);
-          if (saved === undefined) return;
-          const restored = restoredValue(root, target, persisted, saved, config.types?.[target]);
-          if (restored === undefined) await indexedState('delete', persisted.key);
-          else {
-            writePath(state, target, restored);
-            const changes = new Map([[target, restored]]);
-            recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
-            scheduleUpdate(root, state, changes);
-          }
-        } catch (error) { root.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target, error}})); }
-      });
+      const indexedRestores = restoreIndexed(root, state, config) || [];
       Promise.all(indexedRestores).finally(() => {
         if (!rootStates.has(root)) return;
         Object.entries(config.effects).forEach(([id, definition]) => {
@@ -419,6 +422,7 @@ export const mount = (scope = document) => {
     });
   };
 export const unmount = (root) => {
+    if (root) pendingMounts.delete(root);
     if (!root || root.dataset.amlEngineMounted !== 'true') return;
     lifecycle(root, 'unmount', {state: clone(rootStates.get(root) || {})});
     effectRuntimes.get(root)?.forEach((_, id) => cleanupEffect(root, id, 'unmount'));
@@ -455,7 +459,7 @@ export const on = (root, phase, handler) => {
   };
 import { effectRuntimes, mountedRoots, navigationRuntimes, rootCleanups, rootConfigs, rootControllers, rootStates, sharedState, sharedTypes, stateHistories } from './context.js';
 import { clone, readPath, recomputeComputed, writePath } from './core/state.js';
-import { indexedState, restoredValue } from './storage.js';
+import {restorePersisted, restoreIndexed} from './browser-storage.js';
 import { matchingContextProvider, render, renderContexts, renderVirtualLists, restoreContexts } from './rendering.js';
 import { activateEffect, cleanupEffect } from './effects-runtime.js';
 import { eventPayload, newEffectRuntime } from './effects.js';
@@ -464,3 +468,6 @@ import { execute } from './actions-runtime.js';
 import { preserveForm, restoreForm, scheduleRemoteValidation, updateModel, validateControl, validateForm, validateRemote } from './forms-runtime.js';
 import { lifecycle, remember } from './lifecycle.js';
 import { navigate } from './navigation.js';
+
+import { sharedValueTypes } from './context.js';
+import { phpType } from './core/php-values.js';

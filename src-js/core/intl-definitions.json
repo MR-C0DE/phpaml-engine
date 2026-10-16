@@ -1,0 +1,2248 @@
+{
+    "normalizer": {
+        "class": {
+            "name": "Normalizer",
+            "parent": null,
+            "ancestors": [],
+            "abstract": true,
+            "final": true,
+            "properties": [],
+            "staticProperties": [],
+            "constants": {
+                "FORM_D": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "NFD": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "FORM_KD": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 8
+                },
+                "NFKD": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 8
+                },
+                "FORM_C": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 16
+                },
+                "NFC": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 16
+                },
+                "FORM_KC": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 32
+                },
+                "NFKC": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 32
+                },
+                "FORM_KC_CF": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 48
+                },
+                "NFKC_CF": {
+                    "owner": "Normalizer",
+                    "visibility": "public",
+                    "value": 48
+                }
+            },
+            "methods": {
+                "normalize": {
+                    "name": "normalize",
+                    "id": "@intl:normalizer::normalize",
+                    "owner": "Normalizer",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "isnormalized": {
+                    "name": "isNormalized",
+                    "id": "@intl:normalizer::isnormalized",
+                    "owner": "Normalizer",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getrawdecomposition": {
+                    "name": "getRawDecomposition",
+                    "id": "@intl:normalizer::getrawdecomposition",
+                    "owner": "Normalizer",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                }
+            },
+            "nativeIntl": true
+        },
+        "functions": {
+            "@intl:normalizer::normalize": {
+                "name": "Normalizer::normalize",
+                "parameters": [
+                    {
+                        "id": "v737472696e67",
+                        "name": "string",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v666f726d",
+                        "name": "form",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 16
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Normalizer",
+                    "method": "normalize"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:normalizer::isnormalized": {
+                "name": "Normalizer::isNormalized",
+                "parameters": [
+                    {
+                        "id": "v737472696e67",
+                        "name": "string",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v666f726d",
+                        "name": "form",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 16
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Normalizer",
+                    "method": "isnormalized"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:normalizer::getrawdecomposition": {
+                "name": "Normalizer::getRawDecomposition",
+                "parameters": [
+                    {
+                        "id": "v737472696e67",
+                        "name": "string",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v666f726d",
+                        "name": "form",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 16
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Normalizer",
+                    "method": "getrawdecomposition"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            }
+        }
+    },
+    "collator": {
+        "class": {
+            "name": "Collator",
+            "parent": null,
+            "ancestors": [],
+            "abstract": false,
+            "final": true,
+            "properties": [],
+            "staticProperties": [],
+            "constants": {
+                "DEFAULT_VALUE": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": -1
+                },
+                "PRIMARY": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "SECONDARY": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "TERTIARY": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "DEFAULT_STRENGTH": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "QUATERNARY": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "IDENTICAL": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 15
+                },
+                "OFF": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 16
+                },
+                "ON": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 17
+                },
+                "SHIFTED": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 20
+                },
+                "NON_IGNORABLE": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 21
+                },
+                "LOWER_FIRST": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 24
+                },
+                "UPPER_FIRST": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 25
+                },
+                "FRENCH_COLLATION": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "ALTERNATE_HANDLING": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "CASE_FIRST": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "CASE_LEVEL": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "NORMALIZATION_MODE": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "STRENGTH": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "HIRAGANA_QUATERNARY_MODE": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "NUMERIC_COLLATION": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 7
+                },
+                "SORT_REGULAR": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "SORT_STRING": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "SORT_NUMERIC": {
+                    "owner": "Collator",
+                    "visibility": "public",
+                    "value": 2
+                }
+            },
+            "methods": {
+                "__construct": {
+                    "name": "__construct",
+                    "id": "@intl:collator::__construct",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "create": {
+                    "name": "create",
+                    "id": "@intl:collator::create",
+                    "owner": "Collator",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "compare": {
+                    "name": "compare",
+                    "id": "@intl:collator::compare",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "sort": {
+                    "name": "sort",
+                    "id": "@intl:collator::sort",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "asort": {
+                    "name": "asort",
+                    "id": "@intl:collator::asort",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "sortwithsortkeys": {
+                    "name": "sortWithSortKeys",
+                    "id": "@intl:collator::sortwithsortkeys",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getstrength": {
+                    "name": "getStrength",
+                    "id": "@intl:collator::getstrength",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "setstrength": {
+                    "name": "setStrength",
+                    "id": "@intl:collator::setstrength",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getattribute": {
+                    "name": "getAttribute",
+                    "id": "@intl:collator::getattribute",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "setattribute": {
+                    "name": "setAttribute",
+                    "id": "@intl:collator::setattribute",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getlocale": {
+                    "name": "getLocale",
+                    "id": "@intl:collator::getlocale",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "geterrorcode": {
+                    "name": "getErrorCode",
+                    "id": "@intl:collator::geterrorcode",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "geterrormessage": {
+                    "name": "getErrorMessage",
+                    "id": "@intl:collator::geterrormessage",
+                    "owner": "Collator",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                }
+            },
+            "nativeIntl": true
+        },
+        "functions": {
+            "@intl:collator::__construct": {
+                "name": "Collator::__construct",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "__construct"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::create": {
+                "name": "Collator::create",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "create"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::compare": {
+                "name": "Collator::compare",
+                "parameters": [
+                    {
+                        "id": "v737472696e6731",
+                        "name": "string1",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v737472696e6732",
+                        "name": "string2",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "compare"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::sort": {
+                "name": "Collator::sort",
+                "parameters": [
+                    {
+                        "id": "v6172726179",
+                        "name": "array",
+                        "reference": true,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "array"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v666c616773",
+                        "name": "flags",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "sort"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::asort": {
+                "name": "Collator::asort",
+                "parameters": [
+                    {
+                        "id": "v6172726179",
+                        "name": "array",
+                        "reference": true,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "array"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v666c616773",
+                        "name": "flags",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "asort"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::sortwithsortkeys": {
+                "name": "Collator::sortWithSortKeys",
+                "parameters": [
+                    {
+                        "id": "v6172726179",
+                        "name": "array",
+                        "reference": true,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "array"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "sortwithsortkeys"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::getstrength": {
+                "name": "Collator::getStrength",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "getstrength"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::setstrength": {
+                "name": "Collator::setStrength",
+                "parameters": [
+                    {
+                        "id": "v737472656e677468",
+                        "name": "strength",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "setstrength"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::getattribute": {
+                "name": "Collator::getAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "getattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::setattribute": {
+                "name": "Collator::setAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v76616c7565",
+                        "name": "value",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "setattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::getlocale": {
+                "name": "Collator::getLocale",
+                "parameters": [
+                    {
+                        "id": "v74797065",
+                        "name": "type",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "getlocale"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::geterrorcode": {
+                "name": "Collator::getErrorCode",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "geterrorcode"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:collator::geterrormessage": {
+                "name": "Collator::getErrorMessage",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "Collator",
+                    "method": "geterrormessage"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            }
+        }
+    },
+    "intldateformatter": {
+        "class": {
+            "name": "IntlDateFormatter",
+            "parent": null,
+            "ancestors": [],
+            "abstract": false,
+            "final": true,
+            "properties": [],
+            "staticProperties": [],
+            "constants": {
+                "FULL": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "LONG": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "MEDIUM": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "SHORT": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "NONE": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": -1
+                },
+                "RELATIVE_FULL": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 128
+                },
+                "RELATIVE_LONG": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 129
+                },
+                "RELATIVE_MEDIUM": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 130
+                },
+                "RELATIVE_SHORT": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 131
+                },
+                "PATTERN": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": -2
+                },
+                "GREGORIAN": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "TRADITIONAL": {
+                    "owner": "IntlDateFormatter",
+                    "visibility": "public",
+                    "value": 0
+                }
+            },
+            "methods": {
+                "__construct": {
+                    "name": "__construct",
+                    "id": "@intl:intldateformatter::__construct",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "create": {
+                    "name": "create",
+                    "id": "@intl:intldateformatter::create",
+                    "owner": "IntlDateFormatter",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "format": {
+                    "name": "format",
+                    "id": "@intl:intldateformatter::format",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getpattern": {
+                    "name": "getPattern",
+                    "id": "@intl:intldateformatter::getpattern",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "setpattern": {
+                    "name": "setPattern",
+                    "id": "@intl:intldateformatter::setpattern",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "gettimezoneid": {
+                    "name": "getTimeZoneId",
+                    "id": "@intl:intldateformatter::gettimezoneid",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "settimezone": {
+                    "name": "setTimeZone",
+                    "id": "@intl:intldateformatter::settimezone",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getdatetype": {
+                    "name": "getDateType",
+                    "id": "@intl:intldateformatter::getdatetype",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "gettimetype": {
+                    "name": "getTimeType",
+                    "id": "@intl:intldateformatter::gettimetype",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getcalendar": {
+                    "name": "getCalendar",
+                    "id": "@intl:intldateformatter::getcalendar",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "islenient": {
+                    "name": "isLenient",
+                    "id": "@intl:intldateformatter::islenient",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "setlenient": {
+                    "name": "setLenient",
+                    "id": "@intl:intldateformatter::setlenient",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getlocale": {
+                    "name": "getLocale",
+                    "id": "@intl:intldateformatter::getlocale",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "geterrorcode": {
+                    "name": "getErrorCode",
+                    "id": "@intl:intldateformatter::geterrorcode",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "geterrormessage": {
+                    "name": "getErrorMessage",
+                    "id": "@intl:intldateformatter::geterrormessage",
+                    "owner": "IntlDateFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                }
+            },
+            "nativeIntl": true
+        },
+        "functions": {
+            "@intl:intldateformatter::__construct": {
+                "name": "IntlDateFormatter::__construct",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "id": "v6461746554797065",
+                        "name": "dateType",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    },
+                    {
+                        "id": "v74696d6554797065",
+                        "name": "timeType",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    },
+                    {
+                        "id": "v74696d657a6f6e65",
+                        "name": "timezone",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": null,
+                        "default": null
+                    },
+                    {
+                        "id": "v63616c656e646172",
+                        "name": "calendar",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": null,
+                        "default": null
+                    },
+                    {
+                        "id": "v7061747465726e",
+                        "name": "pattern",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        },
+                        "default": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "__construct"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::create": {
+                "name": "IntlDateFormatter::create",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "id": "v6461746554797065",
+                        "name": "dateType",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    },
+                    {
+                        "id": "v74696d6554797065",
+                        "name": "timeType",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    },
+                    {
+                        "id": "v74696d657a6f6e65",
+                        "name": "timezone",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": null,
+                        "default": null
+                    },
+                    {
+                        "id": "v63616c656e646172",
+                        "name": "calendar",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "intlcalendar",
+                                "int",
+                                "null"
+                            ],
+                            "nullable": true
+                        },
+                        "default": null
+                    },
+                    {
+                        "id": "v7061747465726e",
+                        "name": "pattern",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        },
+                        "default": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "create"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::format": {
+                "name": "IntlDateFormatter::format",
+                "parameters": [
+                    {
+                        "id": "v6461746574696d65",
+                        "name": "datetime",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "format"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::getpattern": {
+                "name": "IntlDateFormatter::getPattern",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "getpattern"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::setpattern": {
+                "name": "IntlDateFormatter::setPattern",
+                "parameters": [
+                    {
+                        "id": "v7061747465726e",
+                        "name": "pattern",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "setpattern"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::gettimezoneid": {
+                "name": "IntlDateFormatter::getTimeZoneId",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "gettimezoneid"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::settimezone": {
+                "name": "IntlDateFormatter::setTimeZone",
+                "parameters": [
+                    {
+                        "id": "v74696d657a6f6e65",
+                        "name": "timezone",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "settimezone"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::getdatetype": {
+                "name": "IntlDateFormatter::getDateType",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "getdatetype"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::gettimetype": {
+                "name": "IntlDateFormatter::getTimeType",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "gettimetype"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::getcalendar": {
+                "name": "IntlDateFormatter::getCalendar",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "getcalendar"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::islenient": {
+                "name": "IntlDateFormatter::isLenient",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "islenient"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::setlenient": {
+                "name": "IntlDateFormatter::setLenient",
+                "parameters": [
+                    {
+                        "id": "v6c656e69656e74",
+                        "name": "lenient",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "bool"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "setlenient"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::getlocale": {
+                "name": "IntlDateFormatter::getLocale",
+                "parameters": [
+                    {
+                        "id": "v74797065",
+                        "name": "type",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "getlocale"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::geterrorcode": {
+                "name": "IntlDateFormatter::getErrorCode",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "geterrorcode"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:intldateformatter::geterrormessage": {
+                "name": "IntlDateFormatter::getErrorMessage",
+                "parameters": [],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "IntlDateFormatter",
+                    "method": "geterrormessage"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            }
+        }
+    },
+    "numberformatter": {
+        "class": {
+            "name": "NumberFormatter",
+            "parent": null,
+            "ancestors": [],
+            "abstract": false,
+            "final": true,
+            "properties": [],
+            "staticProperties": [],
+            "constants": {
+                "PATTERN_DECIMAL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "DECIMAL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "CURRENCY": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "PERCENT": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "SCIENTIFIC": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "SPELLOUT": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "ORDINAL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "DURATION": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 7
+                },
+                "PATTERN_RULEBASED": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 9
+                },
+                "IGNORE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "CURRENCY_ACCOUNTING": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 12
+                },
+                "DEFAULT_STYLE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "ROUND_CEILING": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "ROUND_FLOOR": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "ROUND_DOWN": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "ROUND_UP": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "ROUND_TOWARD_ZERO": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "ROUND_AWAY_FROM_ZERO": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "ROUND_HALFEVEN": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "ROUND_HALFODD": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 8
+                },
+                "ROUND_HALFDOWN": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "ROUND_HALFUP": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "PAD_BEFORE_PREFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "PAD_AFTER_PREFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "PAD_BEFORE_SUFFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "PAD_AFTER_SUFFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "PARSE_INT_ONLY": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "GROUPING_USED": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "DECIMAL_ALWAYS_SHOWN": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "MAX_INTEGER_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "MIN_INTEGER_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "INTEGER_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "MAX_FRACTION_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "MIN_FRACTION_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 7
+                },
+                "FRACTION_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 8
+                },
+                "MULTIPLIER": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 9
+                },
+                "GROUPING_SIZE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 10
+                },
+                "ROUNDING_MODE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 11
+                },
+                "ROUNDING_INCREMENT": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 12
+                },
+                "FORMAT_WIDTH": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 13
+                },
+                "PADDING_POSITION": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 14
+                },
+                "SECONDARY_GROUPING_SIZE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 15
+                },
+                "SIGNIFICANT_DIGITS_USED": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 16
+                },
+                "MIN_SIGNIFICANT_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 17
+                },
+                "MAX_SIGNIFICANT_DIGITS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 18
+                },
+                "LENIENT_PARSE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 19
+                },
+                "POSITIVE_PREFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "POSITIVE_SUFFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "NEGATIVE_PREFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "NEGATIVE_SUFFIX": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "PADDING_CHARACTER": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "CURRENCY_CODE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "DEFAULT_RULESET": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "PUBLIC_RULESETS": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 7
+                },
+                "DECIMAL_SEPARATOR_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "GROUPING_SEPARATOR_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "PATTERN_SEPARATOR_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "PERCENT_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "ZERO_DIGIT_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                },
+                "DIGIT_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 5
+                },
+                "MINUS_SIGN_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 6
+                },
+                "PLUS_SIGN_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 7
+                },
+                "CURRENCY_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 8
+                },
+                "INTL_CURRENCY_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 9
+                },
+                "MONETARY_SEPARATOR_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 10
+                },
+                "EXPONENTIAL_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 11
+                },
+                "PERMILL_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 12
+                },
+                "PAD_ESCAPE_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 13
+                },
+                "INFINITY_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 14
+                },
+                "NAN_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 15
+                },
+                "SIGNIFICANT_DIGIT_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 16
+                },
+                "MONETARY_GROUPING_SEPARATOR_SYMBOL": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 17
+                },
+                "TYPE_DEFAULT": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 0
+                },
+                "TYPE_INT32": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 1
+                },
+                "TYPE_INT64": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 2
+                },
+                "TYPE_DOUBLE": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 3
+                },
+                "TYPE_CURRENCY": {
+                    "owner": "NumberFormatter",
+                    "visibility": "public",
+                    "value": 4
+                }
+            },
+            "methods": {
+                "__construct": {
+                    "name": "__construct",
+                    "id": "@intl:numberformatter::__construct",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "create": {
+                    "name": "create",
+                    "id": "@intl:numberformatter::create",
+                    "owner": "NumberFormatter",
+                    "static": true,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "format": {
+                    "name": "format",
+                    "id": "@intl:numberformatter::format",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "formatcurrency": {
+                    "name": "formatCurrency",
+                    "id": "@intl:numberformatter::formatcurrency",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "getattribute": {
+                    "name": "getAttribute",
+                    "id": "@intl:numberformatter::getattribute",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "setattribute": {
+                    "name": "setAttribute",
+                    "id": "@intl:numberformatter::setattribute",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "gettextattribute": {
+                    "name": "getTextAttribute",
+                    "id": "@intl:numberformatter::gettextattribute",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                },
+                "settextattribute": {
+                    "name": "setTextAttribute",
+                    "id": "@intl:numberformatter::settextattribute",
+                    "owner": "NumberFormatter",
+                    "static": false,
+                    "visibility": "public",
+                    "abstract": false,
+                    "final": false
+                }
+            },
+            "nativeIntl": true
+        },
+        "functions": {
+            "@intl:numberformatter::__construct": {
+                "name": "NumberFormatter::__construct",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v7374796c65",
+                        "name": "style",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v7061747465726e",
+                        "name": "pattern",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        },
+                        "default": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "__construct"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::create": {
+                "name": "NumberFormatter::create",
+                "parameters": [
+                    {
+                        "id": "v6c6f63616c65",
+                        "name": "locale",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v7374796c65",
+                        "name": "style",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v7061747465726e",
+                        "name": "pattern",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": true
+                        },
+                        "default": null
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "create"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::format": {
+                "name": "NumberFormatter::format",
+                "parameters": [
+                    {
+                        "id": "v6e756d",
+                        "name": "num",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int",
+                                "float"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v74797065",
+                        "name": "type",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        },
+                        "default": 0
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "format"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::formatcurrency": {
+                "name": "NumberFormatter::formatCurrency",
+                "parameters": [
+                    {
+                        "id": "v616d6f756e74",
+                        "name": "amount",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "float"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v63757272656e6379",
+                        "name": "currency",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "formatcurrency"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::getattribute": {
+                "name": "NumberFormatter::getAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "getattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::setattribute": {
+                "name": "NumberFormatter::setAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v76616c7565",
+                        "name": "value",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int",
+                                "float"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "setattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::gettextattribute": {
+                "name": "NumberFormatter::getTextAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "gettextattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            },
+            "@intl:numberformatter::settextattribute": {
+                "name": "NumberFormatter::setTextAttribute",
+                "parameters": [
+                    {
+                        "id": "v617474726962757465",
+                        "name": "attribute",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "int"
+                            ],
+                            "nullable": false
+                        }
+                    },
+                    {
+                        "id": "v76616c7565",
+                        "name": "value",
+                        "reference": false,
+                        "variadic": false,
+                        "rule": {
+                            "types": [
+                                "string"
+                            ],
+                            "nullable": false
+                        }
+                    }
+                ],
+                "declared": true,
+                "returnType": null,
+                "nativeIntl": {
+                    "class": "NumberFormatter",
+                    "method": "settextattribute"
+                },
+                "body": {
+                    "type": "sequence",
+                    "actions": []
+                }
+            }
+        }
+    }
+}

@@ -1,3 +1,4 @@
+import {prepareScopeModules, prepareModules} from './modules/runtime.js';
 export const updateActiveLinks = () => {
     document.querySelectorAll('a[href]').forEach((link) => {
       let url;
@@ -34,14 +35,16 @@ export const showNavigationState = (current, status, message = '', url = locatio
     if (live) live.textContent = message || status;
     fetch(url, {headers: {'X-AML-Navigation': 'true', 'X-AML-Navigation-State': status}, signal})
       .then((response) => response.text())
-      .then((html) => {
+      .then(async (html) => {
         if (signal?.aborted || !overlay.isConnected) return;
         const stateDocument = new DOMParser().parseFromString(html, 'text/html');
         const stateRoot = stateDocument.querySelector('[data-aml-client]');
         const stateContent = stateDocument.querySelector('[data-aml-navigation-state-content]');
         if (!stateRoot || !stateContent || stateContent.dataset.amlNavigationStateContent !== status) return;
+        const modules = prepareScopeModules(stateRoot); if (modules) await modules;
+        if (signal?.aborted || !overlay.isConnected) return;
         overlay.replaceChildren(document.importNode(stateRoot, true));
-        mount(overlay);
+        await mount(overlay);
         const target = overlay.querySelector('[data-aml-navigation-focus],h1,[role="alert"],[role="status"]');
         if (target) { if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1'); target.focus({preventScroll: true}); }
       })
@@ -93,6 +96,8 @@ export const navigate = async (destination, push = true, sourceRoot = null) => {
         if (response.status === 404 && showNavigationState(current, 'not-found', 'Page not found', location.href, controller.signal)) { current.removeAttribute('aria-busy'); return; }
         throw new Error(`AML navigation failed: ${response.status}`);
       }
+      const modules = prepareScopeModules(next), animations = prepareModules(['animations']);
+      if (modules || animations) await Promise.all([modules, animations]);
       if (!active()) return;
       clearNavigationState(current);
       unmount(current);
@@ -105,10 +110,7 @@ export const navigate = async (destination, push = true, sourceRoot = null) => {
       focusNavigatedPage(url);
       const mounted = document.querySelectorAll('[data-aml-client]');
       const replacement = mounted[Math.min(Math.max(rootIndex, 0), mounted.length - 1)] || mounted[0];
-      replacement?.animate?.(
-        [{opacity: .82, transform: 'translateY(4px)'}, {opacity: 1, transform: 'none'}],
-        {duration: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 160, easing: 'ease-out'},
-      );
+      animateNavigation(replacement);
       document.dispatchEvent(new CustomEvent('aml:navigation-end', {detail: {url: url.href, status: response.status}}));
     } catch (error) {
       if (error?.name === 'AbortError' || !active()) return;
@@ -120,6 +122,10 @@ export const navigate = async (destination, push = true, sourceRoot = null) => {
       if (navigationRuntimes.get(current)?.generation === generation) navigationRuntimes.delete(current);
     }
   };
+let listenersInstalled = false;
+export const installNavigationListeners = () => {
+  if (listenersInstalled) return;
+  listenersInstalled = true;
   document.addEventListener('click', (event) => {
     const link = event.target.closest('a[href]');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -130,23 +136,8 @@ export const navigate = async (destination, push = true, sourceRoot = null) => {
     navigate(url.href, true, link.closest('[data-aml-client]')).catch((error) => { console.error(error); location.href = url.href; });
   });
   addEventListener('popstate', () => navigate(location.href, false).catch(() => location.reload()));
-  addEventListener('storage', (event) => {
-    mountedRoots.forEach((root) => {
-      const state = rootStates.get(root);
-      const config = rootConfigs.get(root) || {};
-      Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
-        if (persisted.storage !== 'local' || persisted.key !== event.key) return;
-        try {
-          const value = event.newValue === null ? undefined : restoredValue(root, target, persisted, event.newValue, config.types?.[target]);
-          if (value === undefined) return;
-          writePath(state, target, value);
-          const changes = new Map([[target, value]]);
-          recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
-          scheduleUpdate(root, state, changes);
-        } catch (error) { root.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target, error}})); }
-      });
-    });
-  });
+
+};
 export const context = (root, name, fallback = null) => {
     const providers = [...root.querySelectorAll('[data-aml-context-provider]')];
     const provider = providers.reverse().find((candidate) => JSON.parse(candidate.dataset.amlContextProvider).name === name);
@@ -162,8 +153,7 @@ export const route = () => {
     });
     return Object.freeze({path: url.pathname, query: Object.freeze(query), hash: url.hash});
   };
-import { mountedRoots, navigationRuntimes, rootConfigs, rootStates } from './context.js';
-import { recomputeComputed, writePath } from './core/state.js';
-import { restoredValue } from './storage.js';
-import { scheduleUpdate } from './state-runtime.js';
+import { navigationRuntimes } from './context.js';
 import { mount, unmount } from './lifecycle-runtime.js';
+
+import {animateNavigation} from './animations-runtime.js';

@@ -1,85 +1,90 @@
-export const request = async (root, state, action, trigger, executionContext = null) => {
-    const owner = executionContext?.owner || executionContext;
-    const data = resolveData(action.data || {}, state, executionContext?.eventData);
-    const url = new URL(action.url, location.origin);
-    if (url.origin !== location.origin) throw new Error('AML API requests must remain same-origin.');
-    const executionGeneration = owner?.generation;
-    const isCurrent = () => !owner
-      || owner.concurrency === 'parallel'
-      || owner.generation === executionGeneration;
-    const controllers = rootControllers.get(root) || new Set();
-    rootControllers.set(root, controllers);
-    if (action.loading) commit(root, state, action.loading, true, executionContext);
-    if (action.error) commit(root, state, action.error, '', executionContext);
-    trigger?.setAttribute('aria-busy', 'true');
-    if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
-    try {
-      const retries = Math.max(0, Math.min(5, Number(action.retries || 0)));
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        if (!isCurrent()) return;
-        const controller = new AbortController();
-        controllers.add(controller);
-        owner?.controllers?.add(controller);
-        let timeout = null;
-        let timedOut = false;
-        const timeoutMs = Number(action.timeout || 0);
-        if (timeoutMs > 0) timeout = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
-        try {
-          const options = prepareApiRequest(url, action, data, controller.signal, csrfToken());
-          const response = await fetch(url, options);
-          refreshCsrfToken(response);
-          const contentType = response.headers.get('content-type') || '';
-          const result = contentType.includes('application/json') ? await response.json() : await response.text();
-          if (!response.ok) {
-            const error = new Error(typeof result === 'object' ? (result.message || result.error || `API request failed: ${response.status}`) : result);
-            error.retryable = response.status === 429 || response.status >= 500;
-            throw error;
-          }
-          if (!isCurrent()) return;
-          const selected = action.select ? readPath(result, action.select) : result;
-          if (action.result) commit(root, state, action.result, selected, executionContext);
-          root.dispatchEvent(new CustomEvent('aml:api-success', {detail: {url: url.href, result, attempts: attempt + 1}}));
-          return;
-        } catch (error) {
-          if (!isCurrent() || (error?.name === 'AbortError' && !timedOut)) return;
-          const failure = timedOut ? new Error(`API request timed out after ${timeoutMs} ms`) : error;
-          const retryable = timedOut || error?.retryable === true || error instanceof TypeError;
-          if (attempt >= retries || !retryable) throw failure;
-          const delay = Math.min(30_000, Math.max(0, Number(action.retryDelay ?? 250)) * (2 ** attempt));
-          root.dispatchEvent(new CustomEvent('aml:api-retry', {detail: {url: url.href, attempt: attempt + 1, delay, error: failure}}));
-          if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-        } finally {
-          if (timeout !== null) clearTimeout(timeout);
-          controllers.delete(controller);
-          owner?.controllers?.delete(controller);
-        }
-      }
-    } catch (error) {
-      if (error?.name === 'AbortError' || !isCurrent()) return;
-      if (action.error) commit(root, state, action.error, error.message, executionContext);
-      root.dispatchEvent(new CustomEvent('aml:api-error', {detail: {url: url.href, error}}));
-      if (executionContext) throw error;
-    } finally {
-      if (action.loading && isCurrent()) commit(root, state, action.loading, false, executionContext);
-      trigger?.removeAttribute('aria-busy');
-      if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
-    }
-  };
+import {releaseLocalReferences} from './core/php-references.js';
+import {prepareInstructionModules} from './modules/runtime.js';
+import {declareFunction} from './core/php-functions.js';
+import {prepareEval} from './core/php-eval.js';
+import {assignTarget} from './core/value.js';
+import {executeFlow, controlSignal} from './control-flow.js';
+import {restoreArrayMetadata, releaseArrays, ownArray, clonePhp, snapshotPhp, validatePhpValue, validateStateReferences} from './core/php-arrays.js';
+import {executeFile} from './files-runtime.js';
+import {request} from './browser-api.js';
+export {request} from './browser-api.js';
 export const matches = (state, action, eventData = null) => {
     const current = Object.hasOwn(action, 'left') ? resolveData(action.left, state, eventData) : readPath(state, action.state);
     const expected = resolveData(action.value, state, eventData);
-    if (action.operator === 'eq') return current === expected;
-    if (action.operator === 'neq') return current !== expected;
-    if (action.operator === 'gt') return current > expected;
-    if (action.operator === 'gte') return current >= expected;
-    if (action.operator === 'lt') return current < expected;
-    if (action.operator === 'lte') return current <= expected;
-    if (action.operator === 'truthy') return Boolean(current);
-    if (action.operator === 'falsy') return !Boolean(current);
-    return false;
+    const leftExpression = Object.hasOwn(action, 'left') ? action.left : {$state: action.state};
+    return phpMatches(action.operator, current, expected, resolveType(leftExpression, state, eventData, current), resolveType(action.value, state, eventData, expected));
   };
+import {serviceRuntime} from './core/php-static-properties.js';
+
 export const execute = async (root, state, action, trigger = null, executionContext = null) => {
-    if (action.type === 'loop-control') return action.operation;
+    const modules = prepareInstructionModules(action);
+    if (modules) {
+      const mountedConfig = rootConfigs.get(root);
+      await modules;
+      if (mountedConfig && rootConfigs.get(root) !== mountedConfig) return false;
+    }
+    const config = rootConfigs.get(root);
+    if (config?.arrayMetadata && !config.arrayMetadataApplied) {
+      for (const [target, descriptor] of Object.entries(config.arrayMetadata)) restoreArrayMetadata(readPath(state, target), descriptor);
+      config.arrayMetadataApplied = true;
+    }
+    const source = action.phpSource || executionContext?.eventData?.source;
+    const context = {...(executionContext || {}), eventData: {
+      ...(executionContext?.eventData || {}),
+      stateTypes: config?.types || executionContext?.eventData?.stateTypes || {},
+      valueTypes: config?.valueTypes || executionContext?.eventData?.valueTypes || {},
+      source,
+      loopBudget: executionContext?.eventData?.loopBudget || {remaining: 10000},
+      builtinBudget: executionContext?.eventData?.builtinBudget || {remaining: 1000000},
+      builtinMemory: executionContext?.eventData?.builtinMemory || {},
+      reportWarning: (warning) => {
+        root.dispatchEvent(new CustomEvent('aml:warning', {detail: warning}));
+        console.warn(warning.message + (warning.source ? ` [PHP ${warning.source.file}:${warning.source.line}]` : ''));
+      },
+    }};
+    context.eventData.assignState = (target, value, valueType, source = context.eventData.source) => {
+      commit(root, state, target, value, {...context, eventData: {...context.eventData, source}, valueType});
+      const assigned = readPath(state, target);
+      return {value: assigned, kind: rootConfigs.get(root)?.valueTypes?.[target] || valueType};
+    };
+    try { return await executeInstruction(root, state, action, trigger, context); }
+    catch (error) { throw withSource(error, source); }
+  };
+const executeInstruction = async (root, state, action, trigger = null, executionContext = null) => {
+    if (action.type === 'local-scope') {
+      const config = rootConfigs.get(root);
+      const services = serviceRuntime(config, action);
+      await prepareEval({...action, functions: services.functions});
+      const evalFunctions = config ? (config.evalFunctions ||= {}) : {};
+      const childContext = {...(executionContext || {}), eventData: {
+        ...(executionContext?.eventData || {}), locals: Object.create(null), localTypes: Object.create(null),
+        stateTypes: rootConfigs.get(root)?.types || {},
+        functions: {...services.functions, ...evalFunctions}, evalFunctions,
+        classes: services.classes, staticFields: services.fields, objectBudget: {remaining: 10000}, thisObject: null, objectScope: null, calledClass: null,
+        localReferences: Object.create(null),
+        callBudget: {depth: 0, remaining: 10000},
+        functionDeclarations: config?.functionDeclarations || new Set(),
+        functionDefinitionIds: config?.functionDefinitionIds || new Map(),
+      }};
+      if (config) {config.functionDeclarations = childContext.eventData.functionDeclarations; config.functionDefinitionIds = childContext.eventData.functionDefinitionIds;}
+      try {return await execute(root, state, action.action, trigger, childContext);} finally {releaseLocalReferences(childContext.eventData); releaseArrays(childContext.eventData.locals);}
+    }
+    if (action.type === 'local-set') {
+      if (!/^v[0-9a-f]+$/.test(action.name) || !executionContext?.eventData?.locals) throw new Error('Invalid frontend local assignment');
+      const data = executionContext.eventData;
+      const value = resolveData(action.value, state, data);
+      const type = resolveType(action.value, state, data, value);
+      assignTarget({$local: action.name}, value, type, state, data);
+      return;
+    }
+    if (action.type === 'function-declare') {declareFunction(action.id, executionContext.eventData); return;}
+    if (action.type === 'return') {const value = resolveData(action.value, state, executionContext.eventData); return {operation: 'return', value, kind: resolveType(action.value, state, executionContext.eventData, value), hasValue: action.hasValue};}
+    if (action.type === 'evaluate') { resolveData(action.value, state, executionContext?.eventData); return; }
+    if (action.type === 'loop-control') return (action.levels || 1) === 1 ? action.operation : {operation: action.operation, levels: action.levels};
+    if (['loop', 'switch', 'foreach-local', 'destructure', 'try'].includes(action.type)) {
+      if (!transactions.has(root) && !hasAsyncAction(action)) return execute(root, state, {type: 'transaction', actions: [action]}, trigger, executionContext);
+      return executeFlow(root, state, action, trigger, executionContext);
+    }
     if (action.type === 'element-ref') {
       const element = root.querySelector(`[data-aml-ref="${CSS.escape(String(action.ref || ''))}"]`);
       if (!element) throw new Error(`Unknown AML element ref: ${action.ref}`);
@@ -108,7 +113,8 @@ export const execute = async (root, state, action, trigger = null, executionCont
       commit(root, state, action.submitted, true, executionContext);
       commit(root, state, action.error, '', executionContext);
       try {
-        await execute(root, state, action.action, trigger, childContext);
+        const result = await execute(root, state, action.action, trigger, childContext);
+        if (result?.cancelled) return result;
         root.dispatchEvent(new CustomEvent('aml:form-success', {detail: {action}}));
       } catch (error) {
         commit(root, state, action.error, error?.message || String(error), executionContext);
@@ -124,7 +130,8 @@ export const execute = async (root, state, action, trigger = null, executionCont
       commit(root, state, action.success, false, executionContext);
       commit(root, state, action.error, '', executionContext);
       try {
-        await execute(root, state, action.action, trigger, childContext);
+        const result = await execute(root, state, action.action, trigger, childContext);
+        if (result?.cancelled) return result;
         commit(root, state, action.success, true, executionContext);
         if (action.onSuccess) await execute(root, state, action.onSuccess, trigger, childContext);
         root.dispatchEvent(new CustomEvent('aml:action-success', {detail: {action}}));
@@ -140,24 +147,28 @@ export const execute = async (root, state, action, trigger = null, executionCont
     }
     if (action.type === 'transaction') {
       const parent = transactions.get(root);
-      const context = parent || {changes: new Map(), snapshot: clone(state)};
+      const context = parent || {changes: new Map(), snapshot: snapshotPhp(state), valueTypes: clone(rootConfigs.get(root)?.valueTypes || {})};
       transactions.set(root, context);
       try {
         for (const child of action.actions || []) {
           const signal = await execute(root, state, child, trigger, executionContext);
-          if (signal === 'break' || signal === 'continue') {
+          if (controlSignal(signal)) {
+            validateStateReferences(state, rootConfigs.get(root)?.valueTypes || {});
             if (!parent) {
               transactions.delete(root);
-              context.changes.forEach((_, target) => commit(root, state, target, readPath(state, target), executionContext));
+              context.changes.forEach((_, target) => commit(root, state, target, readPath(state, target), {...(executionContext || {}), valueType: rootConfigs.get(root)?.valueTypes?.[target]}));
             }
             return signal;
           }
         }
+        validateStateReferences(state, rootConfigs.get(root)?.valueTypes || {});
       } catch (error) {
         if (!parent) {
           transactions.delete(root);
           Object.keys(state).forEach((key) => delete state[key]);
-          Object.assign(state, context.snapshot);
+          Object.assign(state, context.snapshot); ownArray(state, '@state', state);
+          const config = rootConfigs.get(root);
+          if (config) config.valueTypes = context.valueTypes;
           render(root, state);
           root.dispatchEvent(new CustomEvent('aml:transaction-error', {detail: {error, state: clone(state)}}));
         }
@@ -165,7 +176,7 @@ export const execute = async (root, state, action, trigger = null, executionCont
       }
       if (!parent) {
         transactions.delete(root);
-        context.changes.forEach((_, target) => commit(root, state, target, readPath(state, target), executionContext));
+        context.changes.forEach((_, target) => commit(root, state, target, readPath(state, target), {...(executionContext || {}), valueType: rootConfigs.get(root)?.valueTypes?.[target]}));
         queueMicrotask(() => {
           const detail = {changes: Object.fromEntries(context.changes), state: clone(state)};
           root.dispatchEvent(new CustomEvent('aml:transaction', {detail}));
@@ -179,7 +190,7 @@ export const execute = async (root, state, action, trigger = null, executionCont
       }
       for (const child of action.actions || []) {
         const signal = await execute(root, state, child, trigger, executionContext);
-        if (signal === 'break' || signal === 'continue') return signal;
+        if (controlSignal(signal)) return signal;
       }
       return;
     }
@@ -218,19 +229,36 @@ export const execute = async (root, state, action, trigger = null, executionCont
       return;
     }
     if (action.type === 'console') {
+      if (action.level === 'echo') {
+        console.log((action.values || []).map((node) => {const value = resolveData(node, state, executionContext.eventData); return phpString(value, resolveType(node, state, executionContext.eventData, value), executionContext.eventData);}).join(''));
+        return;
+      }
+      if (action.level === 'dump') {
+        const data = executionContext.eventData;
+        const values = (action.values || []).map((node) => {const value = resolveData(node, state, data); return {value, kind: resolveType(node, state, data, value)};});
+        console.log(values.map(({value, kind}) => phpDump(value, kind, 0, undefined, data)).join(''));
+        return;
+      }
       const method = action.level === 'warn' ? 'warn' : action.level === 'error' ? 'error' : 'log';
       console[method](...resolveData(action.values || [], state, executionContext?.eventData));
       return;
     }
     if (action.type === 'navigate') await navigate(action.destination, !action.replace, root);
     else if (action.type === 'api') await request(root, state, action, trigger, executionContext);
+    else if (action.type === 'file') return await executeFile(root, state, action, trigger, executionContext);
     else apply(root, state, action, executionContext);
   };
-import { rootControllers, transactions } from './context.js';
+import { rootConfigs, transactions } from './context.js';
 import { clone, readPath } from './core/state.js';
 import { apply, commit, resolveData } from './state-runtime.js';
-import { csrfToken, prepareApiRequest, refreshCsrfToken } from './http.js';
 import { hasAsyncAction } from './core/action-analysis.js';
 import { render } from './rendering.js';
 import { navigate } from './navigation.js';
 import { updateModel } from './forms-runtime.js';
+
+import { resolveType } from './core/value.js';
+import { phpDump, phpString } from './core/php-values.js';
+
+import { withSource } from './core/diagnostics.js';
+
+import { phpMatches } from './core/php-operators.js';

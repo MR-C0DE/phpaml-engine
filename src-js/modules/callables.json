@@ -1,0 +1,172 @@
+{
+  "call_user_func": [
+    {
+      "index": 0,
+      "name": "callback"
+    }
+  ],
+  "call_user_func_array": [
+    {
+      "index": 0,
+      "name": "callback"
+    }
+  ],
+  "iterator_apply": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "preg_replace_callback": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_all": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_any": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_filter": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_find": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_find_key": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_map": [
+    {
+      "index": 0,
+      "name": "callback"
+    }
+  ],
+  "array_reduce": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_walk": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_walk_recursive": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "uasort": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "uksort": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "usort": [
+    {
+      "index": 1,
+      "name": "callback"
+    }
+  ],
+  "array_udiff": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_udiff_assoc": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_diff_uassoc": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_diff_ukey": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_uintersect": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_uintersect_assoc": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_intersect_uassoc": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_intersect_ukey": [
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_udiff_uassoc": [
+    {
+      "index": -2,
+      "name": null
+    },
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "array_uintersect_uassoc": [
+    {
+      "index": -2,
+      "name": null
+    },
+    {
+      "index": -1,
+      "name": null
+    }
+  ],
+  "preg_replace_callback_array": [
+    {
+      "index": 0,
+      "name": "pattern"
+    }
+  ]
+}

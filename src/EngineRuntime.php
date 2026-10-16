@@ -6,7 +6,7 @@ namespace AML\Engine;
 
 final class EngineRuntime
 {
-    public const VERSION = '0.1.0-beta.8';
+    public const VERSION = '0.1.0-beta.9';
 
     /**
      * Compatibility bridge for applications that still embed the engine.
@@ -43,7 +43,17 @@ final class EngineRuntime
         return 'engine-' . self::VERSION . ($minified ? '.min' : '') . '.js';
     }
 
-    public static function externalScript(string $publicBase = '/_aml', bool $minified = true): string
+    public static function evalAssetFilename(bool $minified = true): string
+    {
+        return 'engine-eval-' . self::VERSION . ($minified ? '.min' : '') . '.js';
+    }
+
+    public static function evalAssetPath(bool $minified = true): string
+    {
+        return dirname(__DIR__) . '/assets/' . self::evalAssetFilename($minified);
+    }
+
+    public static function externalScript(string $publicBase = '/_aml', bool $minified = true, bool $modular = false): string
     {
         if ($publicBase === ''
             || !str_starts_with($publicBase, '/')
@@ -53,10 +63,23 @@ final class EngineRuntime
             throw new \InvalidArgumentException('The PHPAML Engine public asset base must be a same-origin path.');
         }
 
-        $source = rtrim($publicBase, '/') . '/' . self::assetFilename($minified);
+        $source = rtrim($publicBase, '/') . '/' . ($modular ? self::moduleAssetFilename($minified) : self::assetFilename($minified));
 
-        return '<script defer src="'
+        return '<script ' . ($modular ? 'type="module"' : 'defer') . ' src="'
             . htmlspecialchars($source, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '" data-aml-engine></script>';
+    }
+
+    public static function moduleAssetFilename(bool $minified = true): string
+    {
+        return 'modules-' . self::VERSION . ($minified ? '.min' : '') . '/engine.js';
+    }
+
+    /** Resolve only files emitted by the build, without accepting arbitrary paths. */
+    public static function publicAssetPath(string $filename): ?string
+    {
+        static $files = null;
+        $files ??= array_fill_keys(json_decode((string) file_get_contents(dirname(__DIR__) . '/assets/public-assets.json'), true, 512, JSON_THROW_ON_ERROR), true);
+        return isset($files[$filename]) ? dirname(__DIR__) . '/assets/' . $filename : null;
     }
 }

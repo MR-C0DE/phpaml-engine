@@ -209,14 +209,24 @@ if (!str_contains($minifiedScript, 'window.AMLEngine') || strlen($minifiedScript
     throw new RuntimeException('The minified compatibility runtime is unavailable.');
 }
 $assetPath = EngineRuntime::assetPath();
-if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.8.js')) {
+if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.9.js')) {
     throw new RuntimeException('The external browser runtime asset is unavailable.');
 }
-if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.8.min.js') {
+if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.9.min.js') {
     throw new RuntimeException('The minified browser runtime filename is inconsistent.');
 }
-if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.8.min.js" data-aml-engine></script>') {
+if (!is_file(EngineRuntime::evalAssetPath()) || !is_file(EngineRuntime::evalAssetPath() . '.map')
+    || EngineRuntime::evalAssetFilename() !== 'engine-eval-' . EngineRuntime::VERSION . '.min.js') {
+    throw new RuntimeException('The optional PHP parser assets are unavailable.');
+}
+if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.9.min.js" data-aml-engine></script>') {
     throw new RuntimeException('The external browser runtime tag is inconsistent.');
+}
+if (EngineRuntime::externalScript(modular: true) !== '<script type="module" src="/_aml/modules-0.1.0-beta.9.min/engine.js" data-aml-engine></script>'
+    || !is_file(EngineRuntime::publicAssetPath(EngineRuntime::moduleAssetFilename()))
+    || EngineRuntime::publicAssetPath('../composer.json') !== null
+    || EngineRuntime::publicAssetPath('modules-' . EngineRuntime::VERSION . '.min/../../composer.json') !== null) {
+    throw new RuntimeException('The modular runtime asset contract is inconsistent.');
 }
 foreach (['https://example.test/assets', '//cdn.example.test', '/assets?version=1', '/\\evil.example/assets'] as $unsafeBase) {
     try {
@@ -234,7 +244,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.8') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.9') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 $package = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -428,4 +438,53 @@ if (StateNamespace::qualify('root') !== 'root') {
     throw new RuntimeException('Concurrent renders polluted the main execution namespace.');
 }
 
-echo "46 passed, 0 failed.\n";
+$local = new \AML\Engine\LocalAction('v61', new \AML\Engine\StateExpression('gettype', StateRef::to('count'), null));
+$scoped = json_decode((new \AML\Engine\LocalScope($local))->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($scoped['type'] !== 'local-scope' || $scoped['action']['value']['$expression']['operation'] !== 'gettype') {
+    throw new RuntimeException('Local frame serialization lost its expression.');
+}
+$dump = json_decode(ConsoleAction::dump(new \AML\Engine\StateExpression('toFloat', 1, null))->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($dump['level'] !== 'dump' || $dump['values'][0]['$expression']['operation'] !== 'toFloat') {
+    throw new RuntimeException('Dump serialization lost scalar type information.');
+}
+try {
+    Effects::run(ClientAction::set('count', 1))->withCleanup(new \AML\Engine\LocalScope(Api::get('/api/check')));
+    throw new RuntimeException('A scoped API action bypassed cleanup validation.');
+} catch (InvalidArgumentException $error) {
+    if (!str_contains($error->getMessage(), 'local client action')) throw $error;
+}
+
+$flow = new \AML\Engine\FlowAction('loop', [
+    'kind' => 'while', 'conditions' => [StateRef::to('active')],
+    'init' => new \AML\Engine\ExpressionAction(null), 'update' => new \AML\Engine\ExpressionAction(null),
+    'action' => new \AML\Engine\LoopControlAction('break', 2), 'limit' => 1000,
+]);
+$payload = json_decode($flow->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($payload['conditions'][0] !== ['$state' => 'active'] || $payload['action']['levels'] !== 2) throw new RuntimeException('Structured loop serialization failed.');
+$echo = json_decode(ConsoleAction::output('a', StateRef::to('count'))->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($echo['level'] !== 'echo' || $echo['values'][1] !== ['$state' => 'count']) throw new RuntimeException('Console echo serialization failed.');
+try {
+    Effects::run(ClientAction::set('count', 1))->withCleanup(new \AML\Engine\FlowAction('switch', ['value' => 1, 'cases' => [['default' => true, 'action' => Api::get('/api/check')]]]));
+    throw new RuntimeException('A switch API bypassed cleanup validation.');
+} catch (InvalidArgumentException $error) {
+    if (!str_contains($error->getMessage(), 'local client action')) throw $error;
+}
+
+$functionTable = ['sum' => [
+    'name' => 'sum', 'declared' => true,
+    'parameters' => [['name' => 'a', 'id' => 'v61', 'reference' => false, 'variadic' => false, 'rule' => null]],
+    'returnType' => null,
+    'body' => json_decode((new \AML\Engine\FlowAction('return', ['value' => ['$local' => 'v61'], 'hasValue' => true]))->json(), true, 512, JSON_THROW_ON_ERROR),
+]];
+$functionScope = new \AML\Engine\LocalScope(new \AML\Engine\ExpressionAction(new \AML\Engine\StateExpression('call', new \AML\Engine\StateExpression('functionRef', 'sum', null), ['arguments' => [['value' => 3]]])), $functionTable);
+$serialized = json_decode($functionScope->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($serialized['functions']['sum']['body']['type'] !== 'return' || $serialized['action']['value']['$expression']['left']['$expression']['operation'] !== 'functionRef') throw new RuntimeException('Function table or call serialization failed.');
+$declaration = json_decode((new \AML\Engine\FlowAction('function-declare', ['id' => 'sum']))->json(), true, 512, JSON_THROW_ON_ERROR);
+if ($declaration !== ['type' => 'function-declare', 'id' => 'sum']) throw new RuntimeException('Function declaration serialization failed.');
+
+$browserModules = \AML\Engine\FrontendModules::required(['type' => 'sequence', 'actions' => [['type' => 'file'], ['type' => 'api']]]);
+if ($browserModules !== ['files', 'browser']) throw new RuntimeException('Browser action dependencies were lost.');
+$phpModules = \AML\Engine\FrontendModules::required(['$expression' => ['operation' => 'eval', 'left' => ['$state' => 'code']]]);
+if ($phpModules !== ['unicode', 'intl', 'bcmath', 'regex', 'date', 'spl', 'reflection']) throw new RuntimeException('Dynamic PHP unnecessarily loaded browser capabilities.');
+
+echo "56 passed, 0 failed.\n";

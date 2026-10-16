@@ -14,7 +14,7 @@ final readonly class StateConditional
         public mixed $then,
         public mixed $otherwise,
     ) {
-        if (!in_array($operator, ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'truthy', 'falsy'], true)) {
+        if (!in_array($operator, ['eq', 'neq', 'looseEq', 'looseNeq', 'gt', 'gte', 'lt', 'lte', 'truthy', 'falsy'], true)) {
             throw new \InvalidArgumentException("Unsupported conditional value operator: {$operator}");
         }
     }

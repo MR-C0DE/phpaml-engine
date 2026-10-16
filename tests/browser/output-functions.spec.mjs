@@ -1,0 +1,38 @@
+import {assetFile, viewFile} from './test-environment.mjs';
+import {installRuntime} from './runtime-source.mjs';
+import {expect, test} from './runtime-test.mjs';
+import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+const fixture = viewFile('tests/output-functions.php');
+const runtime = readFileSync(assetFile('engine.js'), 'utf8');
+const php = process.env.PHP_BINARY || 'php';
+const attribute = (value) => JSON.stringify(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+test('returned diagnostics hydrate and update as escaped text; ordinary calls stay in the console', async ({page}) => {
+  const html = execFileSync(php, [fixture, '--example'], {encoding: 'utf8'});
+  const logs = [], errors = [];
+  page.on('console', (message) => {if (message.type() === 'log') logs.push(message.text());});
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setContent(`<main data-aml-client>${html}<input aria-label="Nom" data-aml-model="commande.nom"></main>`);
+  const before = await page.locator('main').innerText();
+  await installRuntime(page, runtime);
+  expect(await page.locator('main').innerText()).toBe(before);
+  await page.getByRole('button', {name: 'Ajouter et examiner'}).click();
+  await expect(page.locator('main')).toContainText('[quantite] => 2');
+  await expect(page.locator('main')).toContainText("'quantite' => 2");
+  expect(logs).toHaveLength(2); expect(logs[0]).toContain('[quantite] => 2');
+  await page.getByLabel('Nom').fill('<img src=x onerror=alert(1)>');
+  await expect(page.locator('main')).toContainText('<img src=x onerror=alert(1)>');
+  expect(await page.locator('main img').count()).toBe(0);
+  expect(logs).toHaveLength(2); expect(errors).toEqual([]);
+});
+for (const method of ['callbacks', 'caught', 'uncaught']) test(`compiled output: ${method}`, async ({page}) => {
+  const [sample] = JSON.parse(execFileSync(php, [fixture, '--case', method, '--json'], {encoding: 'utf8'}));
+  const logs = []; page.on('console', (message) => {if (message.type() === 'log') logs.push(message.text());});
+  await page.setContent(`<main data-aml-client><template data-aml-state="${attribute(sample.initial)}" data-aml-state-config="${attribute(sample.config)}"></template><button data-aml-client-click="${attribute(sample.action)}">Run</button></main>`);
+  await page.evaluate(() => {window.failures = []; document.querySelector('main').addEventListener('aml:error', ({detail: {error}}) => window.failures.push({name: error.name, file: error.source.file}));});
+  await installRuntime(page, runtime); await page.getByRole('button', {name: 'Run'}).click();
+  await expect.poll(() => page.evaluate(() => window.AMLEngine.inspect(document.querySelector('main')))).toEqual(sample.error ? sample.initial : sample.expected);
+  expect(logs.join('')).toBe(sample.output);
+  if (sample.error) await expect.poll(() => page.evaluate(() => window.failures)).toEqual([{name: sample.error.name, file: expect.stringMatching(/OutputLibrary\.php$/)}]);
+  expect(await page.locator('main').innerText()).toBe('Run');
+});

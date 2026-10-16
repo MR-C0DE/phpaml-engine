@@ -3,6 +3,7 @@ export const rootConfigs = new WeakMap();
 export const mountedRoots = new Set();
 export const sharedState = Object.create(null);
 export const sharedTypes = Object.create(null);
+export const sharedValueTypes = Object.create(null);
 export const rootControllers = new WeakMap();
 export const rootCleanups = new WeakMap();
 export const validationTimers = new WeakMap();

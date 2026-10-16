@@ -17,7 +17,7 @@ if (($_GET['api'] ?? null) === 'csrf') {
     return;
 }
 
-require dirname(__DIR__) . '/src/EngineRuntime.php';
+require (getenv('PHPAML_ENGINE_ROOT') ?: dirname(__DIR__)) . '/src/EngineRuntime.php';
 
 use AML\Engine\EngineRuntime;
 
@@ -392,8 +392,17 @@ $richState = htmlspecialchars(json_encode([
   </section>
 </main>
 <?php if (isset($_GET['reserved'])): ?><script>window.AMLEngine = {};</script><?php endif; ?>
-<?= EngineRuntime::script(null, isset($_GET['minified'])) ?>
-<script>
+<?= getenv('PHPAML_BROWSER_RUNTIME') === 'modules' ? EngineRuntime::externalScript(modular: true) : EngineRuntime::script(null, isset($_GET['minified'])) ?>
+<script<?= getenv('PHPAML_BROWSER_RUNTIME') === 'modules' ? ' type="module"' : '' ?>>
+<?php if (getenv('PHPAML_BROWSER_RUNTIME') === 'modules'): ?>
+// WebKit can resume an inline importer before a script-tag entry finishes its
+// top-level await. Wait for the mounted runtime before installing fixture hooks.
+await import('/_aml/<?= EngineRuntime::moduleAssetFilename() ?>');
+const readyDeadline = Date.now() + 10000;
+while (!window.AMLEngine?.mount && Date.now() < readyDeadline) await new Promise(resolve => setTimeout(resolve, 0));
+if (!window.AMLEngine?.mount) throw new Error('Engine did not initialize the browser fixture.');
+await AMLEngine.mount(document);
+<?php endif; ?>
 const rootA = document.querySelector('#root-a');
 const transactionCount = document.querySelector('#transaction-count');
 const historyCount = document.querySelector('#history-count');
@@ -505,6 +514,7 @@ document.querySelector('#unmount-effects').addEventListener('click', () => {
   document.querySelector('#unmount-ticks').value = ticks.textContent;
   document.querySelector('#unmount-cleanups').value = cleanups.textContent;
 });
+document.documentElement.dataset.amlFixtureReady = 'true';
 </script>
 </body>
 </html>

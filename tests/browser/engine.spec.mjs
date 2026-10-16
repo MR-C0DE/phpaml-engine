@@ -1,7 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './runtime-test.mjs';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/browser-fixture.php');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-aml-fixture-ready', 'true');
 });
 
 test('updates local state without a page reload', async ({ page }) => {
@@ -79,9 +81,9 @@ test('handles keyboard mouse and drag events with browser event data', async ({ 
   await expect(page.locator('#last-key')).toHaveText('A');
 
   await page.locator('#mouse-event').hover();
-  await expect(page.locator('#hovered')).toHaveText('true');
+  await expect(page.locator('#hovered')).toHaveText('1');
   await page.locator('#keyboard-event').hover();
-  await expect(page.locator('#hovered')).toHaveText('false');
+  await expect(page.locator('#hovered')).toHaveText('');
 
   await page.locator('#drag-source').dragTo(page.locator('#drop-target'));
   await expect(page.locator('#drag-status')).toHaveText('dropped');
@@ -89,6 +91,7 @@ test('handles keyboard mouse and drag events with browser event data', async ({ 
 
 test('runs the minified versioned runtime', async ({ page }) => {
   await page.goto('/browser-fixture.php?minified=1');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
   await page.locator('#increment-b').click();
   await expect(page.locator('#root-b output[data-aml-bind="counter"]')).toHaveText('1');
 });
@@ -127,10 +130,10 @@ test('updates keyed collections without reloading the page', async ({ page }) =>
 
 test('exposes loading, success and error states for effects', async ({ page }) => {
   await page.locator('#api-first').click();
-  await expect(page.locator('#root-l [data-aml-bind="apiLoading"]')).toHaveText('true');
+  await expect(page.locator('#root-l [data-aml-bind="apiLoading"]')).toHaveText('1');
   await page.locator('#api-second').click();
   await expect(page.locator('#root-l [data-aml-bind="apiResult"]')).toHaveText('second');
-  await expect(page.locator('#root-l [data-aml-bind="apiLoading"]')).toHaveText('false');
+  await expect(page.locator('#root-l [data-aml-bind="apiLoading"]')).toHaveText('');
   await page.locator('#api-failure').click();
   await expect(page.locator('#effect-api-errors')).toHaveText('1');
   await expect(page.locator('#root-l [data-aml-bind="apiError"]')).not.toHaveText('');
@@ -150,23 +153,24 @@ test('drives rich components from declarative state', async ({ page }) => {
 
 test('tracks native forms and controls allowlisted element refs', async ({ page }) => {
   const root = page.locator('#root-hooks');
-  await expect(root.locator('[data-aml-bind="form.invalid"]')).toHaveText('true');
+  await expect(root.locator('[data-aml-bind="form.invalid"]')).toHaveText('1');
   await page.locator('#focus-tracked').click();
   await expect(page.locator('#tracked-name')).toBeFocused();
   await page.locator('#tracked-name').fill('André');
-  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('true');
+  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('1');
   await page.locator('#tracked-name').blur();
-  await expect(root.locator('[data-aml-bind="form.touched"]')).toHaveText('true');
+  await expect(root.locator('[data-aml-bind="form.touched"]')).toHaveText('1');
   await page.getByRole('button', {name: 'Submit tracked form'}).click();
-  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('true');
+  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('1');
   await expect(root.locator('[data-aml-bind="name"]')).toHaveText('saved');
   await page.locator('#reset-tracked').click();
-  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('false');
-  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('false');
+  await expect(root.locator('[data-aml-bind="form.dirty"]')).toHaveText('');
+  await expect(root.locator('[data-aml-bind="form.submitted"]')).toHaveText('');
 });
 
 test('changes themes and navigates without replacing the document', async ({ page }) => {
   await page.goto('/navigation-fixture.php?page=home');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
   const documentId = await page.locator('html').getAttribute('data-document-id');
   await page.getByRole('button', { name: 'Dark' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -178,6 +182,7 @@ test('changes themes and navigates without replacing the document', async ({ pag
 
 test('renders navigation loading, not-found and error boundaries', async ({ page }) => {
   await page.goto('/navigation-fixture.php?page=home');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
   await page.getByRole('link', { name: 'Slow' }).click();
   await expect(page.getByText('Loading route')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Page slow' })).toBeVisible();
@@ -186,6 +191,7 @@ test('renders navigation loading, not-found and error boundaries', async ({ page
   await expect(page.getByText('Route missing')).toBeVisible();
 
   await page.goto('/navigation-fixture.php?page=home');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
   await page.getByRole('link', { name: 'Failure' }).click();
   await expect(page.getByText('Route failed')).toBeVisible();
 });

@@ -1,0 +1,87 @@
+import {assetFile, viewFile} from './test-environment.mjs';
+import {browserRuntime} from './runtime-source.mjs';
+import {expect, test} from './runtime-test.mjs';
+import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+const fixture = viewFile('tests/statics.php');
+const payload = JSON.parse(execFileSync(process.env.PHP_BINARY || 'php', [fixture, '--json'], {encoding: 'utf8', maxBuffer: 64 * 1024 * 1024}));
+const samples = payload.cases;
+const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.9.min.js'), 'utf8'));
+const parser = readFileSync(assetFile('engine-eval-0.1.0-beta.9.min.js'), 'utf8');
+const attribute = (value) => JSON.stringify(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+for (const sample of samples) test(`static properties: ${sample.method}`, async ({page}) => {
+  const failures = [], logs = [];
+  page.on('pageerror', (error) => failures.push(error.message));
+  page.on('console', (message) => {if (message.type() === 'log') logs.push(message.text());});
+  await page.route('**/objects-test', (route) => route.fulfill({contentType: 'text/html', headers: {'Content-Security-Policy': "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'unsafe-inline'"}, body: `<!doctype html><meta charset="utf-8"><link rel="icon" href="/favicon.ico"><main data-aml-client><template data-aml-state="${attribute(sample.initial)}" data-aml-state-config="${attribute(sample.config)}"></template><button data-aml-client-click="${attribute(sample.action)}">Run</button><output data-aml-bind="counter"></output></main><script defer data-aml-engine src="/_aml/engine-0.1.0-beta.9.min.js"></script>`}));
+  await page.route('**/engine-0.1.0-beta.9.min.js', (route) => route.fulfill({body: runtime, contentType: 'text/javascript'}));
+  await page.route('**/engine-eval-0.1.0-beta.9.min.js', (route) => route.fulfill({body: parser, contentType: 'text/javascript'}));
+  await page.addInitScript(() => {window.failures = []; window.cspViolations = []; document.addEventListener('aml:error', ({detail: {error}}) => window.failures.push({name: error.name, message: error.message}), true); document.addEventListener('securitypolicyviolation', (event) => window.cspViolations.push(event.blockedURI));});
+  await page.goto('/objects-test');
+  await expect(page.locator('[data-aml-client]').first()).toHaveAttribute('data-aml-engine-mounted', 'true');
+  await page.getByRole('button', {name: 'Run'}).click();
+  if (sample.error || sample.invalidState) await expect.poll(() => page.evaluate(() => window.failures.length)).toBe(1);
+  await expect.poll(() => page.evaluate(() => window.AMLEngine.inspect(document.querySelector('main')))).toEqual(sample.error || sample.invalidState ? sample.initial : sample.expected);
+  if (sample.error) expect(await page.evaluate(() => window.failures[0].name)).toBe(sample.error.name);
+  if (!sample.invalidState) expect(logs.join('')).toBe(sample.output);
+  expect(await page.evaluate(() => window.cspViolations)).toEqual([]);
+  expect(failures).toEqual([]);
+});
+
+const view = viewFile('./');
+async function serve(page, markup) {
+  await page.route('**/engine-eval-0.1.0-beta.9.min.js', (route) => route.fulfill({body: parser, contentType: 'text/javascript'}));
+  await page.route('**/statics-lifecycle', (route) => route.fulfill({contentType: 'text/html', body: `<!doctype html><meta charset="utf-8"><link rel="icon" href="/favicon.ico"><main data-aml-client>${markup}</main><script data-aml-engine>${runtime}</script>`}));
+  await page.goto('/statics-lifecycle');
+  await expect(page.locator('[data-aml-client]')).toHaveAttribute('data-aml-engine-mounted', 'true');
+}
+test('statics survive handlers and failures and reset on root recreation', async ({page}) => {
+  await serve(page, payload.markup);
+  const state = () => page.evaluate(() => window.AMLEngine.inspect(document.querySelector('main')));
+  await page.getByRole('button', {name: 'next', exact: true}).click();
+  await page.getByRole('button', {name: 'next', exact: true}).click();
+  await page.getByRole('button', {name: 'read', exact: true}).click();
+  await expect.poll(state).toEqual({result: [2], counter: 0});
+  await page.getByRole('button', {name: 'failAfterWrite', exact: true}).click();
+  await page.getByRole('button', {name: 'read', exact: true}).click();
+  await expect.poll(state).toEqual({result: [3], counter: 0});
+  await page.getByRole('button', {name: 'saveObject', exact: true}).click();
+  await page.getByRole('button', {name: 'useObject', exact: true}).click();
+  await expect.poll(state).toEqual({result: [11], counter: 0});
+  await page.getByRole('button', {name: 'saveClosure', exact: true}).click();
+  await page.getByRole('button', {name: 'useClosure', exact: true}).click();
+  await expect.poll(state).toEqual({result: [11], counter: 0});
+  await page.evaluate(() => {window.AMLEngine.unmount(document.querySelector('main')); window.AMLEngine.mount(document);});
+  await page.getByRole('button', {name: 'read', exact: true}).click();
+  await expect.poll(state).toEqual({result: [0], counter: 0});
+});
+test('two rendered instances of the same component have isolated static storage', async ({page}) => {
+  const markup = execFileSync(process.env.PHP_BINARY || 'php', ['-r', `require '${view}tests/bootstrap.php'; require '${view}examples/proprietes-statiques/page.php'; echo (new \\AML\\View\\Renderer())->render(new \\Exemples\\Statiques\\Pages\\StatiquesPage());`], {encoding: 'utf8'});
+  await serve(page, markup);
+  await page.getByRole('button', {name: 'Incrémenter A', exact: true}).click();
+  await page.getByRole('button', {name: 'Incrémenter A', exact: true}).click();
+  await page.getByRole('button', {name: 'Incrémenter B', exact: true}).click();
+  await page.getByRole('button', {name: 'Relire A', exact: true}).click();
+  await expect(page.locator('[data-aml-bind-value]')).toHaveText(['Valeur : 2', 'Valeur : 1']);
+  await page.getByRole('button', {name: 'Réinitialiser A', exact: true}).click();
+  await page.getByRole('button', {name: 'Relire B', exact: true}).click();
+  await expect(page.locator('[data-aml-bind-value]')).toHaveText(['Valeur : 0', 'Valeur : 1']);
+});
+test('stateless components in lists and conditions discard their statics on recreation', async ({page}) => {
+  const markup = execFileSync(process.env.PHP_BINARY || 'php', ['-r', `require '${view}tests/bootstrap.php'; require '${view}tests/fixtures/StaticServices.php'; require '${view}tests/fixtures/StaticLifecyclePage.php'; echo (new \\AML\\View\\Renderer())->render(new \\AML\\View\\Tests\\Statics\\StaticLifecyclePage());`], {encoding: 'utf8'});
+  const logs = []; page.on('console', (message) => {if (message.type() === 'log') logs.push(message.text());});
+  await serve(page, markup);
+  const conditional = page.locator('[data-aml-when-content]').getByRole('button', {name: 'Tick'});
+  await conditional.click(); await conditional.click();
+  await page.getByRole('button', {name: 'Add', exact: true}).click();
+  const items = page.locator('li [data-aml-client-click]');
+  await expect(items).toHaveCount(2);
+  await items.nth(0).click(); await items.nth(0).click(); await items.nth(1).click();
+  expect(logs).toEqual(['1', '2', '1', '2', '1']);
+  await page.getByRole('button', {name: 'Remove', exact: true}).click();
+  await page.getByRole('button', {name: 'Add', exact: true}).click();
+  await items.nth(0).click(); expect(logs.at(-1)).toBe('1');
+  await page.getByRole('button', {name: 'Toggle', exact: true}).click();
+  await page.getByRole('button', {name: 'Toggle', exact: true}).click();
+  await conditional.click(); expect(logs.at(-1)).toBe('1');
+});

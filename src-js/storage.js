@@ -1,3 +1,4 @@
+import {describeArray, restoreArrayMetadata} from './core/php-arrays.js';
 import { clone, coerce, deletePath, readPath, writePath } from './core/state.js';
 
 export const migrateValue = (root, target, value, storedVersion, config) => {
@@ -41,16 +42,27 @@ export const indexedState = async (operation, key, value = undefined) => {
   } finally { database.close(); }
 };
 
-export const persistedPayload = (config, value) => JSON.stringify({
+export const persistedPayload = (config, value, phpType = undefined) => JSON.stringify({
   __amlPersisted: true,
   version: Number(config.version || 1),
   savedAt: Date.now(),
   value,
+  ...(phpType ? {phpType} : {}),
+  ...(value && typeof value === 'object' ? {phpArray: describeArray(value)} : {}),
 });
 
-export const restoredValue = (root, target, config, serialized, type) => {
+export const restoredValue = (root, target, config, serialized, type, stateConfig = null) => {
   const parsed = JSON.parse(serialized);
-  if (!parsed || parsed.__amlPersisted !== true) return coerce(type, parsed);
+  const restore = (value, savedKind = null) => {
+    const kind = typeof value === 'number' && ['integer', 'double'].includes(savedKind) ? savedKind : phpType(value);
+    const typed = stateConfig?.typeRules?.[target]
+      ? assignType(stateConfig.typeRules[target], value, kind, false)
+      : {value: coerce(type, value), kind: type === 'float' && value !== null ? 'double' : kind};
+    if (typeof typed.value === 'number' && (!Number.isFinite(typed.value) || typed.kind === 'integer' && !Number.isSafeInteger(typed.value))) throw new RangeError('Persisted number cannot be represented safely');
+    if (stateConfig?.valueTypes) stateConfig.valueTypes[target] = typed.kind;
+    return typed.value;
+  };
+  if (!parsed || parsed.__amlPersisted !== true) return restore(parsed);
   if (Number(parsed.version) > Number(config.version || 1)) {
     root.dispatchEvent(new CustomEvent('aml:storage-version-newer', {detail: {target, storedVersion: parsed.version, expectedVersion: config.version || 1}}));
     return undefined;
@@ -59,8 +71,12 @@ export const restoredValue = (root, target, config, serialized, type) => {
     root.dispatchEvent(new CustomEvent('aml:storage-expired', {detail: {target}}));
     return undefined;
   }
+  restoreArrayMetadata(parsed.value, parsed.phpArray);
   const value = Number(parsed.version) < Number(config.version || 1)
     ? migrateValue(root, target, parsed.value, parsed.version, config)
     : parsed.value;
-  return value === undefined ? undefined : coerce(type, value);
+  return value === undefined ? undefined : restore(value, Number(parsed.version) === Number(config.version || 1) ? parsed.phpType : null);
 };
+
+import { phpType } from './core/php-values.js';
+import { assignType } from './core/php-types.js';

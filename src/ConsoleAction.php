@@ -11,7 +11,7 @@ final readonly class ConsoleAction implements ClientInstruction
         public string $level,
         public array $values,
     ) {
-        if (!in_array($level, ['log', 'warn', 'error'], true)) {
+        if (!in_array($level, ['log', 'warn', 'error', 'dump', 'echo'], true)) {
             throw new \InvalidArgumentException("Unsupported console level: {$level}");
         }
     }
@@ -31,6 +31,14 @@ final readonly class ConsoleAction implements ClientInstruction
         return new self('error', $values);
     }
 
+    public static function dump(mixed ...$values): self
+    {
+        if ($values === []) throw new \InvalidArgumentException('var_dump() requires at least one value.');
+        return new self('dump', $values);
+    }
+
+    public static function output(mixed ...$values): self { return new self('echo', $values); }
+
     public function json(): string
     {
         return json_encode(
@@ -41,6 +49,7 @@ final readonly class ConsoleAction implements ClientInstruction
 
     private static function normalize(mixed $value): mixed
     {
+        if ($value instanceof StateExpression || $value instanceof StateConditional) return self::normalize($value->payload());
         if ($value instanceof StateRef) return ['$state' => $value->name];
         if ($value instanceof EventRef) return ['$event' => $value->path];
         if (!is_array($value)) return $value;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/src/EngineRuntime.php';
+require (getenv('PHPAML_ENGINE_ROOT') ?: dirname(__DIR__)) . '/src/EngineRuntime.php';
 
 use AML\Engine\EngineRuntime;
 
@@ -49,5 +49,5 @@ $page = htmlspecialchars((string) ($_GET['page'] ?? 'home'), ENT_QUOTES, 'UTF-8'
 </main>
 <output id="runtime-error"></output>
 <script>window.fixtureRan = true; addEventListener('error', event => document.querySelector('#runtime-error').value = event.message);</script>
-<?= EngineRuntime::script() ?>
+<?= getenv('PHPAML_BROWSER_RUNTIME') === 'modules' ? EngineRuntime::externalScript(modular: true) : EngineRuntime::script() ?>
 </body></html>

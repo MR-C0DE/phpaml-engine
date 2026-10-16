@@ -1,0 +1,1758 @@
+{
+  "development": {
+    "entry": "assets/modules-0.1.0-beta.9/engine.js",
+    "initial": [
+      "assets/modules-0.1.0-beta.9/engine.js",
+      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js"
+    ],
+    "outputs": {
+      "assets/modules-0.1.0-beta.9/files-7AE7OLES.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 24005
+      },
+      "assets/modules-0.1.0-beta.9/files-7AE7OLES.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:files",
+        "inputs": {
+          "src-js/files-runtime.js": {
+            "bytesInOutput": 7280
+          },
+          "src-js/core/file-codecs.js": {
+            "bytesInOutput": 6406
+          },
+          "phpaml-module:files": {
+            "bytesInOutput": 95
+          }
+        },
+        "bytes": 14169
+      },
+      "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 31942
+      },
+      "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:browser",
+        "inputs": {
+          "src-js/browser-api.js": {
+            "bytesInOutput": 3976
+          },
+          "src-js/http.js": {
+            "bytesInOutput": 1166
+          },
+          "src-js/browser-forms.js": {
+            "bytesInOutput": 4001
+          },
+          "src-js/browser-storage.js": {
+            "bytesInOutput": 4545
+          },
+          "src-js/storage.js": {
+            "bytesInOutput": 4377
+          },
+          "phpaml-module:browser": {
+            "bytesInOutput": 162
+          }
+        },
+        "bytes": 18912
+      },
+      "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 2148
+      },
+      "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:animations",
+        "inputs": {
+          "src-js/animations-runtime.js": {
+            "bytesInOutput": 1153
+          },
+          "phpaml-module:animations": {
+            "bytesInOutput": 81
+          }
+        },
+        "bytes": 1364
+      },
+      "assets/modules-0.1.0-beta.9/engine.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 19592
+      },
+      "assets/modules-0.1.0-beta.9/engine.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/intl-GION4BVU.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/files-7AE7OLES.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js",
+            "kind": "dynamic-import"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-entry:engine",
+        "inputs": {
+          "phpaml-proxy:../storage.js": {
+            "bytesInOutput": 82
+          },
+          "src-js/diagnostics.js": {
+            "bytesInOutput": 3880
+          },
+          "src-js/development-errors.js": {
+            "bytesInOutput": 4672
+          },
+          "src-js/start.js": {
+            "bytesInOutput": 1305
+          },
+          "phpaml-entry:engine": {
+            "bytesInOutput": 1118
+          }
+        },
+        "bytes": 11708
+      },
+      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 168344
+      },
+      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [
+          "activateEffect",
+          "cleanupEffect",
+          "commit",
+          "context",
+          "effectRuntimes",
+          "installNavigationListeners",
+          "lifecycle",
+          "mount",
+          "mountedRoots",
+          "navigate",
+          "on",
+          "remember",
+          "render",
+          "rootCleanups",
+          "rootConfigs",
+          "rootControllers",
+          "rootStates",
+          "route",
+          "runEffects",
+          "scheduleUpdate",
+          "showValidation",
+          "stateHistories",
+          "transactions",
+          "unmount",
+          "updateActiveLinks",
+          "validateControl",
+          "validationControllers",
+          "validationTimers"
+        ],
+        "inputs": {
+          "src-js/context.js": {
+            "bytesInOutput": 901
+          },
+          "phpaml-proxy:../browser-storage.js": {
+            "bytesInOutput": 480
+          },
+          "phpaml-proxy:../animations-runtime.js": {
+            "bytesInOutput": 190
+          },
+          "src-js/rendering.js": {
+            "bytesInOutput": 18964
+          },
+          "src-js/effects.js": {
+            "bytesInOutput": 751
+          },
+          "src-js/control-flow.js": {
+            "bytesInOutput": 4427
+          },
+          "phpaml-proxy:../files-runtime.js": {
+            "bytesInOutput": 78
+          },
+          "phpaml-proxy:../browser-api.js": {
+            "bytesInOutput": 72
+          },
+          "src-js/actions-runtime.js": {
+            "bytesInOutput": 13883
+          },
+          "src-js/core/action-analysis.js": {
+            "bytesInOutput": 1144
+          },
+          "src-js/validation.js": {
+            "bytesInOutput": 702
+          },
+          "phpaml-proxy:../browser-forms.js": {
+            "bytesInOutput": 370
+          },
+          "src-js/forms-runtime.js": {
+            "bytesInOutput": 1902
+          },
+          "src-js/lifecycle.js": {
+            "bytesInOutput": 739
+          },
+          "src-js/lifecycle-runtime.js": {
+            "bytesInOutput": 25810
+          },
+          "src-js/navigation.js": {
+            "bytesInOutput": 9173
+          },
+          "src-js/effects-runtime.js": {
+            "bytesInOutput": 5271
+          },
+          "src-js/state-runtime.js": {
+            "bytesInOutput": 8866
+          }
+        },
+        "bytes": 95565
+      },
+      "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 665655
+      },
+      "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:unicode",
+        "inputs": {
+          "src-js/core/php-builtin-grapheme.js": {
+            "bytesInOutput": 6019
+          },
+          "src-js/core/normalizer-data.json": {
+            "bytesInOutput": 314833
+          },
+          "src-js/core/php-builtin-mbstring.js": {
+            "bytesInOutput": 10544
+          },
+          "src-js/core/unicode-data.json": {
+            "bytesInOutput": 43222
+          },
+          "phpaml-module:unicode": {
+            "bytesInOutput": 113
+          }
+        },
+        "bytes": 375226
+      },
+      "assets/modules-0.1.0-beta.9/intl-GION4BVU.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 172723
+      },
+      "assets/modules-0.1.0-beta.9/intl-GION4BVU.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:intl",
+        "inputs": {
+          "src-js/core/php-intl.js": {
+            "bytesInOutput": 9774
+          },
+          "src-js/core/php-intl-extra.js": {
+            "bytesInOutput": 7801
+          },
+          "src-js/core/intl-definitions.json": {
+            "bytesInOutput": 54444
+          },
+          "src-js/core/intl-currencies.json": {
+            "bytesInOutput": 13619
+          },
+          "phpaml-module:intl": {
+            "bytesInOutput": 92
+          }
+        },
+        "bytes": 86212
+      },
+      "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 14865
+      },
+      "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:bcmath",
+        "inputs": {
+          "src-js/core/php-builtin-bcmath.js": {
+            "bytesInOutput": 7875
+          },
+          "phpaml-module:bcmath": {
+            "bytesInOutput": 77
+          }
+        },
+        "bytes": 8160
+      },
+      "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 42185
+      },
+      "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:regex",
+        "inputs": {
+          "src-js/core/php-builtin-regex.js": {
+            "bytesInOutput": 16444
+          },
+          "src-js/core/php-regex-vm.js": {
+            "bytesInOutput": 9121
+          },
+          "phpaml-module:regex": {
+            "bytesInOutput": 100
+          }
+        },
+        "bytes": 26077
+      },
+      "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 216093
+      },
+      "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:date",
+        "inputs": {
+          "src-js/core/php-date-values.js": {
+            "bytesInOutput": 23341
+          },
+          "src-js/core/date-definitions.json": {
+            "bytesInOutput": 62506
+          },
+          "src-js/core/php-date-advanced.js": {
+            "bytesInOutput": 16542
+          },
+          "src-js/core/php-date-format-parser.js": {
+            "bytesInOutput": 9199
+          },
+          "phpaml-module:date": {
+            "bytesInOutput": 137
+          }
+        },
+        "bytes": 112168
+      },
+      "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 302504
+      },
+      "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:spl",
+        "inputs": {
+          "src-js/core/php-spl.js": {
+            "bytesInOutput": 7426
+          },
+          "src-js/core/php-spl-list.js": {
+            "bytesInOutput": 4084
+          },
+          "src-js/core/spl-definitions.json": {
+            "bytesInOutput": 128193
+          },
+          "phpaml-module:spl": {
+            "bytesInOutput": 88
+          }
+        },
+        "bytes": 140353
+      },
+      "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 171877
+      },
+      "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:reflection",
+        "inputs": {
+          "src-js/core/php-reflection.js": {
+            "bytesInOutput": 8566
+          },
+          "src-js/core/reflection-definitions.json": {
+            "bytesInOutput": 75659
+          },
+          "phpaml-module:reflection": {
+            "bytesInOutput": 77
+          }
+        },
+        "bytes": 84784
+      },
+      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 973912
+      },
+      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [
+          "arrayEntries",
+          "arrayKey",
+          "arrayKind",
+          "arrayLimit",
+          "arrayRead",
+          "arrayUnset",
+          "arrayWithReference",
+          "arrayWrite",
+          "assignTarget",
+          "assignType",
+          "bindMethod",
+          "bindOffsetPattern",
+          "bindReferenceTarget",
+          "bounded",
+          "byteString",
+          "bytes",
+          "clone",
+          "clonePhp",
+          "coerce",
+          "configureEvalAsset",
+          "dateData",
+          "dateParts",
+          "declareFunction",
+          "deletePath",
+          "describeArray",
+          "destructure",
+          "destructureReference",
+          "evaluateObject",
+          "exceptionFlow",
+          "failure",
+          "foreachEntries",
+          "formatThrowable",
+          "fromByteString",
+          "invokeBuiltin",
+          "invokeFunction",
+          "isFrontendCallable",
+          "isPhpArray",
+          "isPhpObject",
+          "limit",
+          "makeArray",
+          "makeObject",
+          "objectData",
+          "objectIs",
+          "objectMemberLookup",
+          "objectPropertyReference",
+          "ownArray",
+          "owningTarget",
+          "pathAffects",
+          "phpArithmetic",
+          "phpBool",
+          "phpDump",
+          "phpIncrement",
+          "phpMatches",
+          "phpString",
+          "phpType",
+          "prepareEval",
+          "readPath",
+          "recomputeComputed",
+          "referenceEntries",
+          "releaseArrays",
+          "releaseLocalReferences",
+          "resolveData",
+          "resolveType",
+          "resolvedNode",
+          "restoreArrayMetadata",
+          "runGrapheme",
+          "safeSegments",
+          "serviceRuntime",
+          "snapshotPhp",
+          "staticPropertyReference",
+          "text",
+          "timezone",
+          "validatePhpValue",
+          "validateStateReferences",
+          "warn",
+          "withSource",
+          "work",
+          "writePath"
+        ],
+        "inputs": {
+          "src-js/core/php-object-values.js": {
+            "bytesInOutput": 732
+          },
+          "src-js/core/diagnostics.js": {
+            "bytesInOutput": 930
+          },
+          "src-js/core/php-references.js": {
+            "bytesInOutput": 1982
+          },
+          "src-js/core/php-value-ownership.js": {
+            "bytesInOutput": 1604
+          },
+          "src-js/core/php-rounding-mode.js": {
+            "bytesInOutput": 504
+          },
+          "src-js/core/php-arrays.js": {
+            "bytesInOutput": 14498
+          },
+          "src-js/core/state.js": {
+            "bytesInOutput": 3392
+          },
+          "phpaml-proxy:php-date-values.js": {
+            "bytesInOutput": 936
+          },
+          "phpaml-proxy:php-spl.js": {
+            "bytesInOutput": 436
+          },
+          "phpaml-proxy:php-intl.js": {
+            "bytesInOutput": 261
+          },
+          "src-js/core/php-object-collections.js": {
+            "bytesInOutput": 4538
+          },
+          "src-js/core/php-destructure.js": {
+            "bytesInOutput": 1236
+          },
+          "phpaml-proxy:php-reflection.js": {
+            "bytesInOutput": 105
+          },
+          "src-js/core/php-builtin-support.js": {
+            "bytesInOutput": 3580
+          },
+          "src-js/core/php-operators.js": {
+            "bytesInOutput": 9773
+          },
+          "src-js/core/php-exceptions.js": {
+            "bytesInOutput": 10135
+          },
+          "src-js/core/php-types.js": {
+            "bytesInOutput": 2819
+          },
+          "src-js/core/php-stdclass.js": {
+            "bytesInOutput": 2897
+          },
+          "src-js/core/php-enums.js": {
+            "bytesInOutput": 1623
+          },
+          "src-js/core/php-serialization.js": {
+            "bytesInOutput": 10224
+          },
+          "node_modules/@noble/hashes/utils.js": {
+            "bytesInOutput": 2681
+          },
+          "node_modules/@noble/hashes/_md.js": {
+            "bytesInOutput": 3555
+          },
+          "node_modules/@noble/hashes/legacy.js": {
+            "bytesInOutput": 6674
+          },
+          "node_modules/@noble/hashes/_u64.js": {
+            "bytesInOutput": 1468
+          },
+          "node_modules/@noble/hashes/sha2.js": {
+            "bytesInOutput": 12273
+          },
+          "node_modules/@noble/hashes/hmac.js": {
+            "bytesInOutput": 1904
+          },
+          "src-js/core/php-builtin-common.js": {
+            "bytesInOutput": 2320
+          },
+          "src-js/core/php-random.js": {
+            "bytesInOutput": 2704
+          },
+          "src-js/core/builtin-signatures.json": {
+            "bytesInOutput": 62144
+          },
+          "src-js/core/php-filter.js": {
+            "bytesInOutput": 13690
+          },
+          "src-js/core/php-builtin-utility.js": {
+            "bytesInOutput": 3654
+          },
+          "src-js/core/php-builtin-math.js": {
+            "bytesInOutput": 3931
+          },
+          "phpaml-proxy:php-builtin-grapheme.js": {
+            "bytesInOutput": 96
+          },
+          "phpaml-proxy:php-date-advanced.js": {
+            "bytesInOutput": 220
+          },
+          "src-js/core/php-builtin-objects.js": {
+            "bytesInOutput": 6699
+          },
+          "src-js/core/php-builtin-web.js": {
+            "bytesInOutput": 6515
+          },
+          "src-js/core/php-builtin-json.js": {
+            "bytesInOutput": 12529
+          },
+          "phpaml-proxy:php-builtin-regex.js": {
+            "bytesInOutput": 88
+          },
+          "src-js/core/php-builtin-format.js": {
+            "bytesInOutput": 7713
+          },
+          "src-js/core/html-entities.json": {
+            "bytesInOutput": 57775
+          },
+          "src-js/core/php-builtin-codecs.js": {
+            "bytesInOutput": 13885
+          },
+          "src-js/core/php-metaphone.js": {
+            "bytesInOutput": 3192
+          },
+          "src-js/core/php-builtin-strings.js": {
+            "bytesInOutput": 14344
+          },
+          "phpaml-proxy:php-builtin-mbstring.js": {
+            "bytesInOutput": 96
+          },
+          "phpaml-proxy:php-builtin-bcmath.js": {
+            "bytesInOutput": 91
+          },
+          "src-js/core/php-function-introspection.js": {
+            "bytesInOutput": 1654
+          },
+          "src-js/core/php-builtin-output.js": {
+            "bytesInOutput": 4676
+          },
+          "src-js/core/php-builtin-arrays.js": {
+            "bytesInOutput": 21859
+          },
+          "src-js/core/php-builtins.js": {
+            "bytesInOutput": 21158
+          },
+          "src-js/core/php-functions.js": {
+            "bytesInOutput": 25271
+          },
+          "src-js/eval/generators.js": {
+            "bytesInOutput": 309
+          },
+          "src-js/core/php-generator-values.js": {
+            "bytesInOutput": 10814
+          },
+          "src-js/core/php-generator-body.js": {
+            "bytesInOutput": 7371
+          },
+          "src-js/core/php-generators.js": {
+            "bytesInOutput": 6349
+          },
+          "src-js/core/php-static-properties.js": {
+            "bytesInOutput": 4976
+          },
+          "src-js/core/php-objects.js": {
+            "bytesInOutput": 21121
+          },
+          "src-js/core/php-magic.js": {
+            "bytesInOutput": 2663
+          },
+          "src-js/core/php-values.js": {
+            "bytesInOutput": 6343
+          },
+          "src-js/core/php-casts.js": {
+            "bytesInOutput": 2845
+          },
+          "src-js/core/php-symbols.js": {
+            "bytesInOutput": 5041
+          },
+          "src-js/core/php-nullsafe.js": {
+            "bytesInOutput": 1328
+          },
+          "src-js/core/php-eval-classes.js": {
+            "bytesInOutput": 848
+          },
+          "src-js/core/php-eval.js": {
+            "bytesInOutput": 4369
+          },
+          "src-js/core/php-collections.js": {
+            "bytesInOutput": 10508
+          },
+          "src-js/core/value.js": {
+            "bytesInOutput": 28559
+          },
+          "src-js/core/php-iterators.js": {
+            "bytesInOutput": 5639
+          }
+        },
+        "bytes": 509940
+      },
+      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 23959
+      },
+      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js": {
+        "imports": [],
+        "exports": [
+          "ENGINE_VERSION",
+          "__export",
+          "configureModules",
+          "moduleExport",
+          "prepareInstructionModules",
+          "prepareModules",
+          "prepareScopeModules",
+          "registerModule"
+        ],
+        "inputs": {
+          "src-js/core/version.js": {
+            "bytesInOutput": 37
+          },
+          "src-js/modules/catalogue.json": {
+            "bytesInOutput": 3797
+          },
+          "src-js/modules/callables.json": {
+            "bytesInOutput": 2144
+          },
+          "src-js/modules/requirements.js": {
+            "bytesInOutput": 4653
+          },
+          "src-js/modules/runtime.js": {
+            "bytesInOutput": 1906
+          }
+        },
+        "bytes": 13030
+      }
+    }
+  },
+  "minified": {
+    "entry": "assets/modules-0.1.0-beta.9.min/engine.js",
+    "initial": [
+      "assets/modules-0.1.0-beta.9.min/engine.js",
+      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js"
+    ],
+    "outputs": {
+      "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 25485
+      },
+      "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:files",
+        "inputs": {
+          "src-js/files-runtime.js": {
+            "bytesInOutput": 4056
+          },
+          "src-js/core/file-codecs.js": {
+            "bytesInOutput": 4037
+          },
+          "phpaml-module:files": {
+            "bytesInOutput": 38
+          }
+        },
+        "bytes": 8309
+      },
+      "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 34648
+      },
+      "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:browser",
+        "inputs": {
+          "src-js/browser-api.js": {
+            "bytesInOutput": 1971
+          },
+          "src-js/http.js": {
+            "bytesInOutput": 654
+          },
+          "src-js/browser-forms.js": {
+            "bytesInOutput": 2244
+          },
+          "src-js/browser-storage.js": {
+            "bytesInOutput": 2299
+          },
+          "src-js/storage.js": {
+            "bytesInOutput": 2418
+          },
+          "phpaml-module:browser": {
+            "bytesInOutput": 55
+          }
+        },
+        "bytes": 9907
+      },
+      "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 2332
+      },
+      "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:animations",
+        "inputs": {
+          "src-js/animations-runtime.js": {
+            "bytesInOutput": 783
+          },
+          "phpaml-module:animations": {
+            "bytesInOutput": 38
+          }
+        },
+        "bytes": 869
+      },
+      "assets/modules-0.1.0-beta.9.min/engine.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 20994
+      },
+      "assets/modules-0.1.0-beta.9.min/engine.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js",
+            "kind": "dynamic-import"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js",
+            "kind": "dynamic-import"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-entry:engine",
+        "inputs": {
+          "phpaml-proxy:../storage.js": {
+            "bytesInOutput": 48
+          },
+          "src-js/diagnostics.js": {
+            "bytesInOutput": 2178
+          },
+          "src-js/development-errors.js": {
+            "bytesInOutput": 3840
+          },
+          "src-js/start.js": {
+            "bytesInOutput": 685
+          },
+          "phpaml-entry:engine": {
+            "bytesInOutput": 825
+          }
+        },
+        "bytes": 7859
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 176844
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [
+          "A",
+          "B",
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h",
+          "i",
+          "j",
+          "k",
+          "l",
+          "m",
+          "n",
+          "o",
+          "p",
+          "q",
+          "r",
+          "s",
+          "t",
+          "u",
+          "v",
+          "w",
+          "x",
+          "y",
+          "z"
+        ],
+        "inputs": {
+          "src-js/context.js": {
+            "bytesInOutput": 270
+          },
+          "phpaml-proxy:../browser-storage.js": {
+            "bytesInOutput": 273
+          },
+          "phpaml-proxy:../animations-runtime.js": {
+            "bytesInOutput": 112
+          },
+          "src-js/rendering.js": {
+            "bytesInOutput": 10615
+          },
+          "src-js/effects.js": {
+            "bytesInOutput": 444
+          },
+          "src-js/control-flow.js": {
+            "bytesInOutput": 2043
+          },
+          "phpaml-proxy:../files-runtime.js": {
+            "bytesInOutput": 46
+          },
+          "phpaml-proxy:../browser-api.js": {
+            "bytesInOutput": 44
+          },
+          "src-js/actions-runtime.js": {
+            "bytesInOutput": 6856
+          },
+          "src-js/core/action-analysis.js": {
+            "bytesInOutput": 508
+          },
+          "src-js/validation.js": {
+            "bytesInOutput": 397
+          },
+          "phpaml-proxy:../browser-forms.js": {
+            "bytesInOutput": 208
+          },
+          "src-js/forms-runtime.js": {
+            "bytesInOutput": 1128
+          },
+          "src-js/lifecycle.js": {
+            "bytesInOutput": 457
+          },
+          "src-js/lifecycle-runtime.js": {
+            "bytesInOutput": 14244
+          },
+          "src-js/navigation.js": {
+            "bytesInOutput": 5842
+          },
+          "src-js/effects-runtime.js": {
+            "bytesInOutput": 2733
+          },
+          "src-js/state-runtime.js": {
+            "bytesInOutput": 4223
+          }
+        },
+        "bytes": 51089
+      },
+      "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 666926
+      },
+      "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:unicode",
+        "inputs": {
+          "src-js/core/php-builtin-grapheme.js": {
+            "bytesInOutput": 3352
+          },
+          "src-js/core/normalizer-data.json": {
+            "bytesInOutput": 277257
+          },
+          "src-js/core/php-builtin-mbstring.js": {
+            "bytesInOutput": 5550
+          },
+          "src-js/core/unicode-data.json": {
+            "bytesInOutput": 36875
+          },
+          "phpaml-module:unicode": {
+            "bytesInOutput": 40
+          }
+        },
+        "bytes": 323240
+      },
+      "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 163509
+      },
+      "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:intl",
+        "inputs": {
+          "src-js/core/php-intl.js": {
+            "bytesInOutput": 6110
+          },
+          "src-js/core/php-intl-extra.js": {
+            "bytesInOutput": 4556
+          },
+          "src-js/core/intl-definitions.json": {
+            "bytesInOutput": 27584
+          },
+          "src-js/core/intl-currencies.json": {
+            "bytesInOutput": 11831
+          },
+          "phpaml-module:intl": {
+            "bytesInOutput": 37
+          }
+        },
+        "bytes": 50302
+      },
+      "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 15922
+      },
+      "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:bcmath",
+        "inputs": {
+          "src-js/core/php-builtin-bcmath.js": {
+            "bytesInOutput": 4009
+          },
+          "phpaml-module:bcmath": {
+            "bytesInOutput": 34
+          }
+        },
+        "bytes": 4153
+      },
+      "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 44748
+      },
+      "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:regex",
+        "inputs": {
+          "src-js/core/php-builtin-regex.js": {
+            "bytesInOutput": 8376
+          },
+          "src-js/core/php-regex-vm.js": {
+            "bytesInOutput": 4525
+          },
+          "phpaml-module:regex": {
+            "bytesInOutput": 38
+          }
+        },
+        "bytes": 13123
+      },
+      "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 208557
+      },
+      "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:date",
+        "inputs": {
+          "src-js/core/php-date-values.js": {
+            "bytesInOutput": 14318
+          },
+          "src-js/core/date-definitions.json": {
+            "bytesInOutput": 32061
+          },
+          "src-js/core/php-date-advanced.js": {
+            "bytesInOutput": 9244
+          },
+          "src-js/core/php-date-format-parser.js": {
+            "bytesInOutput": 5360
+          },
+          "phpaml-module:date": {
+            "bytesInOutput": 46
+          }
+        },
+        "bytes": 61172
+      },
+      "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 277454
+      },
+      "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:spl",
+        "inputs": {
+          "src-js/core/php-spl.js": {
+            "bytesInOutput": 4553
+          },
+          "src-js/core/php-spl-list.js": {
+            "bytesInOutput": 2346
+          },
+          "src-js/core/spl-definitions.json": {
+            "bytesInOutput": 58234
+          },
+          "phpaml-module:spl": {
+            "bytesInOutput": 36
+          }
+        },
+        "bytes": 65410
+      },
+      "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 158988
+      },
+      "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "kind": "import-statement"
+          },
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [],
+        "entryPoint": "phpaml-module:reflection",
+        "inputs": {
+          "src-js/core/php-reflection.js": {
+            "bytesInOutput": 5101
+          },
+          "src-js/core/reflection-definitions.json": {
+            "bytesInOutput": 42265
+          },
+          "phpaml-module:reflection": {
+            "bytesInOutput": 38
+          }
+        },
+        "bytes": 47591
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 994366
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js": {
+        "imports": [
+          {
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "kind": "import-statement"
+          }
+        ],
+        "exports": [
+          "$",
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H",
+          "I",
+          "J",
+          "K",
+          "L",
+          "M",
+          "N",
+          "O",
+          "P",
+          "Q",
+          "R",
+          "S",
+          "T",
+          "U",
+          "V",
+          "W",
+          "X",
+          "Y",
+          "Z",
+          "_",
+          "a",
+          "aa",
+          "b",
+          "ba",
+          "c",
+          "ca",
+          "d",
+          "da",
+          "e",
+          "ea",
+          "f",
+          "fa",
+          "g",
+          "ga",
+          "h",
+          "ha",
+          "i",
+          "ia",
+          "j",
+          "ja",
+          "k",
+          "ka",
+          "l",
+          "la",
+          "m",
+          "ma",
+          "n",
+          "na",
+          "o",
+          "oa",
+          "p",
+          "pa",
+          "q",
+          "qa",
+          "r",
+          "ra",
+          "s",
+          "sa",
+          "t",
+          "ta",
+          "u",
+          "ua",
+          "v",
+          "va",
+          "w",
+          "wa",
+          "x",
+          "xa",
+          "y",
+          "z"
+        ],
+        "inputs": {
+          "src-js/core/php-object-values.js": {
+            "bytesInOutput": 387
+          },
+          "src-js/core/diagnostics.js": {
+            "bytesInOutput": 567
+          },
+          "src-js/core/php-references.js": {
+            "bytesInOutput": 1029
+          },
+          "src-js/core/php-value-ownership.js": {
+            "bytesInOutput": 698
+          },
+          "src-js/core/php-rounding-mode.js": {
+            "bytesInOutput": 343
+          },
+          "src-js/core/php-arrays.js": {
+            "bytesInOutput": 7596
+          },
+          "src-js/core/state.js": {
+            "bytesInOutput": 1668
+          },
+          "phpaml-proxy:php-date-values.js": {
+            "bytesInOutput": 544
+          },
+          "phpaml-proxy:php-spl.js": {
+            "bytesInOutput": 241
+          },
+          "phpaml-proxy:php-intl.js": {
+            "bytesInOutput": 148
+          },
+          "src-js/core/php-object-collections.js": {
+            "bytesInOutput": 2360
+          },
+          "src-js/core/php-destructure.js": {
+            "bytesInOutput": 487
+          },
+          "phpaml-proxy:php-reflection.js": {
+            "bytesInOutput": 62
+          },
+          "src-js/core/php-builtin-support.js": {
+            "bytesInOutput": 2003
+          },
+          "src-js/core/php-operators.js": {
+            "bytesInOutput": 5473
+          },
+          "src-js/core/php-exceptions.js": {
+            "bytesInOutput": 6084
+          },
+          "src-js/core/php-types.js": {
+            "bytesInOutput": 1835
+          },
+          "src-js/core/php-stdclass.js": {
+            "bytesInOutput": 1487
+          },
+          "src-js/core/php-enums.js": {
+            "bytesInOutput": 947
+          },
+          "src-js/core/php-serialization.js": {
+            "bytesInOutput": 5586
+          },
+          "node_modules/@noble/hashes/utils.js": {
+            "bytesInOutput": 1634
+          },
+          "node_modules/@noble/hashes/_md.js": {
+            "bytesInOutput": 2111
+          },
+          "node_modules/@noble/hashes/legacy.js": {
+            "bytesInOutput": 3370
+          },
+          "node_modules/@noble/hashes/_u64.js": {
+            "bytesInOutput": 786
+          },
+          "node_modules/@noble/hashes/sha2.js": {
+            "bytesInOutput": 6810
+          },
+          "node_modules/@noble/hashes/hmac.js": {
+            "bytesInOutput": 1275
+          },
+          "src-js/core/php-builtin-common.js": {
+            "bytesInOutput": 1523
+          },
+          "src-js/core/php-random.js": {
+            "bytesInOutput": 1825
+          },
+          "src-js/core/builtin-signatures.json": {
+            "bytesInOutput": 35053
+          },
+          "src-js/core/php-filter.js": {
+            "bytesInOutput": 7980
+          },
+          "src-js/core/php-builtin-utility.js": {
+            "bytesInOutput": 1893
+          },
+          "src-js/core/php-builtin-math.js": {
+            "bytesInOutput": 2590
+          },
+          "phpaml-proxy:php-builtin-grapheme.js": {
+            "bytesInOutput": 59
+          },
+          "phpaml-proxy:php-date-advanced.js": {
+            "bytesInOutput": 125
+          },
+          "src-js/core/php-builtin-objects.js": {
+            "bytesInOutput": 4022
+          },
+          "src-js/core/php-builtin-web.js": {
+            "bytesInOutput": 3580
+          },
+          "src-js/core/php-builtin-json.js": {
+            "bytesInOutput": 6695
+          },
+          "phpaml-proxy:php-builtin-regex.js": {
+            "bytesInOutput": 54
+          },
+          "src-js/core/php-builtin-format.js": {
+            "bytesInOutput": 4046
+          },
+          "src-js/core/html-entities.json": {
+            "bytesInOutput": 52465
+          },
+          "src-js/core/php-builtin-codecs.js": {
+            "bytesInOutput": 7380
+          },
+          "src-js/core/php-metaphone.js": {
+            "bytesInOutput": 1315
+          },
+          "src-js/core/php-builtin-strings.js": {
+            "bytesInOutput": 8001
+          },
+          "phpaml-proxy:php-builtin-mbstring.js": {
+            "bytesInOutput": 59
+          },
+          "phpaml-proxy:php-builtin-bcmath.js": {
+            "bytesInOutput": 56
+          },
+          "src-js/core/php-function-introspection.js": {
+            "bytesInOutput": 1020
+          },
+          "src-js/core/php-builtin-output.js": {
+            "bytesInOutput": 2457
+          },
+          "src-js/core/php-builtin-arrays.js": {
+            "bytesInOutput": 12065
+          },
+          "src-js/core/php-builtins.js": {
+            "bytesInOutput": 11587
+          },
+          "src-js/core/php-functions.js": {
+            "bytesInOutput": 13510
+          },
+          "src-js/eval/generators.js": {
+            "bytesInOutput": 180
+          },
+          "src-js/core/php-generator-values.js": {
+            "bytesInOutput": 6236
+          },
+          "src-js/core/php-generator-body.js": {
+            "bytesInOutput": 3672
+          },
+          "src-js/core/php-generators.js": {
+            "bytesInOutput": 4160
+          },
+          "src-js/core/php-static-properties.js": {
+            "bytesInOutput": 2611
+          },
+          "src-js/core/php-objects.js": {
+            "bytesInOutput": 12020
+          },
+          "src-js/core/php-magic.js": {
+            "bytesInOutput": 1328
+          },
+          "src-js/core/php-values.js": {
+            "bytesInOutput": 3690
+          },
+          "src-js/core/php-casts.js": {
+            "bytesInOutput": 1664
+          },
+          "src-js/core/php-symbols.js": {
+            "bytesInOutput": 3079
+          },
+          "src-js/core/php-nullsafe.js": {
+            "bytesInOutput": 655
+          },
+          "src-js/core/php-eval-classes.js": {
+            "bytesInOutput": 454
+          },
+          "src-js/core/php-eval.js": {
+            "bytesInOutput": 2609
+          },
+          "src-js/core/php-collections.js": {
+            "bytesInOutput": 5082
+          },
+          "src-js/core/value.js": {
+            "bytesInOutput": 14463
+          },
+          "src-js/core/php-iterators.js": {
+            "bytesInOutput": 2984
+          }
+        },
+        "bytes": 300589
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js.map": {
+        "imports": [],
+        "exports": [],
+        "inputs": {},
+        "bytes": 23040
+      },
+      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js": {
+        "imports": [],
+        "exports": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h"
+        ],
+        "inputs": {
+          "src-js/core/version.js": {
+            "bytesInOutput": 21
+          },
+          "src-js/modules/catalogue.json": {
+            "bytesInOutput": 2558
+          },
+          "src-js/modules/callables.json": {
+            "bytesInOutput": 1181
+          },
+          "src-js/modules/requirements.js": {
+            "bytesInOutput": 2437
+          },
+          "src-js/modules/runtime.js": {
+            "bytesInOutput": 992
+          }
+        },
+        "bytes": 7344
+      }
+    }
+  }
+}

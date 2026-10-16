@@ -1,3 +1,4 @@
+import {ownArray} from './core/php-arrays.js';
 export const scheduleUpdate = (root, state, changes, originEffectId = null) => {
     let pending = pendingBatches.get(root);
     if (!pending) {
@@ -33,8 +34,16 @@ export const scheduleUpdate = (root, state, changes, originEffectId = null) => {
     }
   };
 export const commit = (root, state, target, value, executionContext = null) => {
-    writePath(state, target, value);
+    validatePhpValue(value, executionContext?.valueType || phpType(value));
+    if (typeof value === 'number' && !Number.isFinite(value)) throw new RangeError('Frontend state must contain finite floats');
     const config = rootConfigs.get(root) || {shared: {}, persisted: {}, types: {}, computed: {}};
+    const data = executionContext?.eventData;
+    const typed = assignType(config.typeRules?.[target], value, executionContext?.valueType || phpType(value), data?.source?.strictTypes ?? true, data);
+    value = typed.value;
+    if (typeof value === 'number' && !Number.isFinite(value)) throw new RangeError('Frontend state must contain finite floats');
+    value = clone(value);
+    writePath(state, target, value); ownArray(state, '@state', state);
+    if (config.valueTypes) config.valueTypes[target] = typed.kind;
     const changes = new Map([[target, value]]);
     recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
     const transaction = transactions.get(root);
@@ -44,19 +53,13 @@ export const commit = (root, state, target, value, executionContext = null) => {
     }
     const persistedTarget = owningTarget(config.persisted, target);
     const persisted = persistedTarget ? config.persisted[persistedTarget] : null;
-    if (persisted) {
-      try {
-        const persistedValue = readPath(state, persistedTarget);
-        const payload = persistedPayload(persisted, persistedValue);
-        if (persisted.storage === 'indexeddb') indexedState('put', persisted.key, payload).catch((error) => root.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target: persistedTarget, error}})));
-        else (persisted.storage === 'session' ? sessionStorage : localStorage).setItem(persisted.key, payload);
-      } catch (error) { root.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target: persistedTarget, error}})); }
-    }
+    if (persisted) persistState(root, persistedTarget, persisted, readPath(state, persistedTarget), config.valueTypes?.[persistedTarget]);
     const sharedTarget = owningTarget(config.shared, target);
     const sharedKey = sharedTarget ? config.shared[sharedTarget] : null;
     if (sharedKey) {
       const sharedValue = readPath(state, sharedTarget);
       sharedState[sharedKey] = sharedValue;
+      sharedValueTypes[sharedKey] = config.valueTypes?.[sharedTarget] || phpType(sharedValue);
       mountedRoots.forEach((otherRoot) => {
         if (otherRoot === root) return;
         const otherConfig = rootConfigs.get(otherRoot) || {};
@@ -64,16 +67,11 @@ export const commit = (root, state, target, value, executionContext = null) => {
         if (!otherTarget) return;
         const otherState = rootStates.get(otherRoot);
         writePath(otherState, otherTarget, sharedValue);
+        if (otherConfig.valueTypes) otherConfig.valueTypes[otherTarget] = sharedValueTypes[sharedKey];
         const otherChanges = new Map([[otherTarget, sharedValue]]);
         recomputeComputed(otherRoot, otherState, otherConfig, otherTarget).forEach((computed, name) => otherChanges.set(name, computed));
         const otherPersisted = otherConfig.persisted?.[otherTarget];
-        if (otherPersisted) {
-          try {
-            const payload = persistedPayload(otherPersisted, sharedValue);
-            if (otherPersisted.storage === 'indexeddb') indexedState('put', otherPersisted.key, payload).catch((error) => otherRoot.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target: otherTarget, error}})));
-            else (otherPersisted.storage === 'session' ? sessionStorage : localStorage).setItem(otherPersisted.key, payload);
-          } catch (error) { otherRoot.dispatchEvent(new CustomEvent('aml:storage-error', {detail: {target: otherTarget, error}})); }
-        }
+        if (otherPersisted) persistState(otherRoot, otherTarget, otherPersisted, sharedValue, sharedValueTypes[sharedKey]);
         scheduleUpdate(otherRoot, otherState, otherChanges);
       });
     }
@@ -94,10 +92,14 @@ export const apply = (scope, state, action, executionContext = null) => {
     }
     const current = readPath(state, action.target);
     const value = resolveData(action.value, state, executionContext?.eventData);
-    let next;
-    if (action.type === 'increment') next = Number(current ?? 0) + Number(value ?? 1);
-    else if (action.type === 'decrement') next = Number(current ?? 0) - Number(value ?? 1);
-    else if (action.type === 'toggle') next = !Boolean(current);
+    let next, updatedKind;
+    if (['increment', 'decrement'].includes(action.type) && (value ?? 1) === 1) {
+      const updated = phpIncrement(current, resolveType({$state: action.target}, state, executionContext?.eventData, current), action.type === 'increment' ? 1 : -1, executionContext?.eventData);
+      next = updated.value; updatedKind = updated.kind;
+    }
+    else if (action.type === 'increment') next = phpArithmetic('add', current, value ?? 1, resolveType({$state: action.target}, state, executionContext?.eventData, current) === 'double', executionContext?.eventData);
+    else if (action.type === 'decrement') next = phpArithmetic('subtract', current, value ?? 1, resolveType({$state: action.target}, state, executionContext?.eventData, current) === 'double', executionContext?.eventData);
+    else if (action.type === 'toggle') next = !phpBool(current);
     else if (action.type === 'set') next = value;
     else if (action.type === 'append') next = [...(Array.isArray(current) ? current : []), value];
     else if (action.type === 'prepend') next = [value, ...(Array.isArray(current) ? current : [])];
@@ -126,13 +128,23 @@ export const apply = (scope, state, action, executionContext = null) => {
     else if (action.type === 'merge') next = {...(current && typeof current === 'object' && !Array.isArray(current) ? current : {}), ...value};
     else if (action.type === 'clear') next = [];
     else throw new Error(`Unknown AML client action: ${action.type}`);
-    commit(scope, state, action.target, next, executionContext);
+    const valueType = updatedKind || (action.type === 'set'
+      ? resolveType(action.value, state, executionContext?.eventData, next)
+      : ['increment', 'decrement'].includes(action.type) && resolveType({$state: action.target}, state, executionContext?.eventData, current) === 'double' ? 'double' : phpType(next));
+    if (valueType === 'integer' && !Number.isSafeInteger(next)) throw new RangeError('Frontend integer exceeds JavaScript safe integer precision');
+    commit(scope, state, action.target, next, {...(executionContext || {}), valueType});
   };
-import { mountedRoots, pendingBatches, pendingEffectOrigins, rootConfigs, rootStates, sharedState, transactions } from './context.js';
+import { mountedRoots, pendingBatches, pendingEffectOrigins, rootConfigs, rootStates, sharedState, sharedValueTypes, transactions } from './context.js';
 import { clone, owningTarget, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
-import { resolveData } from './core/value.js';
-import { indexedState, persistedPayload } from './storage.js';
+import { resolveData, resolveType } from './core/value.js';
+import {persistState} from './browser-storage.js';
 import { render } from './rendering.js';
 import { lifecycle, remember } from './lifecycle.js';
 import { runEffects } from './effects-runtime.js';
 export { resolveData } from './core/value.js';
+
+import { assignType } from './core/php-types.js';
+import { phpArithmetic, phpType, phpBool } from './core/php-values.js';
+
+import { phpIncrement } from './core/php-operators.js';
+import { validatePhpValue } from './core/php-arrays.js';

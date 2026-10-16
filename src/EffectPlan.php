@@ -64,15 +64,19 @@ final readonly class EffectPlan
     /** @param array<string, mixed> $action */
     private static function containsApi(array $action): bool
     {
-        if (($action['type'] ?? null) === 'api') return true;
+        if (in_array($action['type'] ?? null, ['api', 'file'], true)) return true;
         foreach (['actions'] as $key) {
             foreach (($action[$key] ?? []) as $child) {
                 if (is_array($child) && self::containsApi($child)) return true;
             }
         }
-        foreach (['then', 'otherwise'] as $key) {
+        foreach (['then', 'otherwise', 'action', 'init', 'update', 'finally'] as $key) {
             if (is_array($action[$key] ?? null) && self::containsApi($action[$key])) return true;
         }
+        foreach (($action['cases'] ?? []) as $case) {
+            if (is_array($case['action'] ?? null) && self::containsApi($case['action'])) return true;
+        }
+        foreach (($action['catches'] ?? []) as $catch) if (self::containsApi($catch['action'])) return true;
         return false;
     }
 }

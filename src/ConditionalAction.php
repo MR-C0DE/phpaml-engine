@@ -18,7 +18,7 @@ final readonly class ConditionalAction implements ClientInstruction
     ) {
         $this->state = is_string($state) ? StateNamespace::qualify($state) : null;
         $this->left = is_string($state) ? null : $state;
-        if (!in_array($operator, ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'truthy', 'falsy'], true)) {
+        if (!in_array($operator, ['eq', 'neq', 'looseEq', 'looseNeq', 'gt', 'gte', 'lt', 'lte', 'truthy', 'falsy'], true)) {
             throw new \InvalidArgumentException("Unsupported condition operator: {$operator}");
         }
     }
