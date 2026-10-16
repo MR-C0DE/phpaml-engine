@@ -163,6 +163,7 @@ export const runMbstring = (name, items, context, parameters) => {
     return result(chars.slice(start, end).join(''));
   }
   const needle = characters(b, context);
+  if (!size && (context.source?.phpVersion ?? 80400) < 80300 && ['mb_stripos', 'mb_strripos', 'mb_stristr', 'mb_strrichr'].includes(name)) return result(false);
   if (name === 'mb_substr_count') {
     if (!needle.length) valueError('mb_substr_count(): needle must not be empty');
     let start = 0, count = 0, found;

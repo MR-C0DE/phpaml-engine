@@ -87,7 +87,13 @@ export const runFilter = (items, context, invoke, builtin) => {
     if (filter === 275) {
       const v4=ipv4(text), v6=ipv6(text); if (!v4&&!v6 || flags&1048576&&!v4 || flags&2097152&&!v6) return failed;
       if (v4) {const [a,b]=text.split('.').map(Number); if (flags&8388608&&(a===10||a===172&&b>=16&&b<=31||a===192&&b===168) || flags&4194304&&(a===0||a===127||a===169&&b===254||a>=240)) return failed;}
-      else if (flags&8388608&&(v6[0]&0xfe00)===0xfc00 || flags&4194304&&(text.includes('.')||v6.slice(0,5).every((n)=>n===0)&&v6[5]===65535||v6.slice(0,7).every((n)=>n===0)&&v6[7]<=1||(v6[0]&0xffc0)===0xfe80)) return failed;
+      else {
+        const reserved = v6.slice(0,7).every((n)=>n===0)&&v6[7]<=1 || (v6[0]&0xffc0)===0xfe80;
+        const versionReserved = (context.source?.phpVersion ?? 80400) < 80300
+          ? v6[0]===0x5f || v6[0]===0x3ff3 || v6[0]===0x2001&&(v6[1]===0xdb8||v6[1]>=0x10&&v6[1]<=0x1f)
+          : text.includes('.') || v6.slice(0,5).every((n)=>n===0)&&v6[5]===65535;
+        if (flags&8388608&&(v6[0]&0xfe00)===0xfc00 || flags&4194304&&(reserved||versionReserved)) return failed;
+      }
       return text;
     }
     let rawBytes = byteString(text);

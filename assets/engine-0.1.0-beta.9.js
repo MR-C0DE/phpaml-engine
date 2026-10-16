@@ -22995,7 +22995,11 @@ ${traceString(error)}`;
         if (v4) {
           const [a, b] = text3.split(".").map(Number);
           if (flags & 8388608 && (a === 10 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168) || flags & 4194304 && (a === 0 || a === 127 || a === 169 && b === 254 || a >= 240)) return failed;
-        } else if (flags & 8388608 && (v6[0] & 65024) === 64512 || flags & 4194304 && (text3.includes(".") || v6.slice(0, 5).every((n) => n === 0) && v6[5] === 65535 || v6.slice(0, 7).every((n) => n === 0) && v6[7] <= 1 || (v6[0] & 65472) === 65152)) return failed;
+        } else {
+          const reserved = v6.slice(0, 7).every((n) => n === 0) && v6[7] <= 1 || (v6[0] & 65472) === 65152;
+          const versionReserved = (context2.source?.phpVersion ?? 80400) < 80300 ? v6[0] === 95 || v6[0] === 16371 || v6[0] === 8193 && (v6[1] === 3512 || v6[1] >= 16 && v6[1] <= 31) : text3.includes(".") || v6.slice(0, 5).every((n) => n === 0) && v6[5] === 65535;
+          if (flags & 8388608 && (v6[0] & 65024) === 64512 || flags & 4194304 && (reserved || versionReserved)) return failed;
+        }
         return text3;
       }
       let rawBytes = byteString(text3);
@@ -24202,7 +24206,7 @@ ${traceString(error)}`;
         const number = phpFloat(v, context2), p = precision === void 0 || precision === -1 ? 6 : precision;
         numeric3 = true;
         if (!Number.isFinite(number)) {
-          value = Number.isNaN(number) ? "NaN" : number < 0 ? "-INF" : "INF";
+          value = Number.isNaN(number) ? "NaN" : number < 0 && (context2.source?.phpVersion ?? 80400) >= 80400 ? "-INF" : "INF";
           numeric3 = false;
         } else {
           if (p > 100) throw limit("sprintf(): floating precision is limited to 100 digits");
@@ -25152,6 +25156,7 @@ ${traceString(error)}`;
       return result2(chars.slice(start, end).join(""));
     }
     const needle = characters(b, context2);
+    if (!size2 && (context2.source?.phpVersion ?? 80400) < 80300 && ["mb_stripos", "mb_strripos", "mb_stristr", "mb_strrichr"].includes(name)) return result2(false);
     if (name === "mb_substr_count") {
       if (!needle.length) valueError2("mb_substr_count(): needle must not be empty");
       let start = 0, count = 0, found2;
@@ -25201,7 +25206,7 @@ ${traceString(error)}`;
     const negative = value[0] === "-", parts = value.replace(/^[+-]/, "").split(".");
     if (parts.join("").length > MAX_DIGITS) throw limit("Frontend BCMath operands are limited to 4096 decimal digits");
     const fraction = (parts[1] || "").replace(/0+$/, ""), raw = (parts[0] + fraction).replace(/^0+/, "") || "0";
-    return { n: BigInt((negative ? "-" : "") + raw), s: fraction.length };
+    return { n: BigInt((negative ? "-" : "") + raw), s: fraction.length, rawScale: (parts[1] || "").length };
   };
   var multiply = (a, b, context2) => {
     const x = digits(a), y = digits(b);
@@ -25275,6 +25280,7 @@ ${traceString(error)}`;
       return result2(fixed(integerRoot(shift(x.n, 2 * scale - x.s, context2), context2), scale));
     }
     const y = parse(b, name, context2);
+    const integerScale = (number) => (context2.source?.phpVersion ?? 80400) < 80300 ? number.rawScale : number.s;
     if (name === "bccomp") {
       const left = shift(x.n, scale - x.s, context2), right = shift(y.n, scale - y.s, context2);
       return result2(left < right ? -1 : left > right ? 1 : 0);
@@ -25292,7 +25298,7 @@ ${traceString(error)}`;
     }
     if (name === "bcpowmod") {
       const modulus = parse(c, name, context2);
-      if (x.s || y.s || modulus.s) invalid("bcpowmod(): arguments must have no fractional part");
+      if (integerScale(x) || integerScale(y) || integerScale(modulus)) invalid("bcpowmod(): arguments must have no fractional part");
       if (y.n < 0n) invalid("bcpowmod(): exponent must be greater than or equal to 0");
       if (modulus.n === 0n) zeroDivision();
       let factor = x.n % modulus.n, exponent = y.n, output = 1n % modulus.n;
@@ -25305,7 +25311,7 @@ ${traceString(error)}`;
       return result2(format2({ n: output, s: 0 }, scale, context2));
     }
     if (name === "bcpow") {
-      if (y.s) invalid("bcpow(): exponent must have no fractional part");
+      if (integerScale(y)) invalid("bcpow(): exponent must have no fractional part");
       if (y.n < -9223372036854775808n || y.n > 9223372036854775807n) invalid("bcpow(): exponent is out of range");
       if (abs(y.n) > 10000n) throw limit("Frontend bcpow exponent is limited to \xB110000");
       if (x.n === 0n && y.n < 0n) {
@@ -25491,8 +25497,8 @@ ${" ".repeat(depth * 8)})
       const modern = (context2.source?.phpVersion ?? 80400) >= 80300;
       let first = a, last = b, step = Math.abs(c), character = typeof a === "string" && typeof b === "string" && a !== "" && b !== "" && (modern ? !numericString2(a) || !numericString2(b) : !numericString2(a) && !numericString2(b));
       if (step === 0 || !Number.isFinite(step)) valueError3("range(): step must be a non-zero finite number");
-      if (character && !Number.isInteger(step)) {
-        warn(context2, "range(): character boundaries converted to 0 for a fractional step");
+      if (character && (!Number.isInteger(step) || !modern && items[2].kind === "double")) {
+        if (modern) warn(context2, "range(): character boundaries converted to 0 for a fractional step");
         first = last = 0;
         character = false;
       } else if (character) {

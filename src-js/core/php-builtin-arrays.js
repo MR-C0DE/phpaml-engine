@@ -45,7 +45,7 @@ export const runArrays = (name, items, context, invoke) => {
     const modern = (context.source?.phpVersion ?? 80400) >= 80300;
     let first = a, last = b, step = Math.abs(c), character = typeof a === 'string' && typeof b === 'string' && a !== '' && b !== '' && (modern ? !numericString(a) || !numericString(b) : !numericString(a) && !numericString(b));
     if (step === 0 || !Number.isFinite(step)) valueError('range(): step must be a non-zero finite number');
-    if (character && !Number.isInteger(step)) {warn(context, 'range(): character boundaries converted to 0 for a fractional step'); first = last = 0; character = false;}
+    if (character && (!Number.isInteger(step) || !modern && items[2].kind === 'double')) {if (modern) warn(context, 'range(): character boundaries converted to 0 for a fractional step'); first = last = 0; character = false;}
     else if (character) {if (modern && (bytes(a).length > 1 || bytes(b).length > 1)) warn(context, 'range(): character boundaries must contain a single byte'); first = bytes(a)[0]; last = bytes(b)[0];}
     else {if (modern && [a, b].some((value) => typeof value === 'string' && !numericString(value))) warn(context, 'range(): non-numeric or empty boundary converted to 0'); first = phpFloat(first); last = phpFloat(last);}
     if (!Number.isFinite(first) || !Number.isFinite(last)) valueError('range(): boundaries must be finite');

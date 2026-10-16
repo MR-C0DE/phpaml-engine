@@ -31,7 +31,7 @@ export const formatString = (format, args, context) => {
       if (specifier === 'X') value = value.toUpperCase();
     } else if ('eEfFgGhH'.includes(specifier)) {
       const number = phpFloat(v, context), p = precision === undefined || precision === -1 ? 6 : precision; numeric = true;
-      if (!Number.isFinite(number)) {value = Number.isNaN(number) ? 'NaN' : number < 0 ? '-INF' : 'INF'; numeric = false;}
+      if (!Number.isFinite(number)) {value = Number.isNaN(number) ? 'NaN' : number < 0 && (context.source?.phpVersion ?? 80400) >= 80400 ? '-INF' : 'INF'; numeric = false;}
       else {
         if (p > 100) throw limit('sprintf(): floating precision is limited to 100 digits');
         if ('fF'.includes(specifier)) value = fixedDecimal(Math.abs(number), p);

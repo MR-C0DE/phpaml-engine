@@ -3,7 +3,7 @@ import {
   limit,
   phpType,
   work
-} from "./chunk-PWURVEEA.js";
+} from "./chunk-PVACVZCB.js";
 import {
   __export,
   registerModule
@@ -47,7 +47,7 @@ var parse = (value, name, context) => {
   const negative = value[0] === "-", parts = value.replace(/^[+-]/, "").split(".");
   if (parts.join("").length > MAX_DIGITS) throw limit("Frontend BCMath operands are limited to 4096 decimal digits");
   const fraction = (parts[1] || "").replace(/0+$/, ""), raw = (parts[0] + fraction).replace(/^0+/, "") || "0";
-  return { n: BigInt((negative ? "-" : "") + raw), s: fraction.length };
+  return { n: BigInt((negative ? "-" : "") + raw), s: fraction.length, rawScale: (parts[1] || "").length };
 };
 var multiply = (a, b, context) => {
   const x = digits(a), y = digits(b);
@@ -121,6 +121,7 @@ var runBCMath = (name, items, context, parameters) => {
     return result(fixed(integerRoot(shift(x.n, 2 * scale - x.s, context), context), scale));
   }
   const y = parse(b, name, context);
+  const integerScale = (number) => (context.source?.phpVersion ?? 80400) < 80300 ? number.rawScale : number.s;
   if (name === "bccomp") {
     const left = shift(x.n, scale - x.s, context), right = shift(y.n, scale - y.s, context);
     return result(left < right ? -1 : left > right ? 1 : 0);
@@ -138,7 +139,7 @@ var runBCMath = (name, items, context, parameters) => {
   }
   if (name === "bcpowmod") {
     const modulus = parse(c, name, context);
-    if (x.s || y.s || modulus.s) invalid("bcpowmod(): arguments must have no fractional part");
+    if (integerScale(x) || integerScale(y) || integerScale(modulus)) invalid("bcpowmod(): arguments must have no fractional part");
     if (y.n < 0n) invalid("bcpowmod(): exponent must be greater than or equal to 0");
     if (modulus.n === 0n) zeroDivision();
     let factor = x.n % modulus.n, exponent = y.n, output = 1n % modulus.n;
@@ -151,7 +152,7 @@ var runBCMath = (name, items, context, parameters) => {
     return result(format({ n: output, s: 0 }, scale, context));
   }
   if (name === "bcpow") {
-    if (y.s) invalid("bcpow(): exponent must have no fractional part");
+    if (integerScale(y)) invalid("bcpow(): exponent must have no fractional part");
     if (y.n < -9223372036854775808n || y.n > 9223372036854775807n) invalid("bcpow(): exponent is out of range");
     if (abs(y.n) > 10000n) throw limit("Frontend bcpow exponent is limited to \xB110000");
     if (x.n === 0n && y.n < 0n) {

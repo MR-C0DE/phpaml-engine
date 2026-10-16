@@ -7120,7 +7120,11 @@ var runFilter = (items, context, invoke, builtin) => {
       if (v4) {
         const [a, b] = text3.split(".").map(Number);
         if (flags & 8388608 && (a === 10 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168) || flags & 4194304 && (a === 0 || a === 127 || a === 169 && b === 254 || a >= 240)) return failed;
-      } else if (flags & 8388608 && (v6[0] & 65024) === 64512 || flags & 4194304 && (text3.includes(".") || v6.slice(0, 5).every((n) => n === 0) && v6[5] === 65535 || v6.slice(0, 7).every((n) => n === 0) && v6[7] <= 1 || (v6[0] & 65472) === 65152)) return failed;
+      } else {
+        const reserved = v6.slice(0, 7).every((n) => n === 0) && v6[7] <= 1 || (v6[0] & 65472) === 65152;
+        const versionReserved = (context.source?.phpVersion ?? 80400) < 80300 ? v6[0] === 95 || v6[0] === 16371 || v6[0] === 8193 && (v6[1] === 3512 || v6[1] >= 16 && v6[1] <= 31) : text3.includes(".") || v6.slice(0, 5).every((n) => n === 0) && v6[5] === 65535;
+        if (flags & 8388608 && (v6[0] & 65024) === 64512 || flags & 4194304 && (reserved || versionReserved)) return failed;
+      }
       return text3;
     }
     let rawBytes = byteString(text3);
@@ -7782,7 +7786,7 @@ var formatString = (format, args, context) => {
       const number = phpFloat(v, context), p = precision === void 0 || precision === -1 ? 6 : precision;
       numeric3 = true;
       if (!Number.isFinite(number)) {
-        value = Number.isNaN(number) ? "NaN" : number < 0 ? "-INF" : "INF";
+        value = Number.isNaN(number) ? "NaN" : number < 0 && (context.source?.phpVersion ?? 80400) >= 80400 ? "-INF" : "INF";
         numeric3 = false;
       } else {
         if (p > 100) throw limit("sprintf(): floating precision is limited to 100 digits");
@@ -8722,8 +8726,8 @@ var runArrays = (name, items, context, invoke) => {
     const modern = (context.source?.phpVersion ?? 80400) >= 80300;
     let first = a, last = b, step = Math.abs(c), character = typeof a === "string" && typeof b === "string" && a !== "" && b !== "" && (modern ? !numericString2(a) || !numericString2(b) : !numericString2(a) && !numericString2(b));
     if (step === 0 || !Number.isFinite(step)) valueError2("range(): step must be a non-zero finite number");
-    if (character && !Number.isInteger(step)) {
-      warn(context, "range(): character boundaries converted to 0 for a fractional step");
+    if (character && (!Number.isInteger(step) || !modern && items[2].kind === "double")) {
+      if (modern) warn(context, "range(): character boundaries converted to 0 for a fractional step");
       first = last = 0;
       character = false;
     } else if (character) {

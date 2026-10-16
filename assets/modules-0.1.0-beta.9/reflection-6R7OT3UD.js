@@ -13,7 +13,7 @@ import {
   phpType,
   resolvedNode,
   staticPropertyReference
-} from "./chunk-PWURVEEA.js";
+} from "./chunk-PVACVZCB.js";
 import {
   __export,
   registerModule
