@@ -9084,8 +9084,9 @@ var phpRound = (value, precision = 0, mode = 1, phpVersion = 80400) => {
   const restore = (integer) => precision > 0 ? integer / scale : integer * scale;
   if (phpVersion < 80400) {
     const nearest = (number) => {
-      let result2 = Math.floor(number + 0.5);
-      if (number === result2 - 0.5 && (mode === 2 || mode === 3 && result2 % 2 !== 0 || mode === 4 && result2 % 2 === 0)) result2--;
+      const direction = number < 0 ? -1 : 1;
+      let result2 = number < 0 ? Math.ceil(number - 0.5) : Math.floor(number + 0.5);
+      if (number === result2 - direction * 0.5 && (mode === 2 || mode === 3 && result2 % 2 !== 0 || mode === 4 && result2 % 2 === 0)) result2 -= direction;
       return result2;
     };
     let order = Math.floor(Math.log10(magnitude));
@@ -9094,13 +9095,13 @@ var phpRound = (value, precision = 0, mode = 1, phpVersion = 80400) => {
     let scaled;
     if (places > precision && places - 15 < precision) {
       const factor = 10 ** Math.abs(places);
-      scaled = nearest(places >= 0 ? magnitude * factor : magnitude / factor) / 10 ** (places - precision);
+      scaled = nearest(places >= 0 ? value * factor : value / factor) / 10 ** (places - precision);
     } else {
-      scaled = precision >= 0 ? magnitude * scale : magnitude / scale;
-      if (scaled >= 1e15) return value;
+      scaled = precision >= 0 ? value * scale : value / scale;
+      if (Math.abs(scaled) >= 1e15) return value;
     }
     const integer = nearest(scaled);
-    return (value < 0 ? -1 : 1) * (Math.abs(precision) < 23 ? restore(integer) : Number(`${integer}e${-precision}`));
+    return Math.abs(precision) < 23 ? restore(integer) : Number(`${Object.is(integer, -0) ? "-0" : integer}e${-precision}`);
   }
   let whole = Math.floor(precision > 0 ? magnitude * scale : magnitude / scale);
   if (restore(whole + 1) === magnitude) whole++;

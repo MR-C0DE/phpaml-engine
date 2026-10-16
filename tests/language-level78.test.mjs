@@ -47,6 +47,12 @@ test('rounding keeps PHP float kinds, ties, negative precision and version seman
   assert.equal(phpRound(1.4999999999999998, 0, 1, 80300), 2);
   assert.equal(phpRound(1.4999999999999998, 0, 1, 80400), 1);
   assert.equal(phpRound(1.5, 0, 999, 80300), 2);
+  for (const version of [80200, 80300, 80400]) {
+    assert.equal(phpRound(-0.005, 2, 2, version), version < 80400 ? 0 : -0);
+    assert.equal(phpRound(-0.005, 2, 3, version), version < 80400 ? 0 : -0);
+    assert.equal(phpRound(-0.004, 2, 2, version), -0);
+    assert.equal(phpRound(-0, 2, 2, version), -0);
+  }
   const node = call('round', 2), context = {};
   const value = resolveData(node, {}, context);
   assert.equal(resolveType(node, {}, context, value), 'double');

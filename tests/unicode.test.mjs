@@ -74,3 +74,16 @@ test('NumberFormatter carries the server ICU currency default for decimal and pe
     }
   }
 });
+
+test('empty grapheme searches preserve the PHP runtime indexing convention', () => {
+  const input = 'aé👨‍👩‍👧‍👦éz';
+  for (const graphemeEmptySearchCodeUnits of [false, true]) {
+    const context = {source: {...source, graphemeEmptySearchCodeUnits}};
+    for (const name of ['grapheme_strpos', 'grapheme_stripos', 'grapheme_strrpos', 'grapheme_strripos']) {
+      assert.equal(call(name, [input, '', -2], context), graphemeEmptySearchCodeUnits ? 13 : 3);
+      assert.equal(call(name, [input, '', 0], context), name.includes('strr') ? (graphemeEmptySearchCodeUnits ? 16 : 5) : 0);
+    }
+    assert.equal(call('grapheme_strstr', [input, '', false], context), input);
+    assert.equal(call('grapheme_strstr', [input, '', true], context), '');
+  }
+});

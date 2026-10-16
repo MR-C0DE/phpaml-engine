@@ -20,7 +20,10 @@ const find = (haystack, needle, offset, reverse, insensitive, context, exact=fal
   const parts=clusters(haystack),count=parts.length;
   if(offset < -count || offset > count)throw failure('ValueError','grapheme search: offset must be contained in the haystack');
   const start=offset<0?count+offset:offset, positions=[0];for(const part of parts)positions.push(positions.at(-1)+part.length);
-  if(needle==='')return {index:reverse&&offset>=0?haystack.length:positions[start],position:reverse&&offset>=0?haystack.length:positions[start]};
+  if(needle===''){
+    const index=reverse&&offset>=0?count:start,position=positions[index];
+    return {index:context.source?.graphemeEmptySearchCodeUnits?position:index,position};
+  }
   const search=exact?needle:key(needle,insensitive),pieces=parts.map((part)=>exact?part:key(part,insensitive)),boundaries=[0];for(const part of pieces)boundaries.push(boundaries.at(-1)+part.length);
   const input=pieces.join('');let found=-1;
   if(search==='')return null;

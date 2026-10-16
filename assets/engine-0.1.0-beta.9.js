@@ -6842,7 +6842,10 @@ if (!window.AMLEngine?.mount) {
     if (offset < -count || offset > count) throw failure("ValueError", "grapheme search: offset must be contained in the haystack");
     const start = offset < 0 ? count + offset : offset, positions = [0];
     for (const part of parts) positions.push(positions.at(-1) + part.length);
-    if (needle === "") return { index: reverse && offset >= 0 ? haystack.length : positions[start], position: reverse && offset >= 0 ? haystack.length : positions[start] };
+    if (needle === "") {
+      const index = reverse && offset >= 0 ? count : start, position2 = positions[index];
+      return { index: context2.source?.graphemeEmptySearchCodeUnits ? position2 : index, position: position2 };
+    }
     const search = exact ? needle : key(needle, insensitive), pieces = parts.map((part) => exact ? part : key(part, insensitive)), boundaries = [0];
     for (const part of pieces) boundaries.push(boundaries.at(-1) + part.length);
     const input = pieces.join("");
@@ -25850,8 +25853,9 @@ ${" ".repeat(depth * 8)})
     const restore2 = (integer) => precision > 0 ? integer / scale : integer * scale;
     if (phpVersion < 80400) {
       const nearest = (number) => {
-        let result3 = Math.floor(number + 0.5);
-        if (number === result3 - 0.5 && (mode === 2 || mode === 3 && result3 % 2 !== 0 || mode === 4 && result3 % 2 === 0)) result3--;
+        const direction = number < 0 ? -1 : 1;
+        let result3 = number < 0 ? Math.ceil(number - 0.5) : Math.floor(number + 0.5);
+        if (number === result3 - direction * 0.5 && (mode === 2 || mode === 3 && result3 % 2 !== 0 || mode === 4 && result3 % 2 === 0)) result3 -= direction;
         return result3;
       };
       let order = Math.floor(Math.log10(magnitude));
@@ -25860,13 +25864,13 @@ ${" ".repeat(depth * 8)})
       let scaled;
       if (places > precision && places - 15 < precision) {
         const factor = 10 ** Math.abs(places);
-        scaled = nearest(places >= 0 ? magnitude * factor : magnitude / factor) / 10 ** (places - precision);
+        scaled = nearest(places >= 0 ? value * factor : value / factor) / 10 ** (places - precision);
       } else {
-        scaled = precision >= 0 ? magnitude * scale : magnitude / scale;
-        if (scaled >= 1e15) return value;
+        scaled = precision >= 0 ? value * scale : value / scale;
+        if (Math.abs(scaled) >= 1e15) return value;
       }
       const integer = nearest(scaled);
-      return (value < 0 ? -1 : 1) * (Math.abs(precision) < 23 ? restore2(integer) : Number(`${integer}e${-precision}`));
+      return Math.abs(precision) < 23 ? restore2(integer) : Number(`${Object.is(integer, -0) ? "-0" : integer}e${-precision}`);
     }
     let whole = Math.floor(precision > 0 ? magnitude * scale : magnitude / scale);
     if (restore2(whole + 1) === magnitude) whole++;

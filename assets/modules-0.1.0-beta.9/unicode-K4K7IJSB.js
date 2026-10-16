@@ -11,7 +11,7 @@ import {
   text,
   warn,
   work
-} from "./chunk-AK2NYU3I.js";
+} from "./chunk-PWURVEEA.js";
 import {
   __export,
   registerModule
@@ -53,7 +53,10 @@ var find = (haystack, needle, offset, reverse, insensitive, context, exact = fal
   if (offset < -count || offset > count) throw failure("ValueError", "grapheme search: offset must be contained in the haystack");
   const start = offset < 0 ? count + offset : offset, positions = [0];
   for (const part of parts) positions.push(positions.at(-1) + part.length);
-  if (needle === "") return { index: reverse && offset >= 0 ? haystack.length : positions[start], position: reverse && offset >= 0 ? haystack.length : positions[start] };
+  if (needle === "") {
+    const index = reverse && offset >= 0 ? count : start, position2 = positions[index];
+    return { index: context.source?.graphemeEmptySearchCodeUnits ? position2 : index, position: position2 };
+  }
   const search = exact ? needle : key(needle, insensitive), pieces = parts.map((part) => exact ? part : key(part, insensitive)), boundaries = [0];
   for (const part of pieces) boundaries.push(boundaries.at(-1) + part.length);
   const input = pieces.join("");

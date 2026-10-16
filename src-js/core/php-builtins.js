@@ -64,8 +64,9 @@ export const phpRound = (value, precision = 0, mode = 1, phpVersion = 80400) => 
   if (phpVersion < 80400) {
     // PHP 8.2/8.3 pre-round near ties to 15 significant decimal digits.
     const nearest = (number) => {
-      let result = Math.floor(number + 0.5);
-      if (number === result - 0.5 && (mode === 2 || mode === 3 && result % 2 !== 0 || mode === 4 && result % 2 === 0)) result--;
+      const direction = number < 0 ? -1 : 1;
+      let result = number < 0 ? Math.ceil(number - 0.5) : Math.floor(number + 0.5);
+      if (number === result - direction * 0.5 && (mode === 2 || mode === 3 && result % 2 !== 0 || mode === 4 && result % 2 === 0)) result -= direction;
       return result;
     };
     let order = Math.floor(Math.log10(magnitude));
@@ -74,13 +75,13 @@ export const phpRound = (value, precision = 0, mode = 1, phpVersion = 80400) => 
     let scaled;
     if (places > precision && places - 15 < precision) {
       const factor = 10 ** Math.abs(places);
-      scaled = nearest(places >= 0 ? magnitude * factor : magnitude / factor) / 10 ** (places - precision);
+      scaled = nearest(places >= 0 ? value * factor : value / factor) / 10 ** (places - precision);
     } else {
-      scaled = precision >= 0 ? magnitude * scale : magnitude / scale;
-      if (scaled >= 1e15) return value;
+      scaled = precision >= 0 ? value * scale : value / scale;
+      if (Math.abs(scaled) >= 1e15) return value;
     }
     const integer = nearest(scaled);
-    return (value < 0 ? -1 : 1) * (Math.abs(precision) < 23 ? restore(integer) : Number(`${integer}e${-precision}`));
+    return Math.abs(precision) < 23 ? restore(integer) : Number(`${Object.is(integer, -0) ? '-0' : integer}e${-precision}`);
   }
   let whole = Math.floor(precision > 0 ? magnitude * scale : magnitude / scale);
   if (restore(whole + 1) === magnitude) whole++;
