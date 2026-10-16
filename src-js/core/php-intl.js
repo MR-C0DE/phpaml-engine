@@ -16,7 +16,7 @@ const createData=(locale,style,pattern,context)=>{
   let tag;try{tag=Intl.getCanonicalLocales(locale.replaceAll('_','-'))[0];}catch{throw unsupported('invalid locale');}
   if(!Intl.NumberFormat.supportedLocalesOf([tag]).length)throw unsupported('locale is not available in this browser');
   let currency='XXX';
-  if(styles[style]==='currency'){const key=tag.toLowerCase();currency=currencies[key]||currencies[key.split('-')[0]]||'XXX';}
+  if(styles[style]==='currency'||context.source?.intlCurrencyFromLocale){const key=tag.toLowerCase();currency=currencies[key]||currencies[key.split('-')[0]]||'XXX';}
   const options={style:styles[style],...(styles[style]==='currency'?{currency,currencySign:style===12?'accounting':'standard'}:{})};
   const defaults=new Intl.NumberFormat(tag,options).resolvedOptions();
   if(!new Intl.NumberFormat(tag,{roundingMode:'halfEven'}).resolvedOptions().roundingMode)throw unsupported('this browser does not support the required Intl rounding modes');

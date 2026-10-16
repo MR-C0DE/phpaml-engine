@@ -70,7 +70,6 @@ export const nextArrayKey = (value, context = null) => {
   const info = metadata.get(value);
   let next = info?.next;
   if (next == null) { const integers = arrayEntries(value).map(([key]) => key).filter((key) => typeof key === 'number'); next = integers.length ? Math.max(...integers) + 1 : 0; }
-  if ((context?.source?.phpVersion ?? 80400) < 80300) next = Math.max(0, next);
   if (!Number.isSafeInteger(next)) throw new RangeError('Frontend array index exceeds safe integer precision');
   return next;
 };
@@ -87,7 +86,8 @@ export const arrayWrite = (value, key, item, kind = kindOf(item), context = null
   types.set(key, kind);
   const previous = nextArrayKey(value, context);
   const numericCount = arrayEntries(value).filter(([candidate]) => typeof candidate === 'number').length;
-  const next = typeof key === 'number' ? numericCount === 0 && previous === 0 ? key + 1 : Math.max(previous, key + 1) : previous;
+  let next = typeof key === 'number' ? numericCount === 0 && previous === 0 ? key + 1 : Math.max(previous, key + 1) : previous;
+  if (!context?.arrayLiteral && (context?.source?.phpVersion ?? 80400) < 80300 && previous >= 0) next = Math.max(0, next);
   return makeArray(entries, types, next, metadata.get(value)?.cursor ?? 0, refs, metadata.get(value)?.origin);
 };
 export const arrayUnset = (value, key, context = null) => {

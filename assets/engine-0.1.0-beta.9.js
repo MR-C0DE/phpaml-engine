@@ -256,7 +256,6 @@ if (!window.AMLEngine?.mount) {
       const integers = arrayEntries(value).map(([key2]) => key2).filter((key2) => typeof key2 === "number");
       next2 = integers.length ? Math.max(...integers) + 1 : 0;
     }
-    if ((context2?.source?.phpVersion ?? 80400) < 80300) next2 = Math.max(0, next2);
     if (!Number.isSafeInteger(next2)) throw new RangeError("Frontend array index exceeds safe integer precision");
     return next2;
   };
@@ -274,7 +273,8 @@ if (!window.AMLEngine?.mount) {
     types.set(key2, kind);
     const previous = nextArrayKey(value, context2);
     const numericCount = arrayEntries(value).filter(([candidate]) => typeof candidate === "number").length;
-    const next2 = typeof key2 === "number" ? numericCount === 0 && previous === 0 ? key2 + 1 : Math.max(previous, key2 + 1) : previous;
+    let next2 = typeof key2 === "number" ? numericCount === 0 && previous === 0 ? key2 + 1 : Math.max(previous, key2 + 1) : previous;
+    if (!context2?.arrayLiteral && (context2?.source?.phpVersion ?? 80400) < 80300 && previous >= 0) next2 = Math.max(0, next2);
     return makeArray(entries, types, next2, metadata.get(value)?.cursor ?? 0, refs, metadata.get(value)?.origin);
   };
   var arrayUnset = (value, key2, context2 = null) => {
@@ -6927,7 +6927,7 @@ if (!window.AMLEngine?.mount) {
     }
     if (!Intl.NumberFormat.supportedLocalesOf([tag]).length) throw unsupported2("locale is not available in this browser");
     let currency = "XXX";
-    if (styles[style] === "currency") {
+    if (styles[style] === "currency" || context2.source?.intlCurrencyFromLocale) {
       const key2 = tag.toLowerCase();
       currency = intl_currencies_default[key2] || intl_currencies_default[key2.split("-")[0]] || "XXX";
     }
@@ -22174,7 +22174,7 @@ ${traceString(error)}`;
 
   // src-js/core/php-generators.js
   var generators = /* @__PURE__ */ new WeakMap();
-  var generatorDefinition = (version = 80400) => ({ name: "Generator", ancestors: ["Iterator", "Traversable"], parent: null, interfaces: ["Iterator"], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(["rewind", "valid", "current", "key", "next", "send", "throw", "getReturn", version >= 80400 ? "__debugInfo" : "__wakeup"].map((name) => [name.toLowerCase(), { name, id: "@generator:" + name.toLowerCase(), visibility: "public", owner: "Generator", static: false, abstract: false }])) });
+  var generatorDefinition = (version = 80400) => ({ name: "Generator", ancestors: ["Iterator", "Traversable"], parent: null, interfaces: ["Iterator"], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(["rewind", "valid", "current", "key", "next", "send", "throw", "getReturn", ...version >= 80400 ? ["__debugInfo"] : []].map((name) => [name.toLowerCase(), { name, id: "@generator:" + name.toLowerCase(), visibility: "public", owner: "Generator", static: false, abstract: false }])) });
   var empty2 = () => ({ value: null, kind: "NULL" });
   var failure3 = (message) => Object.assign(new Error(message), { name: "Exception" });
   var generatorMethods = ["current", "key", "next", "rewind", "valid", "send", "throw", "getreturn", "__debuginfo", "__wakeup"];
@@ -22476,11 +22476,11 @@ ${traceString(error)}`;
     const fn = callable(target, context2);
     return fn.generator ? generatorSignature(fn.method) : context2.functions?.[fn.id];
   };
-  var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null) => {
+  var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null, magicClosure = false) => {
     if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11));
     const fn = function() {
     };
-    closures.set(fn, { id, thisObject, objectScope, calledClass, magicName });
+    closures.set(fn, { id, thisObject, objectScope, calledClass, magicName, magicClosure });
     return fn;
   };
   var declareFunction = (id, context2) => {
@@ -22548,6 +22548,10 @@ ${traceString(error)}`;
     const closure = callable(target, context2), definition = context2.functions?.[closure.id];
     if (definition?.internal && argumentsList.length > definition.parameters.length) throw failure4("ArgumentCountError", "Too many enum method arguments");
     if (closure.generator) return generatorMethod(closure.generator, closure.method, argumentsList, context2);
+    if (closure.magicClosure && (context2.source?.phpVersion ?? 80400) < 80300) {
+      const named2 = argumentsList.find((argument) => argument.name !== void 0);
+      if (named2) throw new Error(`Unknown named parameter $${named2.name}`);
+    }
     if (closure.magicName !== null && closure.magicName !== void 0) argumentsList = [{ value: closure.magicName, kind: "string" }, { value: magicArguments(argumentsList), kind: "array" }];
     if (definition?.builtin) return invokeBuiltin(definition.builtin, argumentsList, state, context2);
     if (!definition || !definition.declared && !context2.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition?.name || closure.id}()`);
@@ -26485,7 +26489,7 @@ ${" ".repeat(depth * 8)})
     if (!found || !objectMemberAccessible(found, context2)) {
       const bound2 = value || (options.forward && objectIs(context2.thisObject, name) ? context2.thisObject : null);
       const magic = magicMember(name, bound2 ? "__call" : "__callstatic", context2);
-      if (magic) return bindMethod(magic.id, bound2, magic.owner, options.forward ? context2.calledClass || name : instance?.definition.name || name, options.name);
+      if (magic) return bindMethod(magic.id, bound2, magic.owner, options.forward ? context2.calledClass || name : instance?.definition.name || name, options.name, options.firstClass || false);
     }
     if (!found) throw new Error(`Call to undefined method ${name}::${options.name}()`);
     if (!objectMemberAccessible(found, context2)) throw new Error(`Call to ${found.visibility} method ${found.owner}::${options.name}()`);
@@ -26600,7 +26604,7 @@ ${" ".repeat(depth * 8)})
       const result2 = evaluateException({ operation: "exceptionGet", left: expression.left, right: { ...options, method: options.name.toLowerCase() } }, state, context2, () => value, resolveType);
       return { value: result2, kind: phpType(result2) };
     }
-    const callable2 = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method2(value, options, context2);
+    const callable2 = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method2(value, { ...options, firstClass: expression.operation === "objectMethodRef" }, context2);
     return expression.operation === "objectMethodRef" ? { value: callable2, kind: "object" } : evaluateCall({ right: options }, state, context2, callable2);
   };
   var methodCallable = (value, context2) => {
@@ -27082,21 +27086,22 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     }
     if (operation === "array") {
       let result2 = makeArray();
+      const arrayContext = { ...context2, arrayLiteral: true };
       for (const entry of expression.left) {
         if (Object.hasOwn(entry, "spread")) {
           const source2 = value(entry.spread);
           for (const { key: key2, item } of spreadEntries(source2, context2)) {
             const ref = isPhpArray(source2) && arrayElementReference(source2, key2.value);
-            result2 = ref ? arrayWithReference(result2, key2.value, ref, context2, key2.kind === "integer") : arrayWrite(result2, key2.value, item.value, item.kind, context2, key2.kind === "integer");
+            result2 = ref ? arrayWithReference(result2, key2.value, ref, arrayContext, key2.kind === "integer") : arrayWrite(result2, key2.value, item.value, item.kind, arrayContext, key2.kind === "integer");
           }
         } else {
           const key2 = Object.hasOwn(entry, "key") ? value(entry.key) : null;
           if (entry.reference) {
-            result2 = arrayWithReference(result2, key2, promoteReference(entry.value, state, context2), context2, !Object.hasOwn(entry, "key"));
+            result2 = arrayWithReference(result2, key2, promoteReference(entry.value, state, context2), arrayContext, !Object.hasOwn(entry, "key"));
             continue;
           }
           const item = value(entry.value);
-          result2 = arrayWrite(result2, key2, item, kind(entry.value, item), context2, !Object.hasOwn(entry, "key"));
+          result2 = arrayWrite(result2, key2, item, kind(entry.value, item), arrayContext, !Object.hasOwn(entry, "key"));
         }
       }
       return { value: result2, kind: "array" };

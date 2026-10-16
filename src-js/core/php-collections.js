@@ -28,15 +28,16 @@ export const evaluateCollection = (expression, state, context, resolve, type, re
   for (const node of [expression.right, expression.right?.callback]) if (node && Object.hasOwn(node, '$callable')) {const fn = value(node.$callable); if (!isFrontendCallable(fn, context)) throw new TypeError('Expected a compiled frontend callable'); callableCache.set(node, fn);}
   if (operation === 'array') {
     let result = makeArray();
+    const arrayContext = {...context, arrayLiteral: true};
     for (const entry of expression.left) {
       if (Object.hasOwn(entry, 'spread')) {
         const source = value(entry.spread);
-        for (const {key, item} of spreadEntries(source, context)) {const ref = isPhpArray(source) && arrayElementReference(source, key.value); result = ref ? arrayWithReference(result, key.value, ref, context, key.kind === 'integer') : arrayWrite(result, key.value, item.value, item.kind, context, key.kind === 'integer');}
+        for (const {key, item} of spreadEntries(source, context)) {const ref = isPhpArray(source) && arrayElementReference(source, key.value); result = ref ? arrayWithReference(result, key.value, ref, arrayContext, key.kind === 'integer') : arrayWrite(result, key.value, item.value, item.kind, arrayContext, key.kind === 'integer');}
       } else {
         const key = Object.hasOwn(entry, 'key') ? value(entry.key) : null;
-        if (entry.reference) {result = arrayWithReference(result, key, promoteReference(entry.value, state, context), context, !Object.hasOwn(entry, 'key')); continue;}
+        if (entry.reference) {result = arrayWithReference(result, key, promoteReference(entry.value, state, context), arrayContext, !Object.hasOwn(entry, 'key')); continue;}
         const item = value(entry.value);
-        result = arrayWrite(result, key, item, kind(entry.value, item), context, !Object.hasOwn(entry, 'key'));
+        result = arrayWrite(result, key, item, kind(entry.value, item), arrayContext, !Object.hasOwn(entry, 'key'));
       }
     }
     return {value: result, kind: 'array'};

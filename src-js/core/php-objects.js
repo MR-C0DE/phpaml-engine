@@ -134,7 +134,7 @@ const method = (value, options, context) => {
   if (!found || !objectMemberAccessible(found, context)) {
     const bound = value || (options.forward && objectIs(context.thisObject, name) ? context.thisObject : null);
     const magic = magicMember(name, bound ? '__call' : '__callstatic', context);
-    if (magic) return bindMethod(magic.id, bound, magic.owner, options.forward ? context.calledClass || name : instance?.definition.name || name, options.name);
+    if (magic) return bindMethod(magic.id, bound, magic.owner, options.forward ? context.calledClass || name : instance?.definition.name || name, options.name, options.firstClass || false);
   }
   if (!found) throw new Error(`Call to undefined method ${name}::${options.name}()`);
   if (!objectMemberAccessible(found, context)) throw new Error(`Call to ${found.visibility} method ${found.owner}::${options.name}()`);
@@ -217,7 +217,7 @@ export const evaluateObject = (expression, state, context) => {
     const result = evaluateException({operation: 'exceptionGet', left: expression.left, right: {...options, method: options.name.toLowerCase()}}, state, context, () => value, resolveType);
     return {value: result, kind: phpType(result)};
   }
-  const callable = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method(value, options, context);
+  const callable = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method(value, {...options, firstClass: expression.operation === 'objectMethodRef'}, context);
   return expression.operation === 'objectMethodRef' ? {value: callable, kind: 'object'} : evaluateCall({right: options}, state, context, callable);
 };
 

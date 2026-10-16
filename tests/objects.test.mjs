@@ -36,3 +36,12 @@ test('typed object fields retain integral float metadata', () => {
 test('unknown classes cannot resolve to JavaScript prototype members', () => {
   assert.throws(() => resolveData({$expression: {operation: 'objectNew', left: 'constructor', right: {arguments: []}}}, {}, {classes: {}}), /Unknown compiled frontend class/);
 });
+
+test('Generator introspection follows the originating PHP version', async () => {
+  const {generatorDefinition} = await import('../src-js/core/php-generators.js');
+  const standard = ['rewind', 'valid', 'current', 'key', 'next', 'send', 'throw', 'getReturn'];
+  for (const version of [80200, 80300, 80400]) {
+    assert.deepEqual(Object.values(generatorDefinition(version).methods).map(method => method.name),
+      [...standard, ...(version >= 80400 ? ['__debugInfo'] : [])]);
+  }
+});

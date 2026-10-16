@@ -3,25 +3,25 @@
     "entry": "assets/modules-0.1.0-beta.9/engine.js",
     "initial": [
       "assets/modules-0.1.0-beta.9/engine.js",
-      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
-      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+      "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js",
+      "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
       "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js"
     ],
     "outputs": {
-      "assets/modules-0.1.0-beta.9/files-7AE7OLES.js.map": {
+      "assets/modules-0.1.0-beta.9/files-AJBHT4SZ.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 24005
       },
-      "assets/modules-0.1.0-beta.9/files-7AE7OLES.js": {
+      "assets/modules-0.1.0-beta.9/files-AJBHT4SZ.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -44,20 +44,20 @@
         },
         "bytes": 14169
       },
-      "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js.map": {
+      "assets/modules-0.1.0-beta.9/browser-TTPHLSKC.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 31942
       },
-      "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js": {
+      "assets/modules-0.1.0-beta.9/browser-TTPHLSKC.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -123,11 +123,11 @@
       "assets/modules-0.1.0-beta.9/engine.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -135,39 +135,39 @@
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js",
+            "path": "assets/modules-0.1.0-beta.9/unicode-YJIASZSI.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/intl-GION4BVU.js",
+            "path": "assets/modules-0.1.0-beta.9/intl-SXIIG4ST.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js",
+            "path": "assets/modules-0.1.0-beta.9/bcmath-SSFXKQMC.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js",
+            "path": "assets/modules-0.1.0-beta.9/regex-E56GA33U.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js",
+            "path": "assets/modules-0.1.0-beta.9/date-GOC3GWME.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js",
+            "path": "assets/modules-0.1.0-beta.9/spl-5SJISYVP.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js",
+            "path": "assets/modules-0.1.0-beta.9/reflection-2PRXLZRB.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/files-7AE7OLES.js",
+            "path": "assets/modules-0.1.0-beta.9/files-AJBHT4SZ.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/browser-S4LR2HDC.js",
+            "path": "assets/modules-0.1.0-beta.9/browser-TTPHLSKC.js",
             "kind": "dynamic-import"
           },
           {
@@ -196,16 +196,16 @@
         },
         "bytes": 11708
       },
-      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js.map": {
+      "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 168344
       },
-      "assets/modules-0.1.0-beta.9/chunk-ILXEYMGO.js": {
+      "assets/modules-0.1.0-beta.9/chunk-IA2IQXJB.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -301,16 +301,16 @@
         },
         "bytes": 95565
       },
-      "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js.map": {
+      "assets/modules-0.1.0-beta.9/unicode-YJIASZSI.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 665655
       },
-      "assets/modules-0.1.0-beta.9/unicode-U55EK7VO.js": {
+      "assets/modules-0.1.0-beta.9/unicode-YJIASZSI.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -339,16 +339,16 @@
         },
         "bytes": 375226
       },
-      "assets/modules-0.1.0-beta.9/intl-GION4BVU.js.map": {
+      "assets/modules-0.1.0-beta.9/intl-SXIIG4ST.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 172723
+        "bytes": 172780
       },
-      "assets/modules-0.1.0-beta.9/intl-GION4BVU.js": {
+      "assets/modules-0.1.0-beta.9/intl-SXIIG4ST.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -360,7 +360,7 @@
         "entryPoint": "phpaml-module:intl",
         "inputs": {
           "src-js/core/php-intl.js": {
-            "bytesInOutput": 9774
+            "bytesInOutput": 9816
           },
           "src-js/core/php-intl-extra.js": {
             "bytesInOutput": 7801
@@ -375,18 +375,18 @@
             "bytesInOutput": 92
           }
         },
-        "bytes": 86212
+        "bytes": 86254
       },
-      "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js.map": {
+      "assets/modules-0.1.0-beta.9/bcmath-SSFXKQMC.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 14865
       },
-      "assets/modules-0.1.0-beta.9/bcmath-AYYI6OKK.js": {
+      "assets/modules-0.1.0-beta.9/bcmath-SSFXKQMC.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -406,16 +406,16 @@
         },
         "bytes": 8160
       },
-      "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js.map": {
+      "assets/modules-0.1.0-beta.9/regex-E56GA33U.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 42185
       },
-      "assets/modules-0.1.0-beta.9/regex-YMJRJFKJ.js": {
+      "assets/modules-0.1.0-beta.9/regex-E56GA33U.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -438,16 +438,16 @@
         },
         "bytes": 26077
       },
-      "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js.map": {
+      "assets/modules-0.1.0-beta.9/date-GOC3GWME.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 216093
       },
-      "assets/modules-0.1.0-beta.9/date-RKW7NDYP.js": {
+      "assets/modules-0.1.0-beta.9/date-GOC3GWME.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -476,16 +476,16 @@
         },
         "bytes": 112168
       },
-      "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js.map": {
+      "assets/modules-0.1.0-beta.9/spl-5SJISYVP.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 302504
       },
-      "assets/modules-0.1.0-beta.9/spl-4H2Y6CYD.js": {
+      "assets/modules-0.1.0-beta.9/spl-5SJISYVP.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -511,16 +511,16 @@
         },
         "bytes": 140353
       },
-      "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js.map": {
+      "assets/modules-0.1.0-beta.9/reflection-2PRXLZRB.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 171877
       },
-      "assets/modules-0.1.0-beta.9/reflection-4H54TU3A.js": {
+      "assets/modules-0.1.0-beta.9/reflection-2PRXLZRB.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js",
+            "path": "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js",
             "kind": "import-statement"
           },
           {
@@ -543,13 +543,13 @@
         },
         "bytes": 84784
       },
-      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js.map": {
+      "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 973912
+        "bytes": 974710
       },
-      "assets/modules-0.1.0-beta.9/chunk-HCVTEZMH.js": {
+      "assets/modules-0.1.0-beta.9/chunk-AK2NYU3I.js": {
         "imports": [
           {
             "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
@@ -653,7 +653,7 @@
             "bytesInOutput": 504
           },
           "src-js/core/php-arrays.js": {
-            "bytesInOutput": 14498
+            "bytesInOutput": 14539
           },
           "src-js/core/state.js": {
             "bytesInOutput": 3392
@@ -785,7 +785,7 @@
             "bytesInOutput": 21158
           },
           "src-js/core/php-functions.js": {
-            "bytesInOutput": 25271
+            "bytesInOutput": 25545
           },
           "src-js/eval/generators.js": {
             "bytesInOutput": 309
@@ -797,13 +797,13 @@
             "bytesInOutput": 7371
           },
           "src-js/core/php-generators.js": {
-            "bytesInOutput": 6349
+            "bytesInOutput": 6346
           },
           "src-js/core/php-static-properties.js": {
             "bytesInOutput": 4976
           },
           "src-js/core/php-objects.js": {
-            "bytesInOutput": 21121
+            "bytesInOutput": 21213
           },
           "src-js/core/php-magic.js": {
             "bytesInOutput": 2663
@@ -827,7 +827,7 @@
             "bytesInOutput": 4369
           },
           "src-js/core/php-collections.js": {
-            "bytesInOutput": 10508
+            "bytesInOutput": 10589
           },
           "src-js/core/value.js": {
             "bytesInOutput": 28559
@@ -836,7 +836,7 @@
             "bytesInOutput": 5639
           }
         },
-        "bytes": 509940
+        "bytes": 510425
       },
       "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js.map": {
         "imports": [],
@@ -881,25 +881,25 @@
     "entry": "assets/modules-0.1.0-beta.9.min/engine.js",
     "initial": [
       "assets/modules-0.1.0-beta.9.min/engine.js",
-      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
-      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+      "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js",
+      "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
       "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js"
     ],
     "outputs": {
-      "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js.map": {
+      "assets/modules-0.1.0-beta.9.min/files-UVQFS7CI.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 25485
       },
-      "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js": {
+      "assets/modules-0.1.0-beta.9.min/files-UVQFS7CI.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -922,20 +922,20 @@
         },
         "bytes": 8309
       },
-      "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js.map": {
+      "assets/modules-0.1.0-beta.9.min/browser-QRZCHSFT.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 34648
       },
-      "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js": {
+      "assets/modules-0.1.0-beta.9.min/browser-QRZCHSFT.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1001,11 +1001,11 @@
       "assets/modules-0.1.0-beta.9.min/engine.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1013,39 +1013,39 @@
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js",
+            "path": "assets/modules-0.1.0-beta.9.min/unicode-TJRRSBBT.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js",
+            "path": "assets/modules-0.1.0-beta.9.min/intl-ZNYIYBTM.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js",
+            "path": "assets/modules-0.1.0-beta.9.min/bcmath-PW4BZMVF.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js",
+            "path": "assets/modules-0.1.0-beta.9.min/regex-JGWYU64C.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/date-RR5SJZOQ.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js",
+            "path": "assets/modules-0.1.0-beta.9.min/spl-GZJDDIAR.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js",
+            "path": "assets/modules-0.1.0-beta.9.min/reflection-M7BBNLR2.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/files-X7QEXOL3.js",
+            "path": "assets/modules-0.1.0-beta.9.min/files-UVQFS7CI.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/browser-6N6LK36Q.js",
+            "path": "assets/modules-0.1.0-beta.9.min/browser-QRZCHSFT.js",
             "kind": "dynamic-import"
           },
           {
@@ -1074,16 +1074,16 @@
         },
         "bytes": 7859
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js.map": {
+      "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 176844
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-F3NCVMVC.js": {
+      "assets/modules-0.1.0-beta.9.min/chunk-ABQPAF4J.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1179,16 +1179,16 @@
         },
         "bytes": 51089
       },
-      "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js.map": {
+      "assets/modules-0.1.0-beta.9.min/unicode-TJRRSBBT.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 666926
       },
-      "assets/modules-0.1.0-beta.9.min/unicode-XDR4JA53.js": {
+      "assets/modules-0.1.0-beta.9.min/unicode-TJRRSBBT.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1217,16 +1217,16 @@
         },
         "bytes": 323240
       },
-      "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js.map": {
+      "assets/modules-0.1.0-beta.9.min/intl-ZNYIYBTM.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 163509
+        "bytes": 163567
       },
-      "assets/modules-0.1.0-beta.9.min/intl-2UNYPNFF.js": {
+      "assets/modules-0.1.0-beta.9.min/intl-ZNYIYBTM.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1238,7 +1238,7 @@
         "entryPoint": "phpaml-module:intl",
         "inputs": {
           "src-js/core/php-intl.js": {
-            "bytesInOutput": 6110
+            "bytesInOutput": 6144
           },
           "src-js/core/php-intl-extra.js": {
             "bytesInOutput": 4556
@@ -1253,18 +1253,18 @@
             "bytesInOutput": 37
           }
         },
-        "bytes": 50302
+        "bytes": 50336
       },
-      "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js.map": {
+      "assets/modules-0.1.0-beta.9.min/bcmath-PW4BZMVF.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 15922
       },
-      "assets/modules-0.1.0-beta.9.min/bcmath-AFCYNRKV.js": {
+      "assets/modules-0.1.0-beta.9.min/bcmath-PW4BZMVF.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1284,16 +1284,16 @@
         },
         "bytes": 4153
       },
-      "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js.map": {
+      "assets/modules-0.1.0-beta.9.min/regex-JGWYU64C.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 44748
       },
-      "assets/modules-0.1.0-beta.9.min/regex-AQ4GEXMF.js": {
+      "assets/modules-0.1.0-beta.9.min/regex-JGWYU64C.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1316,16 +1316,16 @@
         },
         "bytes": 13123
       },
-      "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js.map": {
+      "assets/modules-0.1.0-beta.9.min/date-RR5SJZOQ.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 208557
       },
-      "assets/modules-0.1.0-beta.9.min/date-Y3YD7UQU.js": {
+      "assets/modules-0.1.0-beta.9.min/date-RR5SJZOQ.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1354,16 +1354,16 @@
         },
         "bytes": 61172
       },
-      "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js.map": {
+      "assets/modules-0.1.0-beta.9.min/spl-GZJDDIAR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 277454
       },
-      "assets/modules-0.1.0-beta.9.min/spl-AHTOM2NK.js": {
+      "assets/modules-0.1.0-beta.9.min/spl-GZJDDIAR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1389,16 +1389,16 @@
         },
         "bytes": 65410
       },
-      "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js.map": {
+      "assets/modules-0.1.0-beta.9.min/reflection-M7BBNLR2.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
         "bytes": 158988
       },
-      "assets/modules-0.1.0-beta.9.min/reflection-B6QNVOFA.js": {
+      "assets/modules-0.1.0-beta.9.min/reflection-M7BBNLR2.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js",
+            "path": "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js",
             "kind": "import-statement"
           },
           {
@@ -1421,13 +1421,13 @@
         },
         "bytes": 47591
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js.map": {
+      "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 994366
+        "bytes": 995192
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-JJ265EQU.js": {
+      "assets/modules-0.1.0-beta.9.min/chunk-ZHGEGKYV.js": {
         "imports": [
           {
             "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
@@ -1531,7 +1531,7 @@
             "bytesInOutput": 343
           },
           "src-js/core/php-arrays.js": {
-            "bytesInOutput": 7596
+            "bytesInOutput": 7619
           },
           "src-js/core/state.js": {
             "bytesInOutput": 1668
@@ -1663,7 +1663,7 @@
             "bytesInOutput": 11587
           },
           "src-js/core/php-functions.js": {
-            "bytesInOutput": 13510
+            "bytesInOutput": 13678
           },
           "src-js/eval/generators.js": {
             "bytesInOutput": 180
@@ -1675,13 +1675,13 @@
             "bytesInOutput": 3672
           },
           "src-js/core/php-generators.js": {
-            "bytesInOutput": 4160
+            "bytesInOutput": 4157
           },
           "src-js/core/php-static-properties.js": {
             "bytesInOutput": 2611
           },
           "src-js/core/php-objects.js": {
-            "bytesInOutput": 12020
+            "bytesInOutput": 12085
           },
           "src-js/core/php-magic.js": {
             "bytesInOutput": 1328
@@ -1705,7 +1705,7 @@
             "bytesInOutput": 2609
           },
           "src-js/core/php-collections.js": {
-            "bytesInOutput": 5082
+            "bytesInOutput": 5107
           },
           "src-js/core/value.js": {
             "bytesInOutput": 14463
@@ -1714,7 +1714,7 @@
             "bytesInOutput": 2984
           }
         },
-        "bytes": 300589
+        "bytes": 300867
       },
       "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js.map": {
         "imports": [],

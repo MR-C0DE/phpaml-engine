@@ -17,12 +17,12 @@ import {
   stateHistories,
   unmount,
   updateActiveLinks
-} from "./chunk-ILXEYMGO.js";
+} from "./chunk-IA2IQXJB.js";
 import {
   clone,
   configureEvalAsset,
   formatThrowable
-} from "./chunk-HCVTEZMH.js";
+} from "./chunk-AK2NYU3I.js";
 import {
   ENGINE_VERSION,
   configureModules,
@@ -208,7 +208,7 @@ var startEngine = (engineScript = null, evalUrl = null) => {
 };
 
 // phpaml-entry:engine
-configureModules({ "unicode": () => import("./unicode-U55EK7VO.js"), "intl": () => import("./intl-GION4BVU.js"), "bcmath": () => import("./bcmath-AYYI6OKK.js"), "regex": () => import("./regex-YMJRJFKJ.js"), "date": () => import("./date-RKW7NDYP.js"), "spl": () => import("./spl-4H2Y6CYD.js"), "reflection": () => import("./reflection-4H54TU3A.js"), "files": () => import("./files-7AE7OLES.js"), "browser": () => import("./browser-S4LR2HDC.js"), "animations": () => import("./animations-OH7TNZ4L.js") });
+configureModules({ "unicode": () => import("./unicode-YJIASZSI.js"), "intl": () => import("./intl-SXIIG4ST.js"), "bcmath": () => import("./bcmath-SSFXKQMC.js"), "regex": () => import("./regex-E56GA33U.js"), "date": () => import("./date-GOC3GWME.js"), "spl": () => import("./spl-5SJISYVP.js"), "reflection": () => import("./reflection-2PRXLZRB.js"), "files": () => import("./files-AJBHT4SZ.js"), "browser": () => import("./browser-TTPHLSKC.js"), "animations": () => import("./animations-OH7TNZ4L.js") });
 if (!window.AMLEngine?.mount) {
   const scripts = [...document.querySelectorAll("script[data-aml-engine]")];
   const script = scripts.find((node) => node.src === import.meta.url) || scripts.at(-1);

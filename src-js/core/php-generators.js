@@ -4,7 +4,7 @@ import {withSource} from './diagnostics.js';
 import {executeGeneratorBody} from './php-generator-body.js';
 
 const generators = new WeakMap();
-export const generatorDefinition = (version = 80400) => ({name: 'Generator', ancestors: ['Iterator', 'Traversable'], parent: null, interfaces: ['Iterator'], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(['rewind', 'valid', 'current', 'key', 'next', 'send', 'throw', 'getReturn', version >= 80400 ? '__debugInfo' : '__wakeup'].map((name) => [name.toLowerCase(), {name, id: '@generator:' + name.toLowerCase(), visibility: 'public', owner: 'Generator', static: false, abstract: false}]))});
+export const generatorDefinition = (version = 80400) => ({name: 'Generator', ancestors: ['Iterator', 'Traversable'], parent: null, interfaces: ['Iterator'], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(['rewind', 'valid', 'current', 'key', 'next', 'send', 'throw', 'getReturn', ...(version >= 80400 ? ['__debugInfo'] : [])].map((name) => [name.toLowerCase(), {name, id: '@generator:' + name.toLowerCase(), visibility: 'public', owner: 'Generator', static: false, abstract: false}]))});
 const empty = () => ({value: null, kind: 'NULL'});
 const failure = (message) => Object.assign(new Error(message), {name: 'Exception'});
 export const generatorMethods = ['current', 'key', 'next', 'rewind', 'valid', 'send', 'throw', 'getreturn', '__debuginfo', '__wakeup'];

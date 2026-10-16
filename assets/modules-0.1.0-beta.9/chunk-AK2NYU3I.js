@@ -254,7 +254,6 @@ var nextArrayKey = (value, context = null) => {
     const integers = arrayEntries(value).map(([key]) => key).filter((key) => typeof key === "number");
     next2 = integers.length ? Math.max(...integers) + 1 : 0;
   }
-  if ((context?.source?.phpVersion ?? 80400) < 80300) next2 = Math.max(0, next2);
   if (!Number.isSafeInteger(next2)) throw new RangeError("Frontend array index exceeds safe integer precision");
   return next2;
 };
@@ -272,7 +271,8 @@ var arrayWrite = (value, key, item, kind = kindOf(item), context = null, append 
   types.set(key, kind);
   const previous = nextArrayKey(value, context);
   const numericCount = arrayEntries(value).filter(([candidate]) => typeof candidate === "number").length;
-  const next2 = typeof key === "number" ? numericCount === 0 && previous === 0 ? key + 1 : Math.max(previous, key + 1) : previous;
+  let next2 = typeof key === "number" ? numericCount === 0 && previous === 0 ? key + 1 : Math.max(previous, key + 1) : previous;
+  if (!context?.arrayLiteral && (context?.source?.phpVersion ?? 80400) < 80300 && previous >= 0) next2 = Math.max(0, next2);
   return makeArray(entries, types, next2, metadata.get(value)?.cursor ?? 0, refs, metadata.get(value)?.origin);
 };
 var arrayUnset = (value, key, context = null) => {
@@ -9471,11 +9471,11 @@ var callableDefinition = (target, context) => {
   const fn = callable(target, context);
   return fn.generator ? generatorSignature(fn.method) : context.functions?.[fn.id];
 };
-var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null) => {
+var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null, magicClosure = false) => {
   if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11));
   const fn = function() {
   };
-  closures.set(fn, { id, thisObject, objectScope, calledClass, magicName });
+  closures.set(fn, { id, thisObject, objectScope, calledClass, magicName, magicClosure });
   return fn;
 };
 var declareFunction = (id, context) => {
@@ -9543,6 +9543,10 @@ var invokeFunction = (target, argumentsList, state, context) => {
   const closure = callable(target, context), definition = context.functions?.[closure.id];
   if (definition?.internal && argumentsList.length > definition.parameters.length) throw failure3("ArgumentCountError", "Too many enum method arguments");
   if (closure.generator) return generatorMethod(closure.generator, closure.method, argumentsList, context);
+  if (closure.magicClosure && (context.source?.phpVersion ?? 80400) < 80300) {
+    const named2 = argumentsList.find((argument) => argument.name !== void 0);
+    if (named2) throw new Error(`Unknown named parameter $${named2.name}`);
+  }
   if (closure.magicName !== null && closure.magicName !== void 0) argumentsList = [{ value: closure.magicName, kind: "string" }, { value: magicArguments(argumentsList), kind: "array" }];
   if (definition?.builtin) return invokeBuiltin(definition.builtin, argumentsList, state, context);
   if (!definition || !definition.declared && !context.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition?.name || closure.id}()`);
@@ -10171,7 +10175,7 @@ function* executeGeneratorBody(action, state, context, frame) {
 
 // src-js/core/php-generators.js
 var generators = /* @__PURE__ */ new WeakMap();
-var generatorDefinition = (version = 80400) => ({ name: "Generator", ancestors: ["Iterator", "Traversable"], parent: null, interfaces: ["Iterator"], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(["rewind", "valid", "current", "key", "next", "send", "throw", "getReturn", version >= 80400 ? "__debugInfo" : "__wakeup"].map((name) => [name.toLowerCase(), { name, id: "@generator:" + name.toLowerCase(), visibility: "public", owner: "Generator", static: false, abstract: false }])) });
+var generatorDefinition = (version = 80400) => ({ name: "Generator", ancestors: ["Iterator", "Traversable"], parent: null, interfaces: ["Iterator"], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(["rewind", "valid", "current", "key", "next", "send", "throw", "getReturn", ...version >= 80400 ? ["__debugInfo"] : []].map((name) => [name.toLowerCase(), { name, id: "@generator:" + name.toLowerCase(), visibility: "public", owner: "Generator", static: false, abstract: false }])) });
 var empty2 = () => ({ value: null, kind: "NULL" });
 var failure4 = (message) => Object.assign(new Error(message), { name: "Exception" });
 var generatorMethods = ["current", "key", "next", "rewind", "valid", "send", "throw", "getreturn", "__debuginfo", "__wakeup"];
@@ -10578,7 +10582,7 @@ var method = (value, options, context) => {
   if (!found || !objectMemberAccessible(found, context)) {
     const bound2 = value || (options.forward && objectIs(context.thisObject, name) ? context.thisObject : null);
     const magic = magicMember(name, bound2 ? "__call" : "__callstatic", context);
-    if (magic) return bindMethod(magic.id, bound2, magic.owner, options.forward ? context.calledClass || name : instance?.definition.name || name, options.name);
+    if (magic) return bindMethod(magic.id, bound2, magic.owner, options.forward ? context.calledClass || name : instance?.definition.name || name, options.name, options.firstClass || false);
   }
   if (!found) throw new Error(`Call to undefined method ${name}::${options.name}()`);
   if (!objectMemberAccessible(found, context)) throw new Error(`Call to ${found.visibility} method ${found.owner}::${options.name}()`);
@@ -10693,7 +10697,7 @@ var evaluateObject = (expression, state, context) => {
     const result = evaluateException({ operation: "exceptionGet", left: expression.left, right: { ...options, method: options.name.toLowerCase() } }, state, context, () => value, resolveType);
     return { value: result, kind: phpType(result) };
   }
-  const callable2 = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method(value, options, context);
+  const callable2 = isGenerator(value) ? bindGeneratorMethod(value, options.name) : method(value, { ...options, firstClass: expression.operation === "objectMethodRef" }, context);
   return expression.operation === "objectMethodRef" ? { value: callable2, kind: "object" } : evaluateCall({ right: options }, state, context, callable2);
 };
 var methodCallable = (value, context) => {
@@ -11175,21 +11179,22 @@ var evaluateCollection = (expression, state, context, resolve, type, reference) 
   }
   if (operation === "array") {
     let result = makeArray();
+    const arrayContext = { ...context, arrayLiteral: true };
     for (const entry of expression.left) {
       if (Object.hasOwn(entry, "spread")) {
         const source2 = value(entry.spread);
         for (const { key, item } of spreadEntries(source2, context)) {
           const ref = isPhpArray(source2) && arrayElementReference(source2, key.value);
-          result = ref ? arrayWithReference(result, key.value, ref, context, key.kind === "integer") : arrayWrite(result, key.value, item.value, item.kind, context, key.kind === "integer");
+          result = ref ? arrayWithReference(result, key.value, ref, arrayContext, key.kind === "integer") : arrayWrite(result, key.value, item.value, item.kind, arrayContext, key.kind === "integer");
         }
       } else {
         const key = Object.hasOwn(entry, "key") ? value(entry.key) : null;
         if (entry.reference) {
-          result = arrayWithReference(result, key, promoteReference(entry.value, state, context), context, !Object.hasOwn(entry, "key"));
+          result = arrayWithReference(result, key, promoteReference(entry.value, state, context), arrayContext, !Object.hasOwn(entry, "key"));
           continue;
         }
         const item = value(entry.value);
-        result = arrayWrite(result, key, item, kind(entry.value, item), context, !Object.hasOwn(entry, "key"));
+        result = arrayWrite(result, key, item, kind(entry.value, item), arrayContext, !Object.hasOwn(entry, "key"));
       }
     }
     return { value: result, kind: "array" };

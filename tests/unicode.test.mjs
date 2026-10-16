@@ -63,3 +63,14 @@ test('Unicode width, code points and bytes remain distinct', () => {
   assert.equal(call('mb_chr', [0xd800]), false);
   assert.equal(call('mb_ord', ['🌍']), 0x1f30d);
 });
+
+test('NumberFormatter carries the server ICU currency default for decimal and percent styles', () => {
+  for (const intlCurrencyFromLocale of [false, true]) {
+    const context = {source: {...source, intlCurrencyFromLocale}};
+    for (const style of [1, 2, 3, 12]) {
+      const formatter = call('numfmt_create', ['fr_CA', style, null], context);
+      assert.equal(call('numfmt_get_text_attribute', [formatter, 5], context),
+        intlCurrencyFromLocale || [2, 12].includes(style) ? 'CAD' : 'XXX');
+    }
+  }
+});

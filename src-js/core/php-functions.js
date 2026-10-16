@@ -67,7 +67,7 @@ export const createClosure = (id, captures, state, context) => {
 };
 export const bindGeneratorMethod = (value, method) => {if (!Object.hasOwn(objectData(value).definition.methods, method.toLowerCase())) throw new Error(`Call to undefined method Generator::${method}()`); const fn = function () {}; closures.set(fn, {generator: value, method: method.toLowerCase()}); return fn;};
 export const callableDefinition = (target, context) => {const fn = callable(target, context); return fn.generator ? generatorSignature(fn.method) : context.functions?.[fn.id];};
-export const bindMethod = (id, thisObject, objectScope, calledClass, magicName = null) => {if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11)); const fn = function () {}; closures.set(fn, {id, thisObject, objectScope, calledClass, magicName}); return fn;};
+export const bindMethod = (id, thisObject, objectScope, calledClass, magicName = null, magicClosure = false) => {if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11)); const fn = function () {}; closures.set(fn, {id, thisObject, objectScope, calledClass, magicName, magicClosure}); return fn;};
 export const declareFunction = (id, context) => {
   const definition = context.functions?.[id];
   if (!definition) throw new Error(`Unknown frontend function declaration: ${id}`);
@@ -125,6 +125,7 @@ export const invokeFunction = (target, argumentsList, state, context) => {
   const closure = callable(target, context), definition = context.functions?.[closure.id];
   if (definition?.internal && argumentsList.length > definition.parameters.length) throw failure('ArgumentCountError', 'Too many enum method arguments');
   if (closure.generator) return generatorMethod(closure.generator, closure.method, argumentsList, context);
+  if (closure.magicClosure && (context.source?.phpVersion ?? 80400) < 80300) {const named = argumentsList.find((argument) => argument.name !== undefined); if (named) throw new Error(`Unknown named parameter $${named.name}`);}
   if (closure.magicName !== null && closure.magicName !== undefined) argumentsList = [{value: closure.magicName, kind: 'string'}, {value: magicArguments(argumentsList), kind: 'array'}];
   if (definition?.builtin) return invokeBuiltin(definition.builtin, argumentsList, state, context);
   if (!definition || !definition.declared && !context.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition?.name || closure.id}()`);

@@ -14,7 +14,7 @@ import {
   runGrapheme,
   timezone,
   work
-} from "./chunk-HCVTEZMH.js";
+} from "./chunk-AK2NYU3I.js";
 import {
   __export,
   registerModule
@@ -2434,7 +2434,7 @@ var createData = (locale, style, pattern, context) => {
   }
   if (!Intl.NumberFormat.supportedLocalesOf([tag]).length) throw unsupported("locale is not available in this browser");
   let currency = "XXX";
-  if (styles[style] === "currency") {
+  if (styles[style] === "currency" || context.source?.intlCurrencyFromLocale) {
     const key = tag.toLowerCase();
     currency = intl_currencies_default[key] || intl_currencies_default[key.split("-")[0]] || "XXX";
   }

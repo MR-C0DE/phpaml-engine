@@ -90,3 +90,15 @@ test('nested array values cannot bypass numeric state validation', async () => {
   await assert.rejects(execute(root, state, set('items', ex('array', [{value: ex('power', {$float: 10}, 400)}]))), /finite floats/);
   assert.deepEqual(state.items, []);
 });
+
+test('PHP 8.2 distinguishes negative literal indices from later offset assignment', () => {
+  for (const phpVersion of [80200, 80300, 80400]) {
+    const context = {source: {phpVersion}};
+    const literal = resolveData(ex('array', [{key: 's', value: 'text'}, {key: -3, value: 'start'}, {value: 'next'}]), {}, context);
+    assert.deepEqual(arrayEntries(literal).map(([key]) => key), ['s', -3, -2]);
+    const appended = arrayWrite(clonePhp(literal), null, 'last', 'string', context, true);
+    assert.deepEqual(arrayEntries(appended).map(([key]) => key), ['s', -3, -2, -1]);
+    const assigned = arrayWrite(makeArray(), -3, 'start', 'string', context);
+    assert.deepEqual(arrayEntries(arrayWrite(assigned, null, 'next', 'string', context, true)).map(([key]) => key), [-3, phpVersion < 80300 ? 0 : -2]);
+  }
+});
