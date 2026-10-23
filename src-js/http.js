@@ -13,6 +13,8 @@ export const refreshCsrfToken = (response, documentRoot = document) => {
 export const prepareApiRequest = (url, action, data, signal, token = '', engine = 'api') => {
   const options = {
     method: action.method,
+    // Also enforce the boundary after redirects, before forwarding any data.
+    mode: 'same-origin',
     credentials: 'same-origin',
     signal,
     headers: {'Accept': 'application/json', 'X-AML-Engine': engine},

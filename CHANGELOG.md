@@ -2,6 +2,86 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased
+
+## 0.1.0-beta.10 — 2026-10-23
+
+- Clarify per-loop and cumulative iteration errors while keeping their budgets,
+  PHP source locations, error code and rollback behavior. Share the guard across
+  events, functions, generators and iterators. Add permanent nested-flow tests
+  to source/distribution suites and actual Safari jobs for both runtimes.
+
+- Render reactive icons from optional same-origin Lucide assets in both runtimes.
+  Share a bounded cache, ignore stale responses, preserve the last valid SVG on
+  errors and update accessible labels without replacing the SVG element.
+  Reject negative Icon size/stroke updates while retaining valid dimensions.
+  Retry transient network failures with bounded backoff and on reconnect;
+  cancel retries on unmount. Verify Icon through installed distribution ZIPs
+  and exclude the obsolete beta.9 runtime from the beta.10 archive.
+  Resolve nested When branches before updating icons and other bindings, keep
+  unchanged branches mounted, and toggle SVG visibility without discarding Style.
+  Cover nested conditional closures, hidden State changes and delayed catalogue
+  replies in both runtimes, including actual Safari automation.
+
+- Complete IList row field bindings across display, style, safe links, child
+  props, nested lists and editable controls. Resolve writes by stable keys,
+  support explicit editable projection sources, preserve child state on reorder
+  and release it on removal. Bind presentation options to State and retain the
+  last valid list on invalid direct or calculated data; keep legacy Each behavior.
+
+- Render View's calculated IList sources in both runtimes, cache dependencies,
+  normalize PHP array iteration order and preserve keyed rows. Validate the
+  full projection before changing the DOM; report errors with PHP locations,
+  keep the last valid list and allow sibling lists and later updates to recover.
+
+- Support View's IList empty placeholders in both collection runtimes. Preserve
+  scalar collection labels during updates, expose scalar template values and
+  match PHP string conversion for booleans/null while retaining keyed nodes.
+
+- Accept `StateRef` action targets without requalifying their owning path inside
+  a child component. Preserve existing string target scoping and reuse runtime
+  type validation for View's local `State()` declarations.
+
+- Restrict State paths to own properties and keep inherited objects isolated.
+  Exclude sensitive controls and autocomplete opt-outs from form drafts;
+  discard those values from legacy drafts before restoration.
+
+- Enforce same-origin API and navigation fetches across redirects, including
+  remote form validation and loading/error states. Keep local redirects working
+  and add a loopback-only security laboratory for both runtimes.
+
+- Evaluate writable View component inputs in both runtimes. Preserve originating
+  State addresses, constructor read contracts, property types, readonly errors,
+  reference arguments and event rollback across nested components.
+
+- Preserve reactive CSS priority and declaration clearing, including pseudo
+  elements, CSS-wide keywords and composed module defaults. Reject malformed CSS before writing
+  it and keep sibling bindings usable after a failure. Cover both distributed
+  runtimes and View's matching PHP simulator without extending the Style API.
+
+- Update State-bound Style values in both runtimes using per-element CSS variables.
+  Preserve DOM identity, scoped styles, hover/media rules and last valid values
+  on errors; cache binding metadata and refresh only affected dependencies.
+
+- Stop development polling and abort pending requests on page exit; resume it
+  once after a history-cache restore and prevent overlapping requests. Suspend
+  polling as the document becomes hidden to avoid requests during WebKit navigation.
+
+- Enhance View's Calendar date input with an inline month grid in both runtimes.
+  Preserve native validation, State, disabled/read-only behavior and input/change
+  events; use civil-date arithmetic for leap years and time zone independence.
+  Cover keyboard navigation, forwarded forms, CSS and the styled application
+  through source and installed-package browser tests.
+
+- Honor existing button loading labels for API/Files work and form submitters;
+  retain reactive child nodes, count overlapping work and preserve independent
+  disabled rules through success, error and cancellation.
+- Correct radio and multiple-select models and keep button form values separate
+  from their labels. Compose nested visibility, inactive steps and disabled rules.
+- Enforce native form constraints, skip disabled fieldsets and preserve accessible
+  help with unique validation error IDs. Add shared full/modular browser regression
+  tests for the existing native component contracts.
+
 ## 0.1.0-beta.9 — 2026-10-16
 
 - Correct PHP 8.2/8.3 compatibility for negative array indices, Generator

@@ -1,31 +1,31 @@
 {
   "development": {
-    "entry": "assets/modules-0.1.0-beta.9/engine.js",
+    "entry": "assets/modules-0.1.0-beta.10/engine.js",
     "initial": [
-      "assets/modules-0.1.0-beta.9/engine.js",
-      "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js",
-      "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
-      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js"
+      "assets/modules-0.1.0-beta.10/engine.js",
+      "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js",
+      "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
+      "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js"
     ],
     "outputs": {
-      "assets/modules-0.1.0-beta.9/files-3H3OLGUR.js.map": {
+      "assets/modules-0.1.0-beta.10/files-XBEU2VHB.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 24005
+        "bytes": 22933
       },
-      "assets/modules-0.1.0-beta.9/files-3H3OLGUR.js": {
+      "assets/modules-0.1.0-beta.10/files-XBEU2VHB.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -33,35 +33,35 @@
         "entryPoint": "phpaml-module:files",
         "inputs": {
           "src-js/files-runtime.js": {
-            "bytesInOutput": 7280
+            "bytesInOutput": 6623
           },
           "src-js/core/file-codecs.js": {
             "bytesInOutput": 6406
           },
           "phpaml-module:files": {
-            "bytesInOutput": 95
+            "bytesInOutput": 96
           }
         },
-        "bytes": 14169
+        "bytes": 13525
       },
-      "assets/modules-0.1.0-beta.9/browser-RPGIO2SA.js.map": {
+      "assets/modules-0.1.0-beta.10/browser-ENFBCPRR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 31942
+        "bytes": 34476
       },
-      "assets/modules-0.1.0-beta.9/browser-RPGIO2SA.js": {
+      "assets/modules-0.1.0-beta.10/browser-ENFBCPRR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -69,13 +69,13 @@
         "entryPoint": "phpaml-module:browser",
         "inputs": {
           "src-js/browser-api.js": {
-            "bytesInOutput": 3976
+            "bytesInOutput": 3806
           },
           "src-js/http.js": {
-            "bytesInOutput": 1166
+            "bytesInOutput": 1269
           },
           "src-js/browser-forms.js": {
-            "bytesInOutput": 4001
+            "bytesInOutput": 5437
           },
           "src-js/browser-storage.js": {
             "bytesInOutput": 4545
@@ -84,21 +84,21 @@
             "bytesInOutput": 4377
           },
           "phpaml-module:browser": {
-            "bytesInOutput": 162
+            "bytesInOutput": 163
           }
         },
-        "bytes": 18912
+        "bytes": 20294
       },
-      "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js.map": {
+      "assets/modules-0.1.0-beta.10/animations-JTCKLEY2.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 2148
+        "bytes": 2150
       },
-      "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js": {
+      "assets/modules-0.1.0-beta.10/animations-JTCKLEY2.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -109,69 +109,69 @@
             "bytesInOutput": 1153
           },
           "phpaml-module:animations": {
-            "bytesInOutput": 81
+            "bytesInOutput": 82
           }
         },
-        "bytes": 1364
+        "bytes": 1365
       },
-      "assets/modules-0.1.0-beta.9/engine.js.map": {
+      "assets/modules-0.1.0-beta.10/engine.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 19592
+        "bytes": 21500
       },
-      "assets/modules-0.1.0-beta.9/engine.js": {
+      "assets/modules-0.1.0-beta.10/engine.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/unicode-VMK5ZZ6J.js",
+            "path": "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/intl-ACXEJL5S.js",
+            "path": "assets/modules-0.1.0-beta.10/intl-MDUFDXKG.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/bcmath-EINREQOB.js",
+            "path": "assets/modules-0.1.0-beta.10/bcmath-U2F57GLR.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/regex-B3FY5D7F.js",
+            "path": "assets/modules-0.1.0-beta.10/regex-5XRKF5LS.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/date-ASHHVKA3.js",
+            "path": "assets/modules-0.1.0-beta.10/date-ROGYUT7L.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/spl-BN33MZ7P.js",
+            "path": "assets/modules-0.1.0-beta.10/spl-BDWSC66K.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/reflection-6R7OT3UD.js",
+            "path": "assets/modules-0.1.0-beta.10/reflection-6FX5GNQ3.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/files-3H3OLGUR.js",
+            "path": "assets/modules-0.1.0-beta.10/files-XBEU2VHB.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/browser-RPGIO2SA.js",
+            "path": "assets/modules-0.1.0-beta.10/browser-ENFBCPRR.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/animations-OH7TNZ4L.js",
+            "path": "assets/modules-0.1.0-beta.10/animations-JTCKLEY2.js",
             "kind": "dynamic-import"
           }
         ],
@@ -188,28 +188,28 @@
             "bytesInOutput": 4672
           },
           "src-js/start.js": {
-            "bytesInOutput": 1305
+            "bytesInOutput": 2474
           },
           "phpaml-entry:engine": {
-            "bytesInOutput": 1118
+            "bytesInOutput": 1119
           }
         },
-        "bytes": 11708
+        "bytes": 12878
       },
-      "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js.map": {
+      "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 168344
+        "bytes": 239487
       },
-      "assets/modules-0.1.0-beta.9/chunk-E35M5NMH.js": {
+      "assets/modules-0.1.0-beta.10/chunk-F7NIHWFI.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -221,6 +221,7 @@
           "effectRuntimes",
           "installNavigationListeners",
           "lifecycle",
+          "markBusy",
           "mount",
           "mountedRoots",
           "navigate",
@@ -247,20 +248,32 @@
           "src-js/context.js": {
             "bytesInOutput": 901
           },
+          "src-js/control-state.js": {
+            "bytesInOutput": 2242
+          },
+          "src-js/calendar.js": {
+            "bytesInOutput": 10563
+          },
           "phpaml-proxy:../browser-storage.js": {
             "bytesInOutput": 480
+          },
+          "src-js/list-bindings.js": {
+            "bytesInOutput": 4641
+          },
+          "src-js/style-bindings.js": {
+            "bytesInOutput": 7245
           },
           "phpaml-proxy:../animations-runtime.js": {
             "bytesInOutput": 190
           },
           "src-js/rendering.js": {
-            "bytesInOutput": 18964
+            "bytesInOutput": 24012
           },
           "src-js/effects.js": {
             "bytesInOutput": 751
           },
           "src-js/control-flow.js": {
-            "bytesInOutput": 4427
+            "bytesInOutput": 4193
           },
           "phpaml-proxy:../files-runtime.js": {
             "bytesInOutput": 78
@@ -269,52 +282,55 @@
             "bytesInOutput": 72
           },
           "src-js/actions-runtime.js": {
-            "bytesInOutput": 13883
+            "bytesInOutput": 13889
           },
           "src-js/core/action-analysis.js": {
             "bytesInOutput": 1144
           },
           "src-js/validation.js": {
-            "bytesInOutput": 702
+            "bytesInOutput": 1177
           },
           "phpaml-proxy:../browser-forms.js": {
             "bytesInOutput": 370
           },
           "src-js/forms-runtime.js": {
-            "bytesInOutput": 1902
+            "bytesInOutput": 2843
+          },
+          "src-js/effects-runtime.js": {
+            "bytesInOutput": 5295
           },
           "src-js/lifecycle.js": {
             "bytesInOutput": 739
           },
+          "src-js/state-runtime.js": {
+            "bytesInOutput": 9008
+          },
+          "src-js/icon-bindings.js": {
+            "bytesInOutput": 8110
+          },
           "src-js/lifecycle-runtime.js": {
-            "bytesInOutput": 25810
+            "bytesInOutput": 26192
           },
           "src-js/navigation.js": {
-            "bytesInOutput": 9173
-          },
-          "src-js/effects-runtime.js": {
-            "bytesInOutput": 5271
-          },
-          "src-js/state-runtime.js": {
-            "bytesInOutput": 8866
+            "bytesInOutput": 9219
           }
         },
-        "bytes": 95565
+        "bytes": 135469
       },
-      "assets/modules-0.1.0-beta.9/unicode-VMK5ZZ6J.js.map": {
+      "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 666004
+        "bytes": 666006
       },
-      "assets/modules-0.1.0-beta.9/unicode-VMK5ZZ6J.js": {
+      "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -334,25 +350,25 @@
             "bytesInOutput": 43222
           },
           "phpaml-module:unicode": {
-            "bytesInOutput": 113
+            "bytesInOutput": 114
           }
         },
-        "bytes": 375440
+        "bytes": 375441
       },
-      "assets/modules-0.1.0-beta.9/intl-ACXEJL5S.js.map": {
+      "assets/modules-0.1.0-beta.10/intl-MDUFDXKG.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 172780
+        "bytes": 172782
       },
-      "assets/modules-0.1.0-beta.9/intl-ACXEJL5S.js": {
+      "assets/modules-0.1.0-beta.10/intl-MDUFDXKG.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -372,25 +388,25 @@
             "bytesInOutput": 13619
           },
           "phpaml-module:intl": {
-            "bytesInOutput": 92
+            "bytesInOutput": 93
           }
         },
-        "bytes": 86254
+        "bytes": 86255
       },
-      "assets/modules-0.1.0-beta.9/bcmath-EINREQOB.js.map": {
+      "assets/modules-0.1.0-beta.10/bcmath-U2F57GLR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 15176
+        "bytes": 15178
       },
-      "assets/modules-0.1.0-beta.9/bcmath-EINREQOB.js": {
+      "assets/modules-0.1.0-beta.10/bcmath-U2F57GLR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -401,25 +417,25 @@
             "bytesInOutput": 8069
           },
           "phpaml-module:bcmath": {
-            "bytesInOutput": 77
+            "bytesInOutput": 78
           }
         },
-        "bytes": 8354
+        "bytes": 8355
       },
-      "assets/modules-0.1.0-beta.9/regex-B3FY5D7F.js.map": {
+      "assets/modules-0.1.0-beta.10/regex-5XRKF5LS.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 42185
+        "bytes": 42187
       },
-      "assets/modules-0.1.0-beta.9/regex-B3FY5D7F.js": {
+      "assets/modules-0.1.0-beta.10/regex-5XRKF5LS.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -433,25 +449,25 @@
             "bytesInOutput": 9121
           },
           "phpaml-module:regex": {
-            "bytesInOutput": 100
+            "bytesInOutput": 101
           }
         },
-        "bytes": 26077
+        "bytes": 26078
       },
-      "assets/modules-0.1.0-beta.9/date-ASHHVKA3.js.map": {
+      "assets/modules-0.1.0-beta.10/date-ROGYUT7L.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 216093
+        "bytes": 216095
       },
-      "assets/modules-0.1.0-beta.9/date-ASHHVKA3.js": {
+      "assets/modules-0.1.0-beta.10/date-ROGYUT7L.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -471,25 +487,25 @@
             "bytesInOutput": 9199
           },
           "phpaml-module:date": {
-            "bytesInOutput": 137
+            "bytesInOutput": 138
           }
         },
-        "bytes": 112168
+        "bytes": 112169
       },
-      "assets/modules-0.1.0-beta.9/spl-BN33MZ7P.js.map": {
+      "assets/modules-0.1.0-beta.10/spl-BDWSC66K.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 302504
+        "bytes": 302299
       },
-      "assets/modules-0.1.0-beta.9/spl-BN33MZ7P.js": {
+      "assets/modules-0.1.0-beta.10/spl-BDWSC66K.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -497,7 +513,7 @@
         "entryPoint": "phpaml-module:spl",
         "inputs": {
           "src-js/core/php-spl.js": {
-            "bytesInOutput": 7426
+            "bytesInOutput": 7273
           },
           "src-js/core/php-spl-list.js": {
             "bytesInOutput": 4084
@@ -506,25 +522,25 @@
             "bytesInOutput": 128193
           },
           "phpaml-module:spl": {
-            "bytesInOutput": 88
+            "bytesInOutput": 89
           }
         },
-        "bytes": 140353
+        "bytes": 140219
       },
-      "assets/modules-0.1.0-beta.9/reflection-6R7OT3UD.js.map": {
+      "assets/modules-0.1.0-beta.10/reflection-6FX5GNQ3.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 171877
+        "bytes": 171879
       },
-      "assets/modules-0.1.0-beta.9/reflection-6R7OT3UD.js": {
+      "assets/modules-0.1.0-beta.10/reflection-6FX5GNQ3.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -538,21 +554,21 @@
             "bytesInOutput": 75659
           },
           "phpaml-module:reflection": {
-            "bytesInOutput": 77
+            "bytesInOutput": 78
           }
         },
-        "bytes": 84784
+        "bytes": 84785
       },
-      "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js.map": {
+      "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 975572
+        "bytes": 987419
       },
-      "assets/modules-0.1.0-beta.9/chunk-PVACVZCB.js": {
+      "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js",
+            "path": "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js",
             "kind": "import-statement"
           }
         ],
@@ -570,9 +586,11 @@
           "bindMethod",
           "bindOffsetPattern",
           "bindReferenceTarget",
+          "bindRow",
           "bounded",
           "byteString",
           "bytes",
+          "checkIteration",
           "clone",
           "clonePhp",
           "coerce",
@@ -620,15 +638,19 @@
           "releaseLocalReferences",
           "resolveData",
           "resolveType",
+          "resolveWritePath",
           "resolvedNode",
           "restoreArrayMetadata",
+          "rowToken",
           "runGrapheme",
           "safeSegments",
           "serviceRuntime",
           "snapshotPhp",
+          "statePathAffects",
           "staticPropertyReference",
           "text",
           "timezone",
+          "unbindRows",
           "validatePhpValue",
           "validateStateReferences",
           "warn",
@@ -656,10 +678,13 @@
             "bytesInOutput": 14539
           },
           "src-js/core/state.js": {
-            "bytesInOutput": 3392
+            "bytesInOutput": 8363
           },
           "phpaml-proxy:php-date-values.js": {
             "bytesInOutput": 936
+          },
+          "src-js/core/loop-budget.js": {
+            "bytesInOutput": 556
           },
           "phpaml-proxy:php-spl.js": {
             "bytesInOutput": 436
@@ -684,9 +709,6 @@
           },
           "src-js/core/php-exceptions.js": {
             "bytesInOutput": 10135
-          },
-          "src-js/core/php-types.js": {
-            "bytesInOutput": 2819
           },
           "src-js/core/php-stdclass.js": {
             "bytesInOutput": 2897
@@ -721,6 +743,15 @@
           "src-js/core/php-random.js": {
             "bytesInOutput": 2704
           },
+          "phpaml-proxy:php-date-advanced.js": {
+            "bytesInOutput": 220
+          },
+          "src-js/core/php-casts.js": {
+            "bytesInOutput": 2845
+          },
+          "src-js/core/php-symbols.js": {
+            "bytesInOutput": 5041
+          },
           "src-js/core/builtin-signatures.json": {
             "bytesInOutput": 62144
           },
@@ -735,9 +766,6 @@
           },
           "phpaml-proxy:php-builtin-grapheme.js": {
             "bytesInOutput": 96
-          },
-          "phpaml-proxy:php-date-advanced.js": {
-            "bytesInOutput": 220
           },
           "src-js/core/php-builtin-objects.js": {
             "bytesInOutput": 6699
@@ -782,19 +810,19 @@
             "bytesInOutput": 21914
           },
           "src-js/core/php-builtins.js": {
-            "bytesInOutput": 21266
+            "bytesInOutput": 21282
           },
           "src-js/core/php-functions.js": {
-            "bytesInOutput": 25545
+            "bytesInOutput": 25417
           },
           "src-js/eval/generators.js": {
             "bytesInOutput": 309
           },
           "src-js/core/php-generator-values.js": {
-            "bytesInOutput": 10814
+            "bytesInOutput": 10534
           },
           "src-js/core/php-generator-body.js": {
-            "bytesInOutput": 7371
+            "bytesInOutput": 7225
           },
           "src-js/core/php-generators.js": {
             "bytesInOutput": 6346
@@ -811,11 +839,11 @@
           "src-js/core/php-values.js": {
             "bytesInOutput": 6343
           },
-          "src-js/core/php-casts.js": {
-            "bytesInOutput": 2845
+          "src-js/core/php-types.js": {
+            "bytesInOutput": 2822
           },
-          "src-js/core/php-symbols.js": {
-            "bytesInOutput": 5041
+          "src-js/core/component-inputs.js": {
+            "bytesInOutput": 1108
           },
           "src-js/core/php-nullsafe.js": {
             "bytesInOutput": 1328
@@ -830,21 +858,21 @@
             "bytesInOutput": 10589
           },
           "src-js/core/value.js": {
-            "bytesInOutput": 28559
+            "bytesInOutput": 28851
           },
           "src-js/core/php-iterators.js": {
-            "bytesInOutput": 5639
+            "bytesInOutput": 5483
           }
         },
-        "bytes": 510890
+        "bytes": 517288
       },
-      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js.map": {
+      "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 23959
+        "bytes": 23960
       },
-      "assets/modules-0.1.0-beta.9/chunk-RFV3LKK7.js": {
+      "assets/modules-0.1.0-beta.10/chunk-DER6LTKY.js": {
         "imports": [],
         "exports": [
           "ENGINE_VERSION",
@@ -858,7 +886,7 @@
         ],
         "inputs": {
           "src-js/core/version.js": {
-            "bytesInOutput": 37
+            "bytesInOutput": 38
           },
           "src-js/modules/catalogue.json": {
             "bytesInOutput": 3797
@@ -873,37 +901,37 @@
             "bytesInOutput": 1906
           }
         },
-        "bytes": 13030
+        "bytes": 13031
       }
     }
   },
   "minified": {
-    "entry": "assets/modules-0.1.0-beta.9.min/engine.js",
+    "entry": "assets/modules-0.1.0-beta.10.min/engine.js",
     "initial": [
-      "assets/modules-0.1.0-beta.9.min/engine.js",
-      "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js",
-      "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
-      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js"
+      "assets/modules-0.1.0-beta.10.min/engine.js",
+      "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js",
+      "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
+      "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js"
     ],
     "outputs": {
-      "assets/modules-0.1.0-beta.9.min/files-GU7J33JK.js.map": {
+      "assets/modules-0.1.0-beta.10.min/files-OSRCDKCV.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 25485
+        "bytes": 24454
       },
-      "assets/modules-0.1.0-beta.9.min/files-GU7J33JK.js": {
+      "assets/modules-0.1.0-beta.10.min/files-OSRCDKCV.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -911,35 +939,35 @@
         "entryPoint": "phpaml-module:files",
         "inputs": {
           "src-js/files-runtime.js": {
-            "bytesInOutput": 4056
+            "bytesInOutput": 3677
           },
           "src-js/core/file-codecs.js": {
             "bytesInOutput": 4037
           },
           "phpaml-module:files": {
-            "bytesInOutput": 38
+            "bytesInOutput": 39
           }
         },
-        "bytes": 8309
+        "bytes": 7938
       },
-      "assets/modules-0.1.0-beta.9.min/browser-Q7D2NBNG.js.map": {
+      "assets/modules-0.1.0-beta.10.min/browser-WEJ376KS.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 34648
+        "bytes": 37331
       },
-      "assets/modules-0.1.0-beta.9.min/browser-Q7D2NBNG.js": {
+      "assets/modules-0.1.0-beta.10.min/browser-WEJ376KS.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -947,36 +975,36 @@
         "entryPoint": "phpaml-module:browser",
         "inputs": {
           "src-js/browser-api.js": {
-            "bytesInOutput": 1971
+            "bytesInOutput": 1823
           },
           "src-js/http.js": {
-            "bytesInOutput": 654
+            "bytesInOutput": 673
           },
           "src-js/browser-forms.js": {
-            "bytesInOutput": 2244
+            "bytesInOutput": 3118
           },
           "src-js/browser-storage.js": {
             "bytesInOutput": 2299
           },
           "src-js/storage.js": {
-            "bytesInOutput": 2418
+            "bytesInOutput": 2419
           },
           "phpaml-module:browser": {
-            "bytesInOutput": 55
+            "bytesInOutput": 56
           }
         },
-        "bytes": 9907
+        "bytes": 10654
       },
-      "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js.map": {
+      "assets/modules-0.1.0-beta.10.min/animations-O3PWFYSR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 2332
+        "bytes": 2335
       },
-      "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js": {
+      "assets/modules-0.1.0-beta.10.min/animations-O3PWFYSR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -987,69 +1015,69 @@
             "bytesInOutput": 783
           },
           "phpaml-module:animations": {
-            "bytesInOutput": 38
+            "bytesInOutput": 39
           }
         },
-        "bytes": 869
+        "bytes": 870
       },
-      "assets/modules-0.1.0-beta.9.min/engine.js.map": {
+      "assets/modules-0.1.0-beta.10.min/engine.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 20994
+        "bytes": 22954
       },
-      "assets/modules-0.1.0-beta.9.min/engine.js": {
+      "assets/modules-0.1.0-beta.10.min/engine.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/unicode-IHYUFYYZ.js",
+            "path": "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/intl-LC7MBPVV.js",
+            "path": "assets/modules-0.1.0-beta.10.min/intl-6ZH6XE6G.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/bcmath-7LO34VZ3.js",
+            "path": "assets/modules-0.1.0-beta.10.min/bcmath-63VYW6SC.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/regex-ZYQKX54G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/regex-D2K4OFBU.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/date-YKSAMCUR.js",
+            "path": "assets/modules-0.1.0-beta.10.min/date-I2MCKYVJ.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/spl-ZTMSLHMB.js",
+            "path": "assets/modules-0.1.0-beta.10.min/spl-BXHAVQMI.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/reflection-UJP3TW2P.js",
+            "path": "assets/modules-0.1.0-beta.10.min/reflection-ANCE6ZWU.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/files-GU7J33JK.js",
+            "path": "assets/modules-0.1.0-beta.10.min/files-OSRCDKCV.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/browser-Q7D2NBNG.js",
+            "path": "assets/modules-0.1.0-beta.10.min/browser-WEJ376KS.js",
             "kind": "dynamic-import"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/animations-EXJIU7CC.js",
+            "path": "assets/modules-0.1.0-beta.10.min/animations-O3PWFYSR.js",
             "kind": "dynamic-import"
           }
         ],
@@ -1060,40 +1088,41 @@
             "bytesInOutput": 48
           },
           "src-js/diagnostics.js": {
-            "bytesInOutput": 2178
+            "bytesInOutput": 2180
           },
           "src-js/development-errors.js": {
-            "bytesInOutput": 3840
+            "bytesInOutput": 3845
           },
           "src-js/start.js": {
-            "bytesInOutput": 685
+            "bytesInOutput": 1178
           },
           "phpaml-entry:engine": {
-            "bytesInOutput": 825
+            "bytesInOutput": 827
           }
         },
-        "bytes": 7859
+        "bytes": 8362
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js.map": {
+      "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 176844
+        "bytes": 250853
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-23363D5X.js": {
+      "assets/modules-0.1.0-beta.10.min/chunk-XMV6ERKO.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
         "exports": [
           "A",
           "B",
+          "C",
           "a",
           "b",
           "c",
@@ -1123,22 +1152,34 @@
         ],
         "inputs": {
           "src-js/context.js": {
-            "bytesInOutput": 270
+            "bytesInOutput": 272
+          },
+          "src-js/control-state.js": {
+            "bytesInOutput": 1145
+          },
+          "src-js/calendar.js": {
+            "bytesInOutput": 5865
           },
           "phpaml-proxy:../browser-storage.js": {
             "bytesInOutput": 273
           },
+          "src-js/list-bindings.js": {
+            "bytesInOutput": 2846
+          },
+          "src-js/style-bindings.js": {
+            "bytesInOutput": 4415
+          },
           "phpaml-proxy:../animations-runtime.js": {
-            "bytesInOutput": 112
+            "bytesInOutput": 113
           },
           "src-js/rendering.js": {
-            "bytesInOutput": 10615
+            "bytesInOutput": 13443
           },
           "src-js/effects.js": {
             "bytesInOutput": 444
           },
           "src-js/control-flow.js": {
-            "bytesInOutput": 2043
+            "bytesInOutput": 1896
           },
           "phpaml-proxy:../files-runtime.js": {
             "bytesInOutput": 46
@@ -1147,52 +1188,55 @@
             "bytesInOutput": 44
           },
           "src-js/actions-runtime.js": {
-            "bytesInOutput": 6856
+            "bytesInOutput": 6861
           },
           "src-js/core/action-analysis.js": {
             "bytesInOutput": 508
           },
           "src-js/validation.js": {
-            "bytesInOutput": 397
+            "bytesInOutput": 712
           },
           "phpaml-proxy:../browser-forms.js": {
             "bytesInOutput": 208
           },
           "src-js/forms-runtime.js": {
-            "bytesInOutput": 1128
-          },
-          "src-js/lifecycle.js": {
-            "bytesInOutput": 457
-          },
-          "src-js/lifecycle-runtime.js": {
-            "bytesInOutput": 14244
-          },
-          "src-js/navigation.js": {
-            "bytesInOutput": 5842
+            "bytesInOutput": 1613
           },
           "src-js/effects-runtime.js": {
-            "bytesInOutput": 2733
+            "bytesInOutput": 2739
+          },
+          "src-js/lifecycle.js": {
+            "bytesInOutput": 459
           },
           "src-js/state-runtime.js": {
-            "bytesInOutput": 4223
+            "bytesInOutput": 4282
+          },
+          "src-js/icon-bindings.js": {
+            "bytesInOutput": 4811
+          },
+          "src-js/lifecycle-runtime.js": {
+            "bytesInOutput": 14464
+          },
+          "src-js/navigation.js": {
+            "bytesInOutput": 5883
           }
         },
-        "bytes": 51089
+        "bytes": 74067
       },
-      "assets/modules-0.1.0-beta.9.min/unicode-IHYUFYYZ.js.map": {
+      "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 667277
+        "bytes": 667280
       },
-      "assets/modules-0.1.0-beta.9.min/unicode-IHYUFYYZ.js": {
+      "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1212,25 +1256,25 @@
             "bytesInOutput": 36875
           },
           "phpaml-module:unicode": {
-            "bytesInOutput": 40
+            "bytesInOutput": 41
           }
         },
-        "bytes": 323392
+        "bytes": 323393
       },
-      "assets/modules-0.1.0-beta.9.min/intl-LC7MBPVV.js.map": {
+      "assets/modules-0.1.0-beta.10.min/intl-6ZH6XE6G.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 163567
+        "bytes": 163570
       },
-      "assets/modules-0.1.0-beta.9.min/intl-LC7MBPVV.js": {
+      "assets/modules-0.1.0-beta.10.min/intl-6ZH6XE6G.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1250,25 +1294,25 @@
             "bytesInOutput": 11831
           },
           "phpaml-module:intl": {
-            "bytesInOutput": 37
+            "bytesInOutput": 38
           }
         },
-        "bytes": 50336
+        "bytes": 50342
       },
-      "assets/modules-0.1.0-beta.9.min/bcmath-7LO34VZ3.js.map": {
+      "assets/modules-0.1.0-beta.10.min/bcmath-63VYW6SC.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 16270
+        "bytes": 16273
       },
-      "assets/modules-0.1.0-beta.9.min/bcmath-7LO34VZ3.js": {
+      "assets/modules-0.1.0-beta.10.min/bcmath-63VYW6SC.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1279,25 +1323,25 @@
             "bytesInOutput": 4096
           },
           "phpaml-module:bcmath": {
-            "bytesInOutput": 34
+            "bytesInOutput": 35
           }
         },
-        "bytes": 4240
+        "bytes": 4241
       },
-      "assets/modules-0.1.0-beta.9.min/regex-ZYQKX54G.js.map": {
+      "assets/modules-0.1.0-beta.10.min/regex-D2K4OFBU.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 44748
+        "bytes": 44751
       },
-      "assets/modules-0.1.0-beta.9.min/regex-ZYQKX54G.js": {
+      "assets/modules-0.1.0-beta.10.min/regex-D2K4OFBU.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1311,25 +1355,25 @@
             "bytesInOutput": 4525
           },
           "phpaml-module:regex": {
-            "bytesInOutput": 38
+            "bytesInOutput": 39
           }
         },
-        "bytes": 13123
+        "bytes": 13121
       },
-      "assets/modules-0.1.0-beta.9.min/date-YKSAMCUR.js.map": {
+      "assets/modules-0.1.0-beta.10.min/date-I2MCKYVJ.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 208557
+        "bytes": 208560
       },
-      "assets/modules-0.1.0-beta.9.min/date-YKSAMCUR.js": {
+      "assets/modules-0.1.0-beta.10.min/date-I2MCKYVJ.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1349,25 +1393,25 @@
             "bytesInOutput": 5360
           },
           "phpaml-module:date": {
-            "bytesInOutput": 46
+            "bytesInOutput": 47
           }
         },
-        "bytes": 61172
+        "bytes": 61173
       },
-      "assets/modules-0.1.0-beta.9.min/spl-ZTMSLHMB.js.map": {
+      "assets/modules-0.1.0-beta.10.min/spl-BXHAVQMI.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 277454
+        "bytes": 277274
       },
-      "assets/modules-0.1.0-beta.9.min/spl-ZTMSLHMB.js": {
+      "assets/modules-0.1.0-beta.10.min/spl-BXHAVQMI.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1375,7 +1419,7 @@
         "entryPoint": "phpaml-module:spl",
         "inputs": {
           "src-js/core/php-spl.js": {
-            "bytesInOutput": 4553
+            "bytesInOutput": 4412
           },
           "src-js/core/php-spl-list.js": {
             "bytesInOutput": 2346
@@ -1384,25 +1428,25 @@
             "bytesInOutput": 58234
           },
           "phpaml-module:spl": {
-            "bytesInOutput": 36
+            "bytesInOutput": 37
           }
         },
-        "bytes": 65410
+        "bytes": 65277
       },
-      "assets/modules-0.1.0-beta.9.min/reflection-UJP3TW2P.js.map": {
+      "assets/modules-0.1.0-beta.10.min/reflection-ANCE6ZWU.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 158988
+        "bytes": 158991
       },
-      "assets/modules-0.1.0-beta.9.min/reflection-UJP3TW2P.js": {
+      "assets/modules-0.1.0-beta.10.min/reflection-ANCE6ZWU.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
@@ -1416,30 +1460,34 @@
             "bytesInOutput": 42265
           },
           "phpaml-module:reflection": {
-            "bytesInOutput": 38
+            "bytesInOutput": 39
           }
         },
-        "bytes": 47591
+        "bytes": 47592
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js.map": {
+      "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 996112
+        "bytes": 1008701
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-EPWMRLQE.js": {
+      "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js": {
         "imports": [
           {
-            "path": "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js",
+            "path": "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js",
             "kind": "import-statement"
           }
         ],
         "exports": [
           "$",
           "A",
+          "Aa",
           "B",
+          "Ba",
           "C",
+          "Ca",
           "D",
+          "Da",
           "E",
           "F",
           "G",
@@ -1512,7 +1560,9 @@
           "x",
           "xa",
           "y",
-          "z"
+          "ya",
+          "z",
+          "za"
         ],
         "inputs": {
           "src-js/core/php-object-values.js": {
@@ -1534,10 +1584,13 @@
             "bytesInOutput": 7619
           },
           "src-js/core/state.js": {
-            "bytesInOutput": 1668
+            "bytesInOutput": 4401
           },
           "phpaml-proxy:php-date-values.js": {
             "bytesInOutput": 544
+          },
+          "src-js/core/loop-budget.js": {
+            "bytesInOutput": 367
           },
           "phpaml-proxy:php-spl.js": {
             "bytesInOutput": 241
@@ -1562,9 +1615,6 @@
           },
           "src-js/core/php-exceptions.js": {
             "bytesInOutput": 6084
-          },
-          "src-js/core/php-types.js": {
-            "bytesInOutput": 1835
           },
           "src-js/core/php-stdclass.js": {
             "bytesInOutput": 1487
@@ -1599,6 +1649,15 @@
           "src-js/core/php-random.js": {
             "bytesInOutput": 1825
           },
+          "phpaml-proxy:php-date-advanced.js": {
+            "bytesInOutput": 125
+          },
+          "src-js/core/php-casts.js": {
+            "bytesInOutput": 1664
+          },
+          "src-js/core/php-symbols.js": {
+            "bytesInOutput": 3079
+          },
           "src-js/core/builtin-signatures.json": {
             "bytesInOutput": 35053
           },
@@ -1613,9 +1672,6 @@
           },
           "phpaml-proxy:php-builtin-grapheme.js": {
             "bytesInOutput": 59
-          },
-          "phpaml-proxy:php-date-advanced.js": {
-            "bytesInOutput": 125
           },
           "src-js/core/php-builtin-objects.js": {
             "bytesInOutput": 4022
@@ -1660,19 +1716,19 @@
             "bytesInOutput": 12096
           },
           "src-js/core/php-builtins.js": {
-            "bytesInOutput": 11642
+            "bytesInOutput": 11659
           },
           "src-js/core/php-functions.js": {
-            "bytesInOutput": 13678
+            "bytesInOutput": 13556
           },
           "src-js/eval/generators.js": {
             "bytesInOutput": 180
           },
           "src-js/core/php-generator-values.js": {
-            "bytesInOutput": 6236
+            "bytesInOutput": 5953
           },
           "src-js/core/php-generator-body.js": {
-            "bytesInOutput": 3672
+            "bytesInOutput": 3533
           },
           "src-js/core/php-generators.js": {
             "bytesInOutput": 4157
@@ -1689,11 +1745,11 @@
           "src-js/core/php-values.js": {
             "bytesInOutput": 3690
           },
-          "src-js/core/php-casts.js": {
-            "bytesInOutput": 1664
+          "src-js/core/php-types.js": {
+            "bytesInOutput": 1835
           },
-          "src-js/core/php-symbols.js": {
-            "bytesInOutput": 3079
+          "src-js/core/component-inputs.js": {
+            "bytesInOutput": 530
           },
           "src-js/core/php-nullsafe.js": {
             "bytesInOutput": 655
@@ -1708,21 +1764,21 @@
             "bytesInOutput": 5107
           },
           "src-js/core/value.js": {
-            "bytesInOutput": 14463
+            "bytesInOutput": 14622
           },
           "src-js/core/php-iterators.js": {
-            "bytesInOutput": 2984
+            "bytesInOutput": 2841
           }
         },
-        "bytes": 301111
+        "bytes": 304279
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js.map": {
+      "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 23040
+        "bytes": 23042
       },
-      "assets/modules-0.1.0-beta.9.min/chunk-J26YW77G.js": {
+      "assets/modules-0.1.0-beta.10.min/chunk-PIYE6MN5.js": {
         "imports": [],
         "exports": [
           "a",
@@ -1736,7 +1792,7 @@
         ],
         "inputs": {
           "src-js/core/version.js": {
-            "bytesInOutput": 21
+            "bytesInOutput": 22
           },
           "src-js/modules/catalogue.json": {
             "bytesInOutput": 2558
@@ -1751,7 +1807,7 @@
             "bytesInOutput": 992
           }
         },
-        "bytes": 7344
+        "bytes": 7345
       }
     }
   }

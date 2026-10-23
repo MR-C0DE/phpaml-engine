@@ -309,7 +309,7 @@ export const evaluateBuiltin = (expression, state, context, resolve, kindOf, ref
     if (!parameters) throw new Error(`Unsupported frontend builtin: ${name}`);
     const args = []; let position = 0;
     for (const argument of expression.right.arguments) {
-      const target = argument.value, assignable = target?.$local || target?.$state || ['dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(target?.$expression?.operation);
+      const target = argument.value, assignable = target?.$local || target?.$state || ['componentInput', 'dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(target?.$expression?.operation);
       if (argument.spread) {
         const parent = assignable ? reference(target, state, data, false, false, true) : null;
         let array = parent ? parent.get().value : resolve(target, state, data);

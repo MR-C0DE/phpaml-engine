@@ -1,3 +1,4 @@
+import {checkIteration as iteration} from './core/loop-budget.js';
 import {destructure,destructureReference} from './core/php-destructure.js';
 import {foreachEntries, referenceEntries} from './core/php-iterators.js';
 import {bindOffsetPattern} from './core/php-object-collections.js';
@@ -11,11 +12,6 @@ import {exceptionFlow} from './core/php-exceptions.js';
 
 export const controlSignal = (signal) => signal === 'break' || signal === 'continue' ? {operation: signal, levels: 1} : signal?.operation === 'return' || signal?.operation === 'break' || signal?.operation === 'continue' ? signal : null;
 const outerSignal = (signal) => signal.operation === 'return' ? signal : signal.levels === 2 ? signal.operation : {...signal, levels: signal.levels - 1};
-const iteration = (context, count, limit) => {
-  if (count > limit || --context.loopBudget.remaining < 0) {
-    const error = new RangeError('Frontend loop exceeds its safe iteration limit'); error.code = 'PHP_LOOP_LIMIT'; throw error;
-  }
-};
 const bind = (bindings, source, sourceKind, state, data) => bindOffsetPattern(bindings, {value: source, kind: sourceKind},
   (key) => {const value = resolveData(key, state, data); return {value, kind: resolveType(key, state, data, value)};},
   (target, item) => assignTarget(target, item.value, item.kind, state, data), data);

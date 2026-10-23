@@ -27,12 +27,14 @@ test('keeps GET requests free of CSRF headers and bodies', () => {
   assert.equal(url.searchParams.get('empty'), '');
   assert.equal(options.headers['X-CSRF-Token'], undefined);
   assert.equal(options.body, undefined);
+  assert.equal(options.mode, 'same-origin');
 });
 
 test('adds JSON and CSRF metadata to mutations', () => {
   const url = new URL('https://example.test/api');
   const options = prepareApiRequest(url, {method: 'POST'}, {name: 'Ada'}, null, 'csrf-token');
   assert.equal(options.credentials, 'same-origin');
+  assert.equal(options.mode, 'same-origin');
   assert.equal(options.headers['Content-Type'], 'application/json');
   assert.equal(options.headers['X-CSRF-Token'], 'csrf-token');
   assert.equal(options.body, '{"name":"Ada"}');
@@ -41,5 +43,6 @@ test('adds JSON and CSRF metadata to mutations', () => {
 test('labels remote validation independently without inventing a token', () => {
   const options = prepareApiRequest(new URL('https://example.test/validate'), {method: 'POST'}, {value: 'a'}, null, '', 'validation');
   assert.equal(options.headers['X-AML-Engine'], 'validation');
+  assert.equal(options.mode, 'same-origin');
   assert.equal(options.headers['X-CSRF-Token'], undefined);
 });

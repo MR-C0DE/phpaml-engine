@@ -8,7 +8,12 @@ export const validateValue = (rules, value) => {
 };
 
 export const validationMessage = (control) => {
+  if (control.willValidate === false || control.matches?.(':disabled')) return '';
   const rules = JSON.parse(control.dataset.amlValidate || '[]');
-  const value = control.type === 'checkbox' ? (control.checked ? control.value : '') : control.value;
-  return validateValue(rules, value);
+  const checked = control.type === 'radio'
+    ? control.checked || (control.name && [...(control.form?.elements || control.ownerDocument.querySelectorAll('input[type="radio"]'))]
+      .some(other => other.type === 'radio' && other.name === control.name && other.form === control.form && other.checked))
+    : control.checked;
+  const value = ['checkbox', 'radio'].includes(control.type) ? (checked ? control.value : '') : control.value;
+  return validateValue(rules, value) || (control.validity?.valid === false ? control.validationMessage : '');
 };

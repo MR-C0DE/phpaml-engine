@@ -386,7 +386,7 @@ if (!window.AMLEngine?.mount) {
   };
 
   // src-js/core/version.js
-  var ENGINE_VERSION = "0.1.0-beta.9";
+  var ENGINE_VERSION = "0.1.0-beta.10";
 
   // src-js/modules/catalogue.json
   var catalogue_default = {
@@ -766,7 +766,7 @@ if (!window.AMLEngine?.mount) {
   var classes = new Map(Object.entries(catalogue_default).flatMap(([module, item]) => item.classes.map((name) => [name, module])));
   var nativeModules = { nativeDate: "date", nativeIntl: "intl", nativeSpl: "spl", nativeReflection: "reflection" };
   var normalize = (name) => typeof name === "string" ? name.replace(/^\\/, "").toLowerCase() : "";
-  var requiredModules = (node) => {
+  var requiredModules = (node2) => {
     const needed = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new WeakSet();
     const add2 = (name) => {
       if (!Object.hasOwn(catalogue_default, name) || needed.has(name)) return;
@@ -818,7 +818,7 @@ if (!window.AMLEngine?.mount) {
       }
       Object.values(value).forEach(visit);
     };
-    visit(node);
+    visit(node2);
     return moduleNames.filter((name) => needed.has(name));
   };
   var scopeRequirements = (scope) => {
@@ -872,6 +872,210 @@ if (!window.AMLEngine?.mount) {
   var prepareInstructionModules = (instruction) => loaders ? prepareModules(requiredModules(instruction)) : null;
   var prepareScopeModules = (scope) => loaders ? prepareModules(scopeRequirements(scope)) : null;
 
+  // src-js/calendar.js
+  var DAY = 864e5;
+  var calendars = /* @__PURE__ */ new WeakMap();
+  var civilDate = (value) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
+    const [year, month, day] = value.split("-").map(Number);
+    const date = /* @__PURE__ */ new Date(0);
+    date.setUTCFullYear(year, month - 1, day);
+    return year >= 1 && year <= 9999 && date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? date : null;
+  };
+  var iso = (date) => date && date.getUTCFullYear() >= 1 && date.getUTCFullYear() <= 9999 ? date.toISOString().slice(0, 10) : null;
+  var moveCalendarDay = (value, count) => {
+    const date = civilDate(value);
+    return date ? iso(new Date(date.getTime() + count * DAY)) : null;
+  };
+  var moveCalendarMonth = (value, count) => {
+    const date = civilDate(value);
+    if (!date) return null;
+    const month = date.getUTCFullYear() * 12 + date.getUTCMonth() + count;
+    const year = Math.floor(month / 12);
+    if (year < 1 || year > 9999) return null;
+    const last = /* @__PURE__ */ new Date(0);
+    last.setUTCFullYear(year, month % 12 + 1, 0);
+    const result2 = /* @__PURE__ */ new Date(0);
+    result2.setUTCFullYear(year, month % 12, Math.min(date.getUTCDate(), last.getUTCDate()));
+    return iso(result2);
+  };
+  var today = () => {
+    const now2 = /* @__PURE__ */ new Date();
+    return `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, "0")}-${String(now2.getDate()).padStart(2, "0")}`;
+  };
+  var inputOf = (calendar) => calendar.querySelector(":scope > input[data-aml-calendar-input]");
+  var limits = (input) => ({ min: civilDate(input.min) ? input.min : "0001-01-01", max: civilDate(input.max) ? input.max : "9999-12-31" });
+  var clamp = (value, input) => {
+    const { min, max } = limits(input);
+    return value < min ? min : value > max ? max : value;
+  };
+  var selectable = (value, input) => {
+    const date = civilDate(value);
+    if (!date) return false;
+    const { min, max } = limits(input);
+    if (value < min || value > max) return false;
+    if (input.step === "any") return true;
+    const step = Number(input.step) > 0 ? Number(input.step) : 1;
+    const base = civilDate(input.min) || civilDate(input.getAttribute("value")) || civilDate("1970-01-01");
+    const steps = (date - base) / DAY / step;
+    return Math.abs(steps - Math.round(steps)) < 1e-8;
+  };
+  var monthChoices = (value, input) => {
+    if (!value) return [];
+    const first = value.slice(0, 7) + "-01", result2 = [];
+    for (let day = first; day && day.slice(0, 7) === first.slice(0, 7); day = moveCalendarDay(day, 1)) {
+      if (selectable(day, input)) result2.push(day);
+    }
+    return result2;
+  };
+  var node = (tag, text3, attributes = {}) => {
+    const element = document.createElement(tag);
+    if (text3 !== null) element.textContent = text3;
+    for (const [key2, value] of Object.entries(attributes)) element.setAttribute(key2, value);
+    return element;
+  };
+  var draw = (calendar, focus = false) => {
+    const input = inputOf(calendar), panel = calendar.querySelector(":scope > [data-aml-calendar-panel]");
+    if (!input || !panel) return;
+    calendar.hidden = input.hidden;
+    const configuration = JSON.parse(calendar.dataset.amlCalendar);
+    let state = calendars.get(calendar);
+    const selected = civilDate(input.value) ? input.value : "";
+    if (!state) {
+      state = { selected, date: clamp(selected || today(), input), signature: "" };
+      calendars.set(calendar, state);
+    }
+    if (state.selected !== selected) {
+      state.selected = selected;
+      state.date = clamp(selected || today(), input);
+    }
+    state.date = clamp(state.date, input);
+    const disabled = input.matches(":disabled") || input.readOnly;
+    if (!selectable(state.date, input)) {
+      const available = monthChoices(state.date, input);
+      if (available.length) state.date = available.find((day) => day >= state.date) || available[available.length - 1];
+    }
+    const signature = JSON.stringify([state.date, selected, disabled, input.min, input.max, input.step, configuration]);
+    if (state.signature === signature && !focus) return;
+    state.signature = signature;
+    const focusInside = panel.contains(document.activeElement);
+    const focusedMove = typeof focus === "string" ? focus : !focus && document.activeElement?.dataset?.amlCalendarMove;
+    const locale = configuration.locale || "en", firstDay = configuration.firstDayOfWeek ?? 1;
+    const french = locale.toLowerCase().startsWith("fr");
+    const format3 = (options) => new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options });
+    const month = format3({ month: "long", year: "numeric" }).format(civilDate(state.date));
+    const shortWeekday = format3({ weekday: "short" }), longWeekday = format3({ weekday: "long" });
+    const fullDate = format3({ weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const header = panel.querySelector(":scope > .aml-calendar-header") || node("div", null, { class: "aml-calendar-header" });
+    const previous = header.querySelector('[data-aml-calendar-move="-1"]') || node("button", "\u2039", { type: "button", "data-aml-calendar-move": "-1" });
+    const next2 = header.querySelector('[data-aml-calendar-move="1"]') || node("button", "\u203A", { type: "button", "data-aml-calendar-move": "1" });
+    previous.setAttribute("aria-label", french ? "Mois pr\xE9c\xE9dent" : "Previous month");
+    next2.setAttribute("aria-label", french ? "Mois suivant" : "Next month");
+    const { min, max } = limits(input);
+    const previousMonth = moveCalendarMonth(state.date, -1), nextMonth = moveCalendarMonth(state.date, 1);
+    previous.disabled = disabled || !previousMonth || previousMonth.slice(0, 7) < min.slice(0, 7);
+    next2.disabled = disabled || !nextMonth || nextMonth.slice(0, 7) > max.slice(0, 7);
+    const monthLabel = header.querySelector(".aml-calendar-month") || node("span", null, { "aria-live": "polite", "aria-atomic": "true", class: "aml-calendar-month" });
+    if (!header.childElementCount) header.append(previous, monthLabel, next2);
+    if (!header.parentElement) panel.append(header);
+    if (monthLabel.textContent !== month) monthLabel.textContent = month;
+    const table2 = node("table", null, { role: "grid", "aria-label": month, class: "aml-calendar-grid" });
+    const headings = node("tr", null);
+    for (let i = 0; i < 7; i++) {
+      const date = civilDate(moveCalendarDay("2024-01-07", (firstDay + i) % 7));
+      headings.append(node("th", shortWeekday.format(date), { scope: "col", abbr: longWeekday.format(date) }));
+    }
+    const head = node("thead", null);
+    head.append(headings);
+    table2.append(head);
+    const body = node("tbody", null), first = state.date.slice(0, 7) + "-01";
+    const offset = (civilDate(first).getUTCDay() - firstDay + 7) % 7;
+    const currentDate = today();
+    for (let row = 0; row < 6; row++) {
+      const tr = node("tr", null);
+      for (let column = 0; column < 7; column++) {
+        const date = moveCalendarDay(first, row * 7 + column - offset), cell = node("td", null);
+        if (date && date.slice(0, 7) === first.slice(0, 7)) {
+          cell.setAttribute("aria-selected", date === selected ? "true" : "false");
+          const button = node("button", String(Number(date.slice(-2))), {
+            type: "button",
+            "data-aml-calendar-day": date,
+            "aria-label": fullDate.format(civilDate(date)),
+            tabindex: date === state.date && !disabled ? "0" : "-1"
+          });
+          button.disabled = disabled || !selectable(date, input);
+          if (date === currentDate) button.setAttribute("aria-current", "date");
+          cell.append(button);
+        }
+        tr.append(cell);
+      }
+      body.append(tr);
+    }
+    table2.append(body);
+    const oldTable = panel.querySelector(":scope > .aml-calendar-grid");
+    if (oldTable) oldTable.replaceWith(table2);
+    else panel.append(table2);
+    panel.hidden = false;
+    if (focus || focusInside) {
+      const headerButton = focusedMove && panel.querySelector(`button[data-aml-calendar-move="${focusedMove}"]:not(:disabled)`);
+      (headerButton || panel.querySelector(`button[data-aml-calendar-day="${state.date}"]:not(:disabled)`))?.focus();
+    }
+  };
+  var renderCalendars = (root) => root.querySelectorAll("[data-aml-calendar]").forEach((calendar) => draw(calendar));
+  var calendarClick = (root, event) => {
+    const button = event.target.closest("[data-aml-calendar-day],[data-aml-calendar-move]");
+    const calendar = button?.closest("[data-aml-calendar]");
+    if (!calendar || !root.contains(calendar)) return false;
+    event.preventDefault();
+    const input = inputOf(calendar), state = calendars.get(calendar);
+    if (!input || !state || button.disabled || input.matches(":disabled") || input.readOnly) return true;
+    if (button.dataset.amlCalendarDay) {
+      const date = button.dataset.amlCalendarDay;
+      if (!selectable(date, input)) return true;
+      if (input.value !== date) {
+        input.value = date;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    } else {
+      state.date = moveCalendarMonth(state.date, Number(button.dataset.amlCalendarMove)) || state.date;
+    }
+    draw(calendar, button.dataset.amlCalendarMove || true);
+    return true;
+  };
+  var calendarKey = (root, event) => {
+    const button = event.target.closest("[data-aml-calendar-day]"), calendar = button?.closest("[data-aml-calendar]");
+    if (!calendar || !root.contains(calendar) || event.altKey || event.ctrlKey || event.metaKey) return false;
+    const input = inputOf(calendar), state = calendars.get(calendar);
+    if (!state || input.matches(":disabled") || input.readOnly) return false;
+    const date = button.dataset.amlCalendarDay;
+    const firstDay = JSON.parse(calendar.dataset.amlCalendar).firstDayOfWeek ?? 1;
+    const weekday = (civilDate(date).getUTCDay() - firstDay + 7) % 7;
+    const days = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7, Home: -weekday, End: 6 - weekday };
+    let next2;
+    if (Object.prototype.hasOwnProperty.call(days, event.key)) next2 = moveCalendarDay(date, days[event.key]);
+    else if (event.key === "PageUp" || event.key === "PageDown") next2 = moveCalendarMonth(date, (event.key === "PageUp" ? -1 : 1) * (event.shiftKey ? 12 : 1));
+    else return false;
+    event.preventDefault();
+    if (next2) {
+      next2 = clamp(next2, input);
+      const direction = next2 < date ? -1 : 1;
+      const { min, max } = limits(input);
+      for (let count = 0; next2 && !selectable(next2, input) && count < 366; count++) {
+        next2 = moveCalendarDay(next2, direction);
+        if (next2 && (next2 < min || next2 > max)) {
+          next2 = null;
+          break;
+        }
+      }
+      if (next2 && selectable(next2, input)) {
+        state.date = next2;
+        draw(calendar, true);
+      }
+    }
+    return true;
+  };
+
   // src-js/context.js
   var rootStates = /* @__PURE__ */ new WeakMap();
   var rootConfigs = /* @__PURE__ */ new WeakMap();
@@ -900,14 +1104,124 @@ if (!window.AMLEngine?.mount) {
     }
     return segments;
   };
-  var readPath = (state, path) => safeSegments(path).reduce((value, key2) => value?.[key2], state);
+  var ownValue = (value, key2) => value != null && Object.hasOwn(value, key2) ? value[key2] : void 0;
+  var writeOwn = (value, key2, next2) => {
+    if (Object.hasOwn(value, key2)) value[key2] = next2;
+    else Object.defineProperty(value, key2, { value: next2, writable: true, enumerable: true, configurable: true });
+  };
+  var rowBindings = /* @__PURE__ */ new WeakMap();
+  var rowToken = (key2) => "k" + [...new TextEncoder().encode(String(key2))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  var bindRow = (state, prefix, rule) => {
+    safeSegments(prefix);
+    let registry = rowBindings.get(state);
+    if (!registry) {
+      registry = { rows: /* @__PURE__ */ new Map(), roots: /* @__PURE__ */ new Set(), revision: 0, indices: /* @__PURE__ */ new WeakMap() };
+      rowBindings.set(state, registry);
+    }
+    registry.roots.add(prefix.slice(0, prefix.lastIndexOf(".")));
+    registry.rows.set(prefix, rule);
+  };
+  var unbindRows = (state, prefix) => {
+    const rows = rowBindings.get(state)?.rows;
+    if (rows) {
+      for (const path of rows.keys()) if (path === prefix || path.startsWith(prefix + ".")) rows.delete(path);
+    }
+  };
+  var boundRow = (state, path) => {
+    const registry = rowBindings.get(state);
+    if (!registry) return null;
+    let prefix = path;
+    while (prefix) {
+      if (registry.rows.has(prefix)) return { prefix, rule: registry.rows.get(prefix) };
+      const end = prefix.lastIndexOf(".");
+      prefix = end < 0 ? "" : prefix.slice(0, end);
+    }
+    return null;
+  };
+  var sourceIndex = (state, rule, depth) => {
+    const items = readPath(state, rule.source, depth + 1);
+    if (!Array.isArray(items)) throw new TypeError("An editable IList source must remain an indexed array.");
+    const registry = rowBindings.get(state);
+    let caches = registry.indices.get(items);
+    if (!caches) {
+      caches = /* @__PURE__ */ new Map();
+      registry.indices.set(items, caches);
+    }
+    let cached = caches.get(rule.keyPath);
+    if (!cached || cached.revision !== registry.revision) {
+      const keys = /* @__PURE__ */ new Map();
+      items.forEach((item, index) => {
+        const key2 = rule.keyPath ? safeSegments(rule.keyPath).reduce(ownValue, item) : void 0;
+        if (typeof key2 !== "string" && !(typeof key2 === "number" && Number.isSafeInteger(key2))) throw new TypeError("Editable IList records require a stable string or integer key.");
+        if (keys.has(String(key2))) throw new Error("Duplicate editable IList key: " + key2);
+        keys.set(String(key2), index);
+      });
+      cached = { revision: registry.revision, keys };
+      caches.set(rule.keyPath, cached);
+    }
+    const found = cached.keys.get(rule.key) ?? -1;
+    if (found < 0) throw new Error("This IList item no longer exists in its source.");
+    return found;
+  };
+  var resolveWritePath = (state, path, depth = 0) => {
+    safeSegments(path);
+    if (depth > 32) throw new RangeError("Cyclic IList field binding.");
+    const binding = boundRow(state, path);
+    if (!binding) {
+      if ([...rowBindings.get(state)?.roots || []].some((root) => path === root || path.startsWith(root + "."))) throw new Error("This IList row has been removed.");
+      return path;
+    }
+    const { prefix, rule } = binding;
+    if (!rule.source) throw new Error("This calculated IList is read-only. Connect its source with editable().");
+    const index = sourceIndex(state, rule, depth);
+    const suffix = path.slice(prefix.length);
+    if (!suffix) throw new Error("Write an IList field, not the row handle.");
+    return resolveWritePath(state, `${rule.source}.${index}${suffix}`, depth + 1);
+  };
+  var readPath = (state, path, depth = 0) => {
+    const segments = safeSegments(path);
+    if (depth > 32) throw new RangeError("Cyclic IList field binding.");
+    const binding = boundRow(state, path);
+    if (!binding) return segments.reduce(ownValue, state);
+    const { prefix, rule } = binding;
+    let value = rule.value;
+    if (rule.direct && rule.source) {
+      try {
+        value = readPath(state, `${rule.source}.${sourceIndex(state, rule, depth)}`, depth + 1);
+      } catch (_) {
+      }
+    }
+    const suffix = path.slice(prefix.length + 1);
+    return suffix ? safeSegments(suffix).reduce(ownValue, value) : value;
+  };
   var writePath = (state, path, value) => {
     const keys = safeSegments(path);
     const leaf = keys.pop();
-    const parent = keys.reduce((current, key2) => current[key2] ?? (current[key2] = {}), state);
-    parent[leaf] = value;
+    const parent = keys.reduce((current, key2) => {
+      if (current === null || typeof current !== "object") throw new TypeError("A state path must traverse local objects.");
+      if (ownValue(current, key2) == null) writeOwn(current, key2, {});
+      return current[key2];
+    }, state);
+    if (parent === null || typeof parent !== "object") throw new TypeError("A state path must target a local object.");
+    writeOwn(parent, leaf, value);
+    const registry = rowBindings.get(state);
+    if (registry) registry.revision++;
   };
   var pathAffects = (binding, target) => binding === target || binding.startsWith(`${target}.`) || target.startsWith(`${binding}.`);
+  var statePathAffects = (state, binding, target, depth = 0) => {
+    if (pathAffects(binding, target)) return true;
+    if (depth > 32) return false;
+    const row = boundRow(state, binding);
+    if (!row) return false;
+    if (row.rule.direct && row.rule.source) {
+      try {
+        return pathAffects(resolveWritePath(state, binding), target);
+      } catch (_) {
+        return false;
+      }
+    }
+    return (row.rule.dependencies || []).some((path) => statePathAffects(state, path, target, depth + 1));
+  };
   var owningTarget = (group2, target) => Object.keys(group2 || {}).sort((left, right) => right.length - left.length).find((candidate) => target === candidate || target.startsWith(`${candidate}.`));
   var computedValue = (rule, state) => {
     const values3 = (rule.dependencies || []).map((dependency) => readPath(state, dependency));
@@ -923,7 +1237,7 @@ if (!window.AMLEngine?.mount) {
     for (let pass = 0; pass < 20; pass++) {
       let passChanged = false;
       Object.entries(config.computed || {}).forEach(([target, rule]) => {
-        if (changedTarget && !rule.dependencies.some((dependency) => pathAffects(dependency, changedTarget)) && ![...changes.keys()].some((dependency) => rule.dependencies.some((item) => pathAffects(item, dependency)))) return;
+        if (changedTarget && !rule.dependencies.some((dependency) => statePathAffects(state, dependency, changedTarget)) && ![...changes.keys()].some((dependency) => rule.dependencies.some((item) => statePathAffects(state, item, dependency)))) return;
         const next2 = computedValue(rule, state);
         if (Object.is(readPath(state, target), next2)) return;
         writePath(state, target, next2);
@@ -950,8 +1264,10 @@ if (!window.AMLEngine?.mount) {
   var deletePath = (state, path) => {
     const keys = safeSegments(path);
     const leaf = keys.pop();
-    const parent = keys.reduce((current, key2) => current?.[key2], state);
+    const parent = keys.reduce(ownValue, state);
     if (parent && typeof parent === "object") delete parent[leaf];
+    const registry = rowBindings.get(state);
+    if (registry) registry.revision++;
   };
 
   // src-js/core/date-definitions.json
@@ -3624,7 +3940,7 @@ if (!window.AMLEngine?.mount) {
       if (!"!|+YymndjHGhgisuvaAOPpeUMFDlSz #;:/.,-()".includes(tokens2[i])) throw dateUnsupported(`createFromFormat token ${tokens2[i]} is unavailable; escape literal characters`);
     }
     let parts = { ...dateParts(Math.floor(Date.now() / 1e3), zone), microsecond: 0 }, cursor = 0, timeSeen = false, period = null, weekday = null, dayOfYear = null, timestamp = null, trailing = false;
-    const parsed = /* @__PURE__ */ new Set(), warnings = /* @__PURE__ */ new Map(), errors = /* @__PURE__ */ new Map();
+    const parsed = /* @__PURE__ */ new Set(), warnings = /* @__PURE__ */ new Map(), errors2 = /* @__PURE__ */ new Map();
     let warningCount = 0, errorCount = 0;
     const offset = () => encoder2.encode(text3.slice(0, cursor)).length;
     const problem = (message, warning = false) => {
@@ -3632,7 +3948,7 @@ if (!window.AMLEngine?.mount) {
         warnings.set(offset(), message);
         warningCount++;
       } else {
-        errors.set(offset(), message);
+        errors2.set(offset(), message);
         errorCount++;
       }
     };
@@ -3781,7 +4097,7 @@ if (!window.AMLEngine?.mount) {
     const days = new Date(Date.UTC(parts.year, parts.month, 0)).getUTCDate();
     if (parts.month < 1 || parts.month > 12 || parts.day < 1 || parts.day > days) problem("The parsed date was invalid", true);
     if (cursor < text3.length) problem("Trailing data", trailing);
-    (context2.builtinMemory || (context2.builtinMemory = {})).dateErrors = warningCount || errorCount ? { warning_count: warningCount, warnings: makeArray([...warnings]), error_count: errorCount, errors: makeArray([...errors]) } : false;
+    (context2.builtinMemory || (context2.builtinMemory = {})).dateErrors = warningCount || errorCount ? { warning_count: warningCount, warnings: makeArray([...warnings]), error_count: errorCount, errors: makeArray([...errors2]) } : false;
     if (errorCount) return false;
     if (dayOfYear !== null) {
       parts.month = 1;
@@ -7053,6 +7369,19 @@ if (!window.AMLEngine?.mount) {
     const copy = makeObject(objectData(value).definition);
     storage2.set(copy, { ...data, attributes: new Map(data.attributes), textAttributes: new Map(data.textAttributes) });
     return copy;
+  };
+
+  // src-js/core/loop-budget.js
+  var checkIteration = (context2, count, limit3 = 1e3) => {
+    const budget = context2.loopBudget || (context2.loopBudget = { remaining: 1e4 });
+    const perLoop = count > limit3;
+    if (perLoop || --budget.remaining < 0) {
+      throw Object.assign(new RangeError(perLoop ? `Frontend loop exceeds its safe iteration limit (${limit3} iterations per loop).` : "Frontend execution exceeds its total iteration limit (10000 iterations shared by all loops)."), {
+        code: "PHP_LOOP_LIMIT",
+        limitKind: perLoop ? "loop" : "execution",
+        limit: perLoop ? limit3 : 1e4
+      });
+    }
   };
 
   // src-js/core/php-spl-list.js
@@ -12407,253 +12736,6 @@ if (!window.AMLEngine?.mount) {
     throw Object.assign(new Error("Invalid backing value for enum " + name), { name: "ValueError" });
   };
 
-  // src-js/core/php-exceptions.js
-  var parents = {
-    Exception: ["Throwable", "Stringable"],
-    Error: ["Throwable", "Stringable"],
-    ReflectionException: ["Exception"],
-    JsonException: ["Exception"],
-    DateException: ["Exception"],
-    DateMalformedStringException: ["DateException"],
-    DateInvalidTimeZoneException: ["DateException"],
-    DateMalformedIntervalStringException: ["DateException"],
-    DateMalformedPeriodStringException: ["DateException"],
-    DateInvalidOperationException: ["DateException"],
-    LogicException: ["Exception"],
-    RuntimeException: ["Exception"],
-    ErrorException: ["Exception"],
-    InvalidArgumentException: ["LogicException"],
-    DomainException: ["LogicException"],
-    LengthException: ["LogicException"],
-    OutOfRangeException: ["LogicException"],
-    OutOfBoundsException: ["RuntimeException"],
-    OverflowException: ["RuntimeException"],
-    RangeException: ["RuntimeException"],
-    UnderflowException: ["RuntimeException"],
-    UnexpectedValueException: ["RuntimeException"],
-    TypeError: ["Error"],
-    ArgumentCountError: ["TypeError"],
-    ValueError: ["Error"],
-    ArithmeticError: ["Error"],
-    DivisionByZeroError: ["ArithmeticError"],
-    AssertionError: ["Error"],
-    UnhandledMatchError: ["Error"],
-    CompileError: ["Error"],
-    ParseError: ["CompileError"]
-  };
-  var exceptionClass = (error) => {
-    if (isPhpObject(error)) return objectData(error).definition.name;
-    if (!(error instanceof Error)) throw new TypeError("Expected an object value.");
-    if (error.phpHierarchy) return error.name;
-    if (error instanceof RangeError) return ["PHP_LOOP_LIMIT", "PHP_CALL_LIMIT"].includes(error.code) ? "RuntimeException" : "ValueError";
-    return Object.hasOwn(parents, error.name) ? error.name : "Error";
-  };
-  var exceptionIs = (error, type) => {
-    if (isPhpObject(error)) return objectIs(error, type);
-    if (!(error instanceof Error)) return false;
-    const wanted = type.replace(/^\\/, "").toLowerCase();
-    const visit = (name) => name.toLowerCase() === wanted || (parents[name] || []).some(visit);
-    return error.phpHierarchy ? error.phpHierarchy.some((name) => name.toLowerCase() === wanted) : visit(exceptionClass(error));
-  };
-  var raise = (value, source, context2) => {
-    if (!(value instanceof Error)) throw withSource(new Error(typeof value === "function" ? "Cannot throw objects that do not implement Throwable" : "Can only throw objects"), source);
-    value.phpTrace ?? (value.phpTrace = (context2?.trace || []).map((frame) => ({ ...frame })));
-    throw withSource(value, source);
-  };
-  var bindArguments = (nodes, names2, state, context2, resolve, type) => {
-    const args = [];
-    for (const node of nodes || []) {
-      const value = resolve(node.value, state, context2);
-      if (node.spread) {
-        if (!isPhpArray(value)) throw new TypeError("Only arrays can be unpacked in exception arguments");
-        for (const [key2, item] of arrayEntries(value)) args.push({ ...typeof key2 === "string" ? { name: key2 } : {}, value: item, kind: arrayKind(value, key2) });
-      } else args.push({ ...node, value, kind: type(node.value, state, context2, value) });
-    }
-    const values3 = /* @__PURE__ */ Object.create(null);
-    let position2 = 0, named = false;
-    for (const arg of args) {
-      let name = arg.name;
-      if (name !== void 0) {
-        named = true;
-        if (!names2.includes(name)) throw new Error(`Unknown named parameter $${name}`);
-      } else {
-        if (named) throw new Error("Cannot use positional argument after named argument");
-        name = names2[position2++];
-      }
-      if (name === void 0) throw Object.assign(new Error("Too many exception/assertion arguments"), { name: "ArgumentCountError" });
-      if (Object.hasOwn(values3, name)) throw new Error(`Named parameter $${name} overwrites previous argument`);
-      values3[name] = { value: arg.value, kind: arg.kind };
-    }
-    return values3;
-  };
-  var newThrowable = (descriptor, message, code, previous, source, context2) => {
-    const error = new Error(message);
-    error.name = descriptor.name;
-    error.phpHierarchy = [descriptor.name, ...descriptor.parents];
-    error.phpCode = code;
-    error.phpPrevious = previous;
-    error.phpMessage = message;
-    error.phpTrace = (context2.trace || []).map((frame) => ({ ...frame }));
-    return withSource(error, source);
-  };
-  var evaluateException = (expression, state, context2, resolve, type) => {
-    const value = (node) => resolve(node, state, context2), options = expression.right || {};
-    if (expression.operation === "throw") return raise(value(expression.left), expression.right || context2.source, context2);
-    if (expression.operation === "exceptionIs") {
-      const left = value(expression.left);
-      let right = expression.right === "@static" ? context2.calledClass : value(expression.right);
-      if (isPhpObject(right)) right = objectData(right).definition.name;
-      else if (right instanceof Error) right = exceptionClass(right);
-      if (typeof right !== "string") throw new Error("Class name must be a valid object or a string");
-      return exceptionIs(left, right);
-    }
-    if (expression.operation === "exceptionGet") {
-      const error2 = value(expression.left);
-      if (error2 == null && options.nullable) return null;
-      const name = exceptionClass(error2);
-      switch (options.method) {
-        case "class":
-          return name;
-        case "getmessage":
-          return error2.phpMessage ?? error2.message;
-        case "getcode":
-          return error2.phpCode ?? 0;
-        case "getprevious":
-          return error2.phpPrevious ?? null;
-        case "getfile":
-          return error2.phpFile ?? error2.source?.file ?? "[browser]";
-        case "getline":
-          return error2.phpLine ?? error2.source?.line ?? 0;
-        case "gettrace":
-          return (error2.phpTrace || []).map((frame) => ({ ...frame }));
-        case "gettraceasstring":
-          return traceString(error2);
-        case "__tostring":
-          return formatThrowable(error2);
-        case "getseverity":
-          if (exceptionIs(error2, "ErrorException")) return error2.phpSeverity ?? 1;
-          break;
-      }
-      throw new Error(`Unsupported Throwable method: ${options.method}`);
-    }
-    if (expression.operation === "assert") {
-      const args2 = bindArguments(expression.left, ["assertion", "description"], state, context2, resolve, type);
-      if (!Object.hasOwn(args2, "assertion")) throw Object.assign(new Error("assert() requires an assertion"), { name: "ArgumentCountError" });
-      const item = args2.description || { value: null, kind: "NULL" };
-      const description = item.value instanceof Error ? item.value : assignType({ types: ["string"], nullable: true, property: "assert() description" }, item.value, item.kind, options.source?.strictTypes ?? true, context2).value;
-      if (phpBool(args2.assertion.value)) return true;
-      if (description instanceof Error) return raise(description, options.source, context2);
-      return raise(newThrowable({ name: "AssertionError", parents: ["Error", "Throwable", "Stringable"] }, description ?? options.description, 0, null, options.source, context2), options.source, context2);
-    }
-    const descriptor = expression.left, extended = descriptor.ctorKind === "ErrorException";
-    const args = bindArguments(options.arguments, extended ? ["message", "code", "severity", "filename", "line", "previous"] : ["message", "code", "previous"], state, context2, resolve, type);
-    const scalar2 = (name, typeName, fallback, nullable2 = false) => {
-      const item = args[name] || { value: fallback, kind: phpType(fallback) };
-      return assignType({ types: [typeName], nullable: nullable2, property: `${descriptor.name}::__construct($${name})` }, item.value, item.kind, options.source?.strictTypes ?? true, context2).value;
-    };
-    const message = scalar2("message", "string", ""), code = scalar2("code", "int", 0);
-    const previous = args.previous?.value ?? null;
-    if (previous !== null && !(previous instanceof Error)) throw new TypeError("Exception previous must be Throwable|null");
-    const error = newThrowable(descriptor, message, code, previous, options.source || context2.source, context2);
-    if (extended) {
-      error.phpSeverity = scalar2("severity", "int", 1);
-      error.phpFile = scalar2("filename", "string", null, true);
-      error.phpLine = scalar2("line", "int", null, true);
-    }
-    return error;
-  };
-  var traceString = (error) => [...(error.phpTrace || []).map((frame, index) => `#${index} ${frame.file || "[browser]"}(${frame.line || 0}): ${frame.function || "{closure}"}()`), `#${(error.phpTrace || []).length} {main}`].join("\n");
-  var formatThrowable = (error, seen = /* @__PURE__ */ new Set()) => {
-    if (seen.has(error)) return "[cyclic exception]";
-    seen.add(error);
-    const previous = error.phpPrevious ? formatThrowable(error.phpPrevious, seen) + "\n\nNext " : "";
-    return previous + `${exceptionClass(error)}: ${error.phpMessage ?? error.message} in ${error.phpFile ?? error.source?.file ?? "[browser]"}:${error.phpLine ?? error.source?.line ?? 0}
-Stack trace:
-${traceString(error)}`;
-  };
-  var linkPrevious = (error, pending3) => {
-    if (!(error instanceof Error) || !(pending3 instanceof Error) || error === pending3) return;
-    const seen = /* @__PURE__ */ new Set();
-    for (let cause = pending3; cause; cause = cause.phpPrevious) {
-      if (seen.has(cause)) return;
-      seen.add(cause);
-    }
-    let tail = error;
-    while (tail) {
-      if (seen.has(tail)) return;
-      seen.add(tail);
-      if (!tail.phpPrevious) {
-        tail.phpPrevious = pending3;
-        return;
-      }
-      tail = tail.phpPrevious;
-    }
-  };
-  function* exceptionFlow(action, bind2, context2) {
-    let pending3, signal;
-    try {
-      signal = yield action.action;
-    } catch (error) {
-      error.phpTrace ?? (error.phpTrace = (context2.trace || []).map((frame) => ({ ...frame })));
-      const branch = (action.catches || []).find((branch2) => branch2.types.some((type) => exceptionIs(error, type)));
-      if (!branch) pending3 = error;
-      else {
-        try {
-          if (branch.variable) bind2(branch.variable, error);
-          signal = yield branch.action;
-        } catch (failure6) {
-          pending3 = failure6;
-        }
-      }
-    }
-    if (action.finally) {
-      try {
-        const final = yield action.finally;
-        if (final) return final;
-      } catch (error) {
-        linkPrevious(error, pending3);
-        throw error;
-      }
-    }
-    if (pending3) throw pending3;
-    return signal;
-  }
-
-  // src-js/core/php-types.js
-  var nativeType = (type) => ({ integer: "int", double: "float", boolean: "bool", NULL: "null" })[type] || type;
-  var numeric = (value) => typeof value === "number" || typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
-  var assignType = (rule, value, kind = phpType(value), strict = true, context2 = null) => {
-    if (!rule) return { value, kind };
-    const types = rule.types.map((type) => type.replace(/^\?/, ""));
-    const actual = nativeType(kind);
-    if (isPhpObject(value) && types.some((type) => type.split("&").every((member) => objectIs(value, member)))) return { value, kind: "object" };
-    if (isRoundingMode(value) && types.some((type) => type.toLowerCase() === "roundingmode")) return { value, kind: "object" };
-    if (value instanceof Error && types.some((type) => type.split("&").every((member) => exceptionIs(value, member)))) return { value, kind: "object" };
-    if (types.includes("iterable") && (kind === "array" || objectIs(value, "Traversable"))) return { value, kind };
-    if (types.includes("mixed") || value == null && rule.nullable) return { value, kind };
-    if (types.includes(actual) || value === true && types.includes("true") || value === false && types.includes("false")) {
-      if (actual === "int" && !Number.isSafeInteger(value)) throw new RangeError("Frontend integer exceeds JavaScript safe integer precision");
-      return { value, kind };
-    }
-    if (actual === "int" && types.includes("float")) return { value, kind: "double" };
-    if (!strict && isPhpObject(value) && types.includes("string") && objectIs(value, "Stringable")) return { value: phpString(value, kind, context2), kind: "string" };
-    if (!strict && value != null && ["int", "float", "string", "bool"].includes(actual)) {
-      let preferred = ["int", "float", "string", "bool"];
-      if (actual === "string" && numeric(value) && /[.eE]/.test(value) && types.includes("float")) preferred = ["float", "int", "string", "bool"];
-      for (const type of preferred.filter((item) => types.includes(item))) {
-        if (type === "string") return { value: phpString(value, kind, context2), kind: "string" };
-        if (type === "bool") return { value: phpBool(value), kind: "boolean" };
-        if (actual === "string" && !numeric(value)) continue;
-        if (type === "float") return { value: phpFloat(value), kind: "double" };
-        const number = phpFloat(value);
-        if (!Number.isFinite(number)) continue;
-        if (!Number.isInteger(number)) warn(context2, `Implicit conversion from ${actual} to int loses precision`, "PHP_DEPRECATED");
-        return { value: phpInt(value), kind: "integer" };
-      }
-    }
-    throw new TypeError(`Cannot assign ${actual} to property ${rule.property || "(state)"} of type ${types.join("|")}${rule.nullable && !types.includes("null") ? "|null" : ""}`);
-  };
-
   // src-js/core/php-serialization.js
   var runSerialization = (name, items, state, context2) => {
     if (!["serialize", "unserialize"].includes(name)) return null;
@@ -12718,7 +12800,7 @@ ${traceString(error)}`;
     if (typeof allowed !== "boolean" && !isPhpArray(allowed)) throw new TypeError("unserialize(): allowed_classes must be an array or boolean");
     if (!Number.isInteger(maxDepth) || maxDepth < 0) throw failure("ValueError", "unserialize(): max_depth must be a non-negative integer");
     let position2 = 0, sequence = 0;
-    const objects2 = /* @__PURE__ */ new Map(), pending3 = [];
+    const objects2 = /* @__PURE__ */ new Map(), pending4 = [];
     const malformed = () => {
       throw { serializationParse: true };
     };
@@ -12807,7 +12889,7 @@ ${traceString(error)}`;
       expect("}");
       if (tag === "a") return { value: makeArray(entries.map(([k, v]) => [k, v.value, v.kind])), kind: "array" };
       const value = item.value, data = objectData(value);
-      if (member(value, "__unserialize")) pending3.push(() => invoke(value, "__unserialize", [{ value: makeArray(entries.map(([k, v]) => [k, v.value, v.kind])), kind: "array" }]));
+      if (member(value, "__unserialize")) pending4.push(() => invoke(value, "__unserialize", [{ value: makeArray(entries.map(([k, v]) => [k, v.value, v.kind])), kind: "array" }]));
       else {
         if (className2 === "stdClass") {
           const replacement = makeStdClass(entries);
@@ -12820,14 +12902,14 @@ ${traceString(error)}`;
           const key3 = property2.visibility === "private" ? property2.owner + "::$" + name2 : name2;
           data.fields.set(key3, assignType(property2.rule, part.value, part.kind, true, context2));
         }
-        if (member(value, "__wakeup")) pending3.push(() => invoke(value, "__wakeup"));
+        if (member(value, "__wakeup")) pending4.push(() => invoke(value, "__wakeup"));
       }
       return item;
     };
     try {
       const result2 = parse2();
       if (position2 < raw.length) warn(context2, "unserialize(): Extra data starting at offset " + position2);
-      for (const callback of pending3) callback();
+      for (const callback of pending4) callback();
       return result2;
     } catch (error) {
       if (!error.serializationParse) throw error;
@@ -14031,6 +14113,4089 @@ ${traceString(error)}`;
       work(context2);
     }
     throw failure("Random\\BrokenRandomEngineError", "Unable to generate an unbiased random integer");
+  };
+
+  // src-js/core/php-destructure.js
+  var destructure = (action, state, context2) => {
+    const references = action.bindings.some((binding) => binding.reference);
+    const ref = references ? valueReference(action.value, state, context2) : null;
+    const value = ref ? ref.get().value : resolveData2(action.value, state, context2), kind = resolveType(action.value, state, context2, value);
+    const root = resolvedNode2({ value, kind }, ref);
+    const cache2 = /* @__PURE__ */ new Map();
+    for (const binding of action.bindings) {
+      if (binding.reference) {
+        let node2 = root;
+        for (const key2 of binding.path) node2 = { $expression: { operation: "offset", left: node2, right: key2 } };
+        bindReferenceTarget(binding.target, promoteReference(node2, state, context2), state, context2);
+      } else bindOffsetPattern([binding], { value: clonePhp(value), kind }, (key2) => {
+        const value2 = resolveData2(key2, state, context2);
+        return { value: value2, kind: resolveType(key2, state, context2, value2) };
+      }, (target, item) => assignTarget(target, item.value, item.kind, state, context2), context2, cache2);
+    }
+  };
+  var destructureReference = (bindings4, reference, state, context2) => destructure({ bindings: bindings4, value: resolvedNode2(reference.get(), reference) }, state, context2);
+
+  // src-js/core/reflection-definitions.json
+  var reflection_definitions_default = {
+    reflectionclass: {
+      class: {
+        name: "ReflectionClass",
+        parent: null,
+        ancestors: [
+          "Stringable",
+          "Reflector"
+        ],
+        abstract: false,
+        final: false,
+        properties: [],
+        staticProperties: [],
+        constants: {
+          IS_IMPLICIT_ABSTRACT: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 16
+          },
+          IS_EXPLICIT_ABSTRACT: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 64
+          },
+          IS_FINAL: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 32
+          },
+          IS_READONLY: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 65536
+          },
+          SKIP_INITIALIZATION_ON_SERIALIZE: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 8
+          },
+          SKIP_DESTRUCTOR: {
+            owner: "ReflectionClass",
+            visibility: "public",
+            value: 16
+          }
+        },
+        methods: {
+          __construct: {
+            name: "__construct",
+            id: "@reflection:reflectionclass::__construct",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getname: {
+            name: "getName",
+            id: "@reflection:reflectionclass::getname",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getshortname: {
+            name: "getShortName",
+            id: "@reflection:reflectionclass::getshortname",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getnamespacename: {
+            name: "getNamespaceName",
+            id: "@reflection:reflectionclass::getnamespacename",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          innamespace: {
+            name: "inNamespace",
+            id: "@reflection:reflectionclass::innamespace",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isabstract: {
+            name: "isAbstract",
+            id: "@reflection:reflectionclass::isabstract",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isfinal: {
+            name: "isFinal",
+            id: "@reflection:reflectionclass::isfinal",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinterface: {
+            name: "isInterface",
+            id: "@reflection:reflectionclass::isinterface",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          istrait: {
+            name: "isTrait",
+            id: "@reflection:reflectionclass::istrait",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isenum: {
+            name: "isEnum",
+            id: "@reflection:reflectionclass::isenum",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isreadonly: {
+            name: "isReadOnly",
+            id: "@reflection:reflectionclass::isreadonly",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinstantiable: {
+            name: "isInstantiable",
+            id: "@reflection:reflectionclass::isinstantiable",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          iscloneable: {
+            name: "isCloneable",
+            id: "@reflection:reflectionclass::iscloneable",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinternal: {
+            name: "isInternal",
+            id: "@reflection:reflectionclass::isinternal",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isuserdefined: {
+            name: "isUserDefined",
+            id: "@reflection:reflectionclass::isuserdefined",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasmethod: {
+            name: "hasMethod",
+            id: "@reflection:reflectionclass::hasmethod",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getmethod: {
+            name: "getMethod",
+            id: "@reflection:reflectionclass::getmethod",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getmethods: {
+            name: "getMethods",
+            id: "@reflection:reflectionclass::getmethods",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasproperty: {
+            name: "hasProperty",
+            id: "@reflection:reflectionclass::hasproperty",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getproperty: {
+            name: "getProperty",
+            id: "@reflection:reflectionclass::getproperty",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getproperties: {
+            name: "getProperties",
+            id: "@reflection:reflectionclass::getproperties",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasconstant: {
+            name: "hasConstant",
+            id: "@reflection:reflectionclass::hasconstant",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getconstant: {
+            name: "getConstant",
+            id: "@reflection:reflectionclass::getconstant",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getconstants: {
+            name: "getConstants",
+            id: "@reflection:reflectionclass::getconstants",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getparentclass: {
+            name: "getParentClass",
+            id: "@reflection:reflectionclass::getparentclass",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getinterfacenames: {
+            name: "getInterfaceNames",
+            id: "@reflection:reflectionclass::getinterfacenames",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          issubclassof: {
+            name: "isSubclassOf",
+            id: "@reflection:reflectionclass::issubclassof",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          implementsinterface: {
+            name: "implementsInterface",
+            id: "@reflection:reflectionclass::implementsinterface",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinstance: {
+            name: "isInstance",
+            id: "@reflection:reflectionclass::isinstance",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          newinstanceargs: {
+            name: "newInstanceArgs",
+            id: "@reflection:reflectionclass::newinstanceargs",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          newinstancewithoutconstructor: {
+            name: "newInstanceWithoutConstructor",
+            id: "@reflection:reflectionclass::newinstancewithoutconstructor",
+            owner: "ReflectionClass",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          }
+        },
+        nativeReflection: true
+      },
+      functions: {
+        "@reflection:reflectionclass::__construct": {
+          name: "ReflectionClass::__construct",
+          parameters: [
+            {
+              id: "v6f626a6563744f72436c617373",
+              name: "objectOrClass",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object",
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "__construct"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getname": {
+          name: "ReflectionClass::getName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getshortname": {
+          name: "ReflectionClass::getShortName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getshortname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getnamespacename": {
+          name: "ReflectionClass::getNamespaceName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getnamespacename"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::innamespace": {
+          name: "ReflectionClass::inNamespace",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "innamespace"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isabstract": {
+          name: "ReflectionClass::isAbstract",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isabstract"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isfinal": {
+          name: "ReflectionClass::isFinal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isfinal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isinterface": {
+          name: "ReflectionClass::isInterface",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isinterface"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::istrait": {
+          name: "ReflectionClass::isTrait",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "istrait"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isenum": {
+          name: "ReflectionClass::isEnum",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isenum"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isreadonly": {
+          name: "ReflectionClass::isReadOnly",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isreadonly"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isinstantiable": {
+          name: "ReflectionClass::isInstantiable",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isinstantiable"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::iscloneable": {
+          name: "ReflectionClass::isCloneable",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "iscloneable"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isinternal": {
+          name: "ReflectionClass::isInternal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isinternal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isuserdefined": {
+          name: "ReflectionClass::isUserDefined",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isuserdefined"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::hasmethod": {
+          name: "ReflectionClass::hasMethod",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "hasmethod"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getmethod": {
+          name: "ReflectionClass::getMethod",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getmethod"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getmethods": {
+          name: "ReflectionClass::getMethods",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getmethods"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::hasproperty": {
+          name: "ReflectionClass::hasProperty",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "hasproperty"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getproperty": {
+          name: "ReflectionClass::getProperty",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getproperty"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getproperties": {
+          name: "ReflectionClass::getProperties",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getproperties"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::hasconstant": {
+          name: "ReflectionClass::hasConstant",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "hasconstant"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getconstant": {
+          name: "ReflectionClass::getConstant",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getconstant"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getconstants": {
+          name: "ReflectionClass::getConstants",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getconstants"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getparentclass": {
+          name: "ReflectionClass::getParentClass",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getparentclass"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::getinterfacenames": {
+          name: "ReflectionClass::getInterfaceNames",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "getinterfacenames"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::issubclassof": {
+          name: "ReflectionClass::isSubclassOf",
+          parameters: [
+            {
+              id: "v636c617373",
+              name: "class",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "reflectionclass",
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "issubclassof"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::implementsinterface": {
+          name: "ReflectionClass::implementsInterface",
+          parameters: [
+            {
+              id: "v696e74657266616365",
+              name: "interface",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "reflectionclass",
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "implementsinterface"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::isinstance": {
+          name: "ReflectionClass::isInstance",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "isinstance"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::newinstanceargs": {
+          name: "ReflectionClass::newInstanceArgs",
+          parameters: [
+            {
+              id: "v61726773",
+              name: "args",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "array"
+                ],
+                nullable: false
+              },
+              default: []
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "newinstanceargs"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionclass::newinstancewithoutconstructor": {
+          name: "ReflectionClass::newInstanceWithoutConstructor",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionClass",
+            method: "newinstancewithoutconstructor"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        }
+      }
+    },
+    reflectionobject: {
+      class: {
+        name: "ReflectionObject",
+        parent: null,
+        ancestors: [
+          "ReflectionClass",
+          "Reflector",
+          "Stringable"
+        ],
+        abstract: false,
+        final: false,
+        properties: [],
+        staticProperties: [],
+        constants: {
+          IS_IMPLICIT_ABSTRACT: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 16
+          },
+          IS_EXPLICIT_ABSTRACT: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 64
+          },
+          IS_FINAL: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 32
+          },
+          IS_READONLY: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 65536
+          },
+          SKIP_INITIALIZATION_ON_SERIALIZE: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 8
+          },
+          SKIP_DESTRUCTOR: {
+            owner: "ReflectionObject",
+            visibility: "public",
+            value: 16
+          }
+        },
+        methods: {
+          __construct: {
+            name: "__construct",
+            id: "@reflection:reflectionobject::__construct",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getname: {
+            name: "getName",
+            id: "@reflection:reflectionobject::getname",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getshortname: {
+            name: "getShortName",
+            id: "@reflection:reflectionobject::getshortname",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getnamespacename: {
+            name: "getNamespaceName",
+            id: "@reflection:reflectionobject::getnamespacename",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          innamespace: {
+            name: "inNamespace",
+            id: "@reflection:reflectionobject::innamespace",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isabstract: {
+            name: "isAbstract",
+            id: "@reflection:reflectionobject::isabstract",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isfinal: {
+            name: "isFinal",
+            id: "@reflection:reflectionobject::isfinal",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinterface: {
+            name: "isInterface",
+            id: "@reflection:reflectionobject::isinterface",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          istrait: {
+            name: "isTrait",
+            id: "@reflection:reflectionobject::istrait",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isenum: {
+            name: "isEnum",
+            id: "@reflection:reflectionobject::isenum",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isreadonly: {
+            name: "isReadOnly",
+            id: "@reflection:reflectionobject::isreadonly",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinstantiable: {
+            name: "isInstantiable",
+            id: "@reflection:reflectionobject::isinstantiable",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          iscloneable: {
+            name: "isCloneable",
+            id: "@reflection:reflectionobject::iscloneable",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinternal: {
+            name: "isInternal",
+            id: "@reflection:reflectionobject::isinternal",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isuserdefined: {
+            name: "isUserDefined",
+            id: "@reflection:reflectionobject::isuserdefined",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasmethod: {
+            name: "hasMethod",
+            id: "@reflection:reflectionobject::hasmethod",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getmethod: {
+            name: "getMethod",
+            id: "@reflection:reflectionobject::getmethod",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getmethods: {
+            name: "getMethods",
+            id: "@reflection:reflectionobject::getmethods",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasproperty: {
+            name: "hasProperty",
+            id: "@reflection:reflectionobject::hasproperty",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getproperty: {
+            name: "getProperty",
+            id: "@reflection:reflectionobject::getproperty",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getproperties: {
+            name: "getProperties",
+            id: "@reflection:reflectionobject::getproperties",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          hasconstant: {
+            name: "hasConstant",
+            id: "@reflection:reflectionobject::hasconstant",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getconstant: {
+            name: "getConstant",
+            id: "@reflection:reflectionobject::getconstant",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getconstants: {
+            name: "getConstants",
+            id: "@reflection:reflectionobject::getconstants",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getparentclass: {
+            name: "getParentClass",
+            id: "@reflection:reflectionobject::getparentclass",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getinterfacenames: {
+            name: "getInterfaceNames",
+            id: "@reflection:reflectionobject::getinterfacenames",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          issubclassof: {
+            name: "isSubclassOf",
+            id: "@reflection:reflectionobject::issubclassof",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          implementsinterface: {
+            name: "implementsInterface",
+            id: "@reflection:reflectionobject::implementsinterface",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinstance: {
+            name: "isInstance",
+            id: "@reflection:reflectionobject::isinstance",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          newinstanceargs: {
+            name: "newInstanceArgs",
+            id: "@reflection:reflectionobject::newinstanceargs",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          newinstancewithoutconstructor: {
+            name: "newInstanceWithoutConstructor",
+            id: "@reflection:reflectionobject::newinstancewithoutconstructor",
+            owner: "ReflectionObject",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          }
+        },
+        nativeReflection: true
+      },
+      functions: {
+        "@reflection:reflectionobject::__construct": {
+          name: "ReflectionObject::__construct",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "__construct"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getname": {
+          name: "ReflectionObject::getName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getshortname": {
+          name: "ReflectionObject::getShortName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getshortname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getnamespacename": {
+          name: "ReflectionObject::getNamespaceName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getnamespacename"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::innamespace": {
+          name: "ReflectionObject::inNamespace",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "innamespace"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isabstract": {
+          name: "ReflectionObject::isAbstract",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isabstract"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isfinal": {
+          name: "ReflectionObject::isFinal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isfinal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isinterface": {
+          name: "ReflectionObject::isInterface",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isinterface"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::istrait": {
+          name: "ReflectionObject::isTrait",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "istrait"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isenum": {
+          name: "ReflectionObject::isEnum",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isenum"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isreadonly": {
+          name: "ReflectionObject::isReadOnly",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isreadonly"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isinstantiable": {
+          name: "ReflectionObject::isInstantiable",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isinstantiable"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::iscloneable": {
+          name: "ReflectionObject::isCloneable",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "iscloneable"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isinternal": {
+          name: "ReflectionObject::isInternal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isinternal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isuserdefined": {
+          name: "ReflectionObject::isUserDefined",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isuserdefined"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::hasmethod": {
+          name: "ReflectionObject::hasMethod",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "hasmethod"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getmethod": {
+          name: "ReflectionObject::getMethod",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getmethod"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getmethods": {
+          name: "ReflectionObject::getMethods",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getmethods"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::hasproperty": {
+          name: "ReflectionObject::hasProperty",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "hasproperty"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getproperty": {
+          name: "ReflectionObject::getProperty",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getproperty"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getproperties": {
+          name: "ReflectionObject::getProperties",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getproperties"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::hasconstant": {
+          name: "ReflectionObject::hasConstant",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "hasconstant"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getconstant": {
+          name: "ReflectionObject::getConstant",
+          parameters: [
+            {
+              id: "v6e616d65",
+              name: "name",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getconstant"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getconstants": {
+          name: "ReflectionObject::getConstants",
+          parameters: [
+            {
+              id: "v66696c746572",
+              name: "filter",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "int"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getconstants"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getparentclass": {
+          name: "ReflectionObject::getParentClass",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getparentclass"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::getinterfacenames": {
+          name: "ReflectionObject::getInterfaceNames",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "getinterfacenames"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::issubclassof": {
+          name: "ReflectionObject::isSubclassOf",
+          parameters: [
+            {
+              id: "v636c617373",
+              name: "class",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "reflectionclass",
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "issubclassof"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::implementsinterface": {
+          name: "ReflectionObject::implementsInterface",
+          parameters: [
+            {
+              id: "v696e74657266616365",
+              name: "interface",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "reflectionclass",
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "implementsinterface"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::isinstance": {
+          name: "ReflectionObject::isInstance",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "isinstance"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::newinstanceargs": {
+          name: "ReflectionObject::newInstanceArgs",
+          parameters: [
+            {
+              id: "v61726773",
+              name: "args",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "array"
+                ],
+                nullable: false
+              },
+              default: []
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "newinstanceargs"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionobject::newinstancewithoutconstructor": {
+          name: "ReflectionObject::newInstanceWithoutConstructor",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionObject",
+            method: "newinstancewithoutconstructor"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        }
+      }
+    },
+    reflectionmethod: {
+      class: {
+        name: "ReflectionMethod",
+        parent: null,
+        ancestors: [
+          "ReflectionFunctionAbstract",
+          "Stringable",
+          "Reflector"
+        ],
+        abstract: false,
+        final: false,
+        properties: [],
+        staticProperties: [],
+        constants: {
+          IS_STATIC: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 16
+          },
+          IS_PUBLIC: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 1
+          },
+          IS_PROTECTED: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 2
+          },
+          IS_PRIVATE: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 4
+          },
+          IS_ABSTRACT: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 64
+          },
+          IS_FINAL: {
+            owner: "ReflectionMethod",
+            visibility: "public",
+            value: 32
+          }
+        },
+        methods: {
+          __construct: {
+            name: "__construct",
+            id: "@reflection:reflectionmethod::__construct",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getname: {
+            name: "getName",
+            id: "@reflection:reflectionmethod::getname",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getdeclaringclass: {
+            name: "getDeclaringClass",
+            id: "@reflection:reflectionmethod::getdeclaringclass",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          ispublic: {
+            name: "isPublic",
+            id: "@reflection:reflectionmethod::ispublic",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isprotected: {
+            name: "isProtected",
+            id: "@reflection:reflectionmethod::isprotected",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isprivate: {
+            name: "isPrivate",
+            id: "@reflection:reflectionmethod::isprivate",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isstatic: {
+            name: "isStatic",
+            id: "@reflection:reflectionmethod::isstatic",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isfinal: {
+            name: "isFinal",
+            id: "@reflection:reflectionmethod::isfinal",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isabstract: {
+            name: "isAbstract",
+            id: "@reflection:reflectionmethod::isabstract",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isconstructor: {
+            name: "isConstructor",
+            id: "@reflection:reflectionmethod::isconstructor",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isdestructor: {
+            name: "isDestructor",
+            id: "@reflection:reflectionmethod::isdestructor",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getnumberofparameters: {
+            name: "getNumberOfParameters",
+            id: "@reflection:reflectionmethod::getnumberofparameters",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getnumberofrequiredparameters: {
+            name: "getNumberOfRequiredParameters",
+            id: "@reflection:reflectionmethod::getnumberofrequiredparameters",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          invokeargs: {
+            name: "invokeArgs",
+            id: "@reflection:reflectionmethod::invokeargs",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          setaccessible: {
+            name: "setAccessible",
+            id: "@reflection:reflectionmethod::setaccessible",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isuserdefined: {
+            name: "isUserDefined",
+            id: "@reflection:reflectionmethod::isuserdefined",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinternal: {
+            name: "isInternal",
+            id: "@reflection:reflectionmethod::isinternal",
+            owner: "ReflectionMethod",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          }
+        },
+        nativeReflection: true
+      },
+      functions: {
+        "@reflection:reflectionmethod::__construct": {
+          name: "ReflectionMethod::__construct",
+          parameters: [
+            {
+              id: "v6f626a6563744f724d6574686f64",
+              name: "objectOrMethod",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object",
+                  "string"
+                ],
+                nullable: false
+              }
+            },
+            {
+              id: "v6d6574686f64",
+              name: "method",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "__construct"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::getname": {
+          name: "ReflectionMethod::getName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "getname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::getdeclaringclass": {
+          name: "ReflectionMethod::getDeclaringClass",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "getdeclaringclass"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::ispublic": {
+          name: "ReflectionMethod::isPublic",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "ispublic"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isprotected": {
+          name: "ReflectionMethod::isProtected",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isprotected"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isprivate": {
+          name: "ReflectionMethod::isPrivate",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isprivate"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isstatic": {
+          name: "ReflectionMethod::isStatic",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isstatic"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isfinal": {
+          name: "ReflectionMethod::isFinal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isfinal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isabstract": {
+          name: "ReflectionMethod::isAbstract",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isabstract"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isconstructor": {
+          name: "ReflectionMethod::isConstructor",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isconstructor"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isdestructor": {
+          name: "ReflectionMethod::isDestructor",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isdestructor"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::getnumberofparameters": {
+          name: "ReflectionMethod::getNumberOfParameters",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "getnumberofparameters"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::getnumberofrequiredparameters": {
+          name: "ReflectionMethod::getNumberOfRequiredParameters",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "getnumberofrequiredparameters"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::invokeargs": {
+          name: "ReflectionMethod::invokeArgs",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: true
+              }
+            },
+            {
+              id: "v61726773",
+              name: "args",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "array"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "invokeargs"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::setaccessible": {
+          name: "ReflectionMethod::setAccessible",
+          parameters: [
+            {
+              id: "v61636365737369626c65",
+              name: "accessible",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "bool"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "setaccessible"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isuserdefined": {
+          name: "ReflectionMethod::isUserDefined",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isuserdefined"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionmethod::isinternal": {
+          name: "ReflectionMethod::isInternal",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionMethod",
+            method: "isinternal"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        }
+      }
+    },
+    reflectionproperty: {
+      class: {
+        name: "ReflectionProperty",
+        parent: null,
+        ancestors: [
+          "Stringable",
+          "Reflector"
+        ],
+        abstract: false,
+        final: false,
+        properties: [],
+        staticProperties: [],
+        constants: {
+          IS_STATIC: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 16
+          },
+          IS_READONLY: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 128
+          },
+          IS_PUBLIC: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 1
+          },
+          IS_PROTECTED: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 2
+          },
+          IS_PRIVATE: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 4
+          },
+          IS_ABSTRACT: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 64
+          },
+          IS_PROTECTED_SET: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 2048
+          },
+          IS_PRIVATE_SET: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 4096
+          },
+          IS_VIRTUAL: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 512
+          },
+          IS_FINAL: {
+            owner: "ReflectionProperty",
+            visibility: "public",
+            value: 32
+          }
+        },
+        methods: {
+          __construct: {
+            name: "__construct",
+            id: "@reflection:reflectionproperty::__construct",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getname: {
+            name: "getName",
+            id: "@reflection:reflectionproperty::getname",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getdeclaringclass: {
+            name: "getDeclaringClass",
+            id: "@reflection:reflectionproperty::getdeclaringclass",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          ispublic: {
+            name: "isPublic",
+            id: "@reflection:reflectionproperty::ispublic",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isprotected: {
+            name: "isProtected",
+            id: "@reflection:reflectionproperty::isprotected",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isprivate: {
+            name: "isPrivate",
+            id: "@reflection:reflectionproperty::isprivate",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isstatic: {
+            name: "isStatic",
+            id: "@reflection:reflectionproperty::isstatic",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isreadonly: {
+            name: "isReadOnly",
+            id: "@reflection:reflectionproperty::isreadonly",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isdefault: {
+            name: "isDefault",
+            id: "@reflection:reflectionproperty::isdefault",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          isinitialized: {
+            name: "isInitialized",
+            id: "@reflection:reflectionproperty::isinitialized",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          getvalue: {
+            name: "getValue",
+            id: "@reflection:reflectionproperty::getvalue",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          setvalue: {
+            name: "setValue",
+            id: "@reflection:reflectionproperty::setvalue",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          },
+          setaccessible: {
+            name: "setAccessible",
+            id: "@reflection:reflectionproperty::setaccessible",
+            owner: "ReflectionProperty",
+            visibility: "public",
+            static: false,
+            abstract: false,
+            final: false
+          }
+        },
+        nativeReflection: true
+      },
+      functions: {
+        "@reflection:reflectionproperty::__construct": {
+          name: "ReflectionProperty::__construct",
+          parameters: [
+            {
+              id: "v636c617373",
+              name: "class",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object",
+                  "string"
+                ],
+                nullable: false
+              }
+            },
+            {
+              id: "v70726f7065727479",
+              name: "property",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "string"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "__construct"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::getname": {
+          name: "ReflectionProperty::getName",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "getname"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::getdeclaringclass": {
+          name: "ReflectionProperty::getDeclaringClass",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "getdeclaringclass"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::ispublic": {
+          name: "ReflectionProperty::isPublic",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "ispublic"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isprotected": {
+          name: "ReflectionProperty::isProtected",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isprotected"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isprivate": {
+          name: "ReflectionProperty::isPrivate",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isprivate"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isstatic": {
+          name: "ReflectionProperty::isStatic",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isstatic"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isreadonly": {
+          name: "ReflectionProperty::isReadOnly",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isreadonly"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isdefault": {
+          name: "ReflectionProperty::isDefault",
+          parameters: [],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isdefault"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::isinitialized": {
+          name: "ReflectionProperty::isInitialized",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "isinitialized"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::getvalue": {
+          name: "ReflectionProperty::getValue",
+          parameters: [
+            {
+              id: "v6f626a656374",
+              name: "object",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "object"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "getvalue"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::setvalue": {
+          name: "ReflectionProperty::setValue",
+          parameters: [
+            {
+              id: "v6f626a6563744f7256616c7565",
+              name: "objectOrValue",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "mixed"
+                ],
+                nullable: true
+              }
+            },
+            {
+              id: "v76616c7565",
+              name: "value",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "mixed"
+                ],
+                nullable: true
+              },
+              default: null
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "setvalue"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        },
+        "@reflection:reflectionproperty::setaccessible": {
+          name: "ReflectionProperty::setAccessible",
+          parameters: [
+            {
+              id: "v61636365737369626c65",
+              name: "accessible",
+              reference: false,
+              variadic: false,
+              rule: {
+                types: [
+                  "bool"
+                ],
+                nullable: false
+              }
+            }
+          ],
+          returnType: null,
+          declared: true,
+          nativeReflection: {
+            class: "ReflectionProperty",
+            method: "setaccessible"
+          },
+          body: {
+            type: "sequence",
+            actions: []
+          }
+        }
+      }
+    }
+  };
+
+  // src-js/core/php-static-properties.js
+  var serviceRuntime = (config, action) => {
+    if (!action.serviceScope && !Object.keys(action.classes || {}).length) return { fields: /* @__PURE__ */ new Map(), classes: {}, functions: action.functions || {} };
+    const scopes = config ? config.serviceScopes || (config.serviceScopes = /* @__PURE__ */ new Map()) : /* @__PURE__ */ new Map();
+    const scope = action.serviceScope || "__aml_services";
+    const runtime = scopes.get(scope) || { fields: /* @__PURE__ */ new Map(), classes: {}, functions: {} };
+    const classes2 = { ...runtime.classes, ...action.classes }, functions2 = { ...runtime.functions, ...action.functions };
+    if (Object.keys(classes2).length > 64 || Object.keys(functions2).length > 256) throw new RangeError("Frontend component service catalogue exceeds 64 classes or 256 functions");
+    runtime.classes = classes2;
+    runtime.functions = functions2;
+    scopes.set(scope, runtime);
+    return runtime;
+  };
+  var stores = /* @__PURE__ */ new WeakMap();
+  var staticPropertyReference = (expression, state, context2) => {
+    const className2 = expression.left === "@static" ? context2.calledClass : resolveData2(expression.left, state, context2);
+    const name = phpString(resolveData2(expression.right.name, state, context2), void 0, context2), property2 = objectMemberLookup(className2, name, "staticProperties", context2, false);
+    const allowed = property2 && objectMemberAccessible(property2, context2);
+    const fields = context2.staticFields || (context2.staticFields = /* @__PURE__ */ new Map());
+    const key2 = property2 && property2.owner.toLowerCase() + "::$" + name;
+    const check = (quiet = false) => {
+      if (!property2) {
+        if (quiet) return false;
+        throw new Error(`Access to undeclared static property ${className2}::$${name}`);
+      }
+      if (!allowed) {
+        if (quiet) return false;
+        throw new Error(`Cannot access ${property2.visibility} property ${property2.owner}::$${name}`);
+      }
+      return true;
+    };
+    const initialize = () => {
+      if (!fields.has(key2) && Object.hasOwn(property2, "default")) {
+        const value = resolveData2(property2.default, state, { ...context2, objectScope: property2.owner, calledClass: className2 });
+        fields.set(key2, assignType(property2.rule, clonePhp(value), resolveType(property2.default, state, { ...context2, objectScope: property2.owner, calledClass: className2 }, value), true, context2));
+        ownArray(fields, key2, fields.get(key2).value);
+      }
+    };
+    let bindings4 = stores.get(fields);
+    if (!bindings4) {
+      bindings4 = /* @__PURE__ */ new Map();
+      stores.set(fields, bindings4);
+    }
+    const reference = {
+      initialized: () => {
+        check();
+        initialize();
+        return fields.has(key2);
+      },
+      get: (quiet = false) => {
+        if (!check(quiet)) return { value: null, kind: "NULL" };
+        initialize();
+        if (!fields.has(key2)) {
+          if (quiet) return { value: null, kind: "NULL" };
+          throw new Error(`Typed static property ${property2.owner}::$${name} must not be accessed before initialization`);
+        }
+        return fields.get(key2);
+      },
+      acquire: () => {
+        check();
+        initialize();
+        if (!fields.has(key2)) {
+          if (property2.rule && !property2.rule.nullable) throw new Error(`Cannot access uninitialized non-nullable property ${property2.owner}::$${name} by reference`);
+          fields.set(key2, { value: null, kind: "NULL" });
+        }
+        return fields.get(key2);
+      },
+      set: (value, kind, source = context2.source) => {
+        check();
+        if (context2.readOnly) throw new Error("Static properties must be modified in frontend events");
+        const result2 = assignType(property2.rule, value, kind, source?.strictTypes ?? true, context2);
+        if (bindings4.has(key2)) return bindings4.get(key2).ref.set(result2.value, result2.kind);
+        fields.set(key2, { value: clonePhp(result2.value), kind: result2.kind });
+        ownArray(fields, key2, fields.get(key2).value);
+        return result2;
+      },
+      remove: () => {
+        check();
+        throw new Error(`Attempt to unset static property ${property2.owner}::$${name}`);
+      },
+      bind: (ref) => {
+        check();
+        if (!ref.cell) throw new Error("Property binding requires a reference cell");
+        const item = ref.get(), checked = assignType(property2.rule, item.value, item.kind, context2.source?.strictTypes ?? true, context2);
+        ref.set(checked.value, checked.kind);
+        const previous = bindings4.get(key2);
+        previous?.ref.cell.guards.delete(previous.token);
+        previous?.ref.cell.bindings.delete(previous.token);
+        const token2 = {};
+        bindings4.set(key2, { ref, token: token2 });
+        ref.cell.bindings.add(token2);
+        ref.cell.guards.set(token2, (value, kind) => assignType(property2.rule, value, kind, context2.source?.strictTypes ?? true, context2));
+        fields.set(key2, { get value() {
+          return ref.get().value;
+        }, get kind() {
+          return ref.get().kind;
+        }, reference: ref });
+        return ref;
+      },
+      reference: () => bindings4.get(key2)?.ref || reference.bind(createReference(reference.get()))
+    };
+    return reference;
+  };
+
+  // src-js/core/php-reflection.js
+  var storage4 = /* @__PURE__ */ new WeakMap();
+  var fail2 = (message) => {
+    throw Object.assign(new Error(message), { name: "ReflectionException" });
+  };
+  var create2 = (name, data) => {
+    const object = makeObject(reflection_definitions_default[name.toLowerCase()].class);
+    storage4.set(object, data);
+    return object;
+  };
+  var className = (value) => storage4.get(value)?.className || objectData(value)?.definition.name || value;
+  var lineage = (name, context2) => {
+    const output = [];
+    while (name) {
+      const data = context2.classes[name.toLowerCase()];
+      if (!data) fail2("Class " + name + " does not exist");
+      output.push(data);
+      name = data.parent;
+    }
+    return output;
+  };
+  var table = (data, type, context2) => Object.assign({}, ...lineage(data.className, context2).reverse().map((row) => row[type]));
+  var nativeReflectionMethod = (definition, context2) => {
+    const operation = definition.nativeReflection.method, name = definition.nativeReflection.class, values3 = definition.parameters.map((p) => context2.locals[p.id]), object = context2.thisObject, state = context2.objectState || {}, result2 = (value) => ({ value, kind: phpType(value) });
+    if (operation === "__construct") {
+      let target = className(values3[0]), member2 = values3[1];
+      if (name === "ReflectionMethod" && !member2 && typeof target === "string" && target.includes("::")) [target, member2] = target.split("::");
+      if (typeof target !== "string") fail2("Expected a compiled class");
+      const type = name === "ReflectionMethod" ? "methods" : name === "ReflectionProperty" ? "properties" : null;
+      const klass2 = lineage(target, context2)[0];
+      const found = type ? objectMemberLookup(klass2.name, type === "methods" ? member2.toLowerCase() : member2, type, context2, false) || type === "properties" && objectMemberLookup(klass2.name, member2, "staticProperties", context2, false) : null;
+      if (type && !found) fail2("Unknown reflected member " + member2);
+      storage4.set(object, { className: klass2.name, member: found, type });
+      return result2(null);
+    }
+    const data = storage4.get(object);
+    if (!data) fail2("Uninitialized reflection");
+    const klass = lineage(data.className, context2)[0], member = data.member;
+    if (operation === "getname") return result2(member?.name || klass.name);
+    if (operation === "getshortname") return result2(klass.name.split("\\").at(-1));
+    if (operation === "getnamespacename") return result2(klass.name.split("\\").slice(0, -1).join("\\"));
+    if (operation === "innamespace") return result2(klass.name.includes("\\"));
+    if (operation === "isinternal") return result2(!!(klass.nativeDate || klass.nativeIntl || klass.nativeSpl || klass.nativeReflection));
+    if (operation === "isuserdefined") return result2(!(klass.nativeDate || klass.nativeIntl || klass.nativeSpl || klass.nativeReflection));
+    if (operation === "getdeclaringclass") return result2(create2("ReflectionClass", { className: member.owner }));
+    if (["ispublic", "isprivate", "isprotected"].includes(operation)) return result2(member.visibility === operation.slice(2));
+    if (operation === "isstatic") return result2(!!member.static || Object.values(table(data, "staticProperties", context2)).includes(member));
+    if (["isabstract", "isfinal", "isinterface", "istrait", "isenum", "isreadonly"].includes(operation)) return result2(!!(member || klass)[operation.slice(2)]);
+    if (operation === "isinstantiable") return result2(!klass.abstract && !klass.interface && !klass.enum && (!klass.methods.__construct || klass.methods.__construct.visibility === "public"));
+    if (operation === "iscloneable") return result2(!klass.enum && !klass.interface && !klass.abstract);
+    if (operation === "setaccessible") return result2(null);
+    if (operation === "isconstructor" || operation === "isdestructor") return result2(member.name.toLowerCase() === (operation === "isconstructor" ? "__construct" : "__destruct"));
+    if (operation === "isdefault") return result2(true);
+    if (operation === "getnumberofparameters" || operation === "getnumberofrequiredparameters") {
+      const params = context2.functions[member.id].parameters;
+      return result2(params.filter((p) => operation === "getnumberofparameters" || !Object.hasOwn(p, "default") && !p.variadic).length);
+    }
+    if (operation === "invokeargs") {
+      const args = arrayEntries(values3[1]).map(([key2, value]) => ({ value, kind: arrayKind(values3[1], key2), ...typeof key2 === "string" ? { name: key2 } : {} }));
+      return invokeFunction(bindMethod(member.id, member.static ? null : values3[0], member.owner, data.className), args, state, context2);
+    }
+    if (["getvalue", "setvalue", "isinitialized"].includes(operation)) {
+      const scoped = { ...context2, objectScope: member.owner }, isStatic = Object.values(table(data, "staticProperties", context2)).includes(member), ref = isStatic ? staticPropertyReference({ left: member.owner, right: { name: member.name } }, state, scoped) : objectPropertyReference({ left: resolvedNode2({ value: values3[0], kind: "object" }), right: { name: member.name } }, state, scoped);
+      if (operation === "setvalue") {
+        const next2 = isStatic && context2.functionArguments.length === 1 ? values3[0] : values3[1];
+        ref.set(next2, phpType(next2));
+        return result2(null);
+      }
+      if (operation === "isinitialized") return result2(ref.initialized());
+      return ref.get();
+    }
+    if (operation === "getparentclass") return result2(klass.parent ? create2("ReflectionClass", { className: klass.parent }) : false);
+    if (operation === "getinterfacenames") return result2(klass.ancestors.filter((name2) => context2.classes[name2.toLowerCase()]?.interface));
+    if (operation === "issubclassof" || operation === "implementsinterface") return result2(klass.ancestors.some((name2) => name2.toLowerCase() === className(values3[0]).toLowerCase()));
+    if (operation === "isinstance") return result2(objectIs(values3[0], klass.name));
+    if (operation === "newinstanceargs" || operation === "newinstancewithoutconstructor") {
+      const arguments_ = operation === "newinstanceargs" ? arrayEntries(values3[0]).map(([key2, value]) => ({ value: resolvedNode2({ value, kind: arrayKind(values3[0], key2) }), ...typeof key2 === "string" ? { name: key2 } : {} })) : [];
+      return evaluateObject({ operation: "objectNew", left: klass.name, right: { arguments: arguments_, skipConstructor: operation === "newinstancewithoutconstructor" } }, state, context2);
+    }
+    if (["hasmethod", "getmethod", "hasproperty", "getproperty", "hasconstant", "getconstant"].includes(operation)) {
+      const type = operation.endsWith("method") ? "methods" : operation.endsWith("property") ? "properties" : "constants", key2 = type === "methods" ? values3[0].toLowerCase() : values3[0], found = objectMemberLookup(klass.name, key2, type, context2, false) || type === "properties" && objectMemberLookup(klass.name, key2, "staticProperties", context2, false);
+      if (operation.startsWith("has")) return result2(!!found);
+      if (!found) {
+        if (type === "constants") return result2(false);
+        fail2("Unknown reflected member " + key2);
+      }
+      if (type === "constants") return evaluateObject({ operation: "objectConstant", left: klass.name, right: key2 }, state, { ...context2, objectScope: found.owner });
+      return result2(create2(type === "methods" ? "ReflectionMethod" : "ReflectionProperty", { className: klass.name, member: found, type }));
+    }
+    if (operation === "getconstants") {
+      const entries = [];
+      for (const [key2, constant] of Object.entries(table(data, "constants", context2))) {
+        const item = evaluateObject({ operation: "objectConstant", left: klass.name, right: key2 }, state, { ...context2, objectScope: constant.owner });
+        entries.push([key2, item.value, item.kind]);
+      }
+      return result2(makeArray(entries));
+    }
+    if (operation === "getmethods" || operation === "getproperties") {
+      const type = operation === "getmethods" ? "methods" : "properties", members = Object.values({ ...table(data, type, context2), ...type === "properties" ? table(data, "staticProperties", context2) : {} });
+      const mask = values3[0];
+      return result2(members.filter((member2) => mask === null || mask & ({ public: 1, protected: 2, private: 4 }[member2.visibility] | (member2.static ? 16 : 0) | (member2.final ? 32 : 0) | (member2.abstract ? 64 : 0))).map((member2) => create2(type === "methods" ? "ReflectionMethod" : "ReflectionProperty", { className: klass.name, member: member2, type })));
+    }
+    fail2("Unsupported reflection method " + operation);
+  };
+
+  // src-js/core/php-iterators.js
+  var isIterable = (value) => isPhpArray(value) || objectIs(value, "Traversable");
+  function* foreachEntries(source, withKey, context2, iteration) {
+    if (!isPhpObject(source)) {
+      if (source == null || typeof source !== "object") {
+        warn(context2, "foreach() argument must be of type array|object");
+        return;
+      }
+      for (const [key2, value] of arrayEntries(source)) {
+        iteration();
+        yield { key: { value: key2, kind: phpType(key2) }, item: { value, kind: arrayKind(source, key2), reference: arrayElementReference(source, key2) } };
+      }
+      return;
+    }
+    let depth = 0;
+    while (objectIs(source, "IteratorAggregate")) {
+      if (++depth > 128) throw Object.assign(new RangeError("Frontend iterator delegation exceeds 128 levels"), { code: "PHP_ITERATOR_LIMIT" });
+      const next2 = invokeCollectionMethod(source, "getiterator", [], context2).value;
+      if (!isPhpObject(next2) || !objectIs(next2, "Traversable") || next2 === source) throw Object.assign(new Error(`Objects returned by ${objectData(source).definition.name}::getIterator() must be traversable or implement interface Iterator`), { name: "Exception" });
+      source = next2;
+    }
+    if (!objectIs(source, "Iterator")) throw new TypeError("Frontend foreach on service objects requires Iterator or IteratorAggregate");
+    if (isGenerator(source) && generatorClosed(source)) throw Object.assign(new Error("Cannot traverse an already closed generator"), { name: "Exception" });
+    const call = (method3) => invokeCollectionMethod(source, method3, [], context2);
+    call("rewind");
+    while (phpBool(call("valid").value)) {
+      iteration();
+      const result2 = call("current"), item = { ...result2, value: clonePhp(result2.value) };
+      const key2 = withKey ? call("key") : null;
+      if (isSplObject(source)) item.reference = arrayElementReference(splStorageReference(source).get().value, key2?.value ?? call("key").value);
+      yield { key: key2, item };
+      call("next");
+    }
+  }
+  function* spreadEntries(value, context2) {
+    if (isPhpArray(value)) {
+      for (const [key2, item] of arrayEntries(value)) yield { key: { value: key2, kind: phpType(key2) }, item: { value: item, kind: arrayKind(value, key2) } };
+      return;
+    }
+    if (!objectIs(value, "Traversable")) throw new TypeError("Only arrays and Traversables can be unpacked");
+    let count = 0;
+    const iteration = () => checkIteration(context2, ++count);
+    for (const entry of foreachEntries(value, true, context2, iteration)) {
+      if (!["integer", "string"].includes(entry.key.kind)) throw new Error("Keys must be of type int|string during unpacking");
+      yield entry;
+    }
+  }
+  function* referenceEntries(target, state, context2, iteration) {
+    if (["call", "objectCall"].includes(target?.$expression?.operation)) {
+      const value = resolveData(target, state, context2);
+      target = resolvedNode({ value, kind: "object" });
+    }
+    let parent = target?.$expression || target?.$local || target?.$state ? promoteReference(target, state, context2) : { get: () => ({ value: resolveData(target, state, context2) }) };
+    let initial = parent.get().value;
+    if (isSplObject(initial)) {
+      parent = splStorageReference(initial);
+      initial = parent.get().value;
+    }
+    if (isGenerator(initial)) {
+      generatorReference(initial, context2);
+      generatorMethod(initial, "rewind", [], context2);
+      while (generatorMethod(initial, "valid", [], context2).value) {
+        iteration();
+        const reference = generatorReference(initial, context2);
+        yield { key: generatorMethod(initial, "key", [], context2), item: reference.get(), reference };
+        generatorMethod(initial, "next", [], context2);
+      }
+      return;
+    }
+    if (!isPhpArray(initial)) throw new Error("Frontend foreach by reference requires an array");
+    let array2 = initial;
+    if (!arrayOrigin(array2)) {
+      array2 = clonePhp(array2);
+      parent.set(array2, "array");
+      array2 = parent.get().value;
+    }
+    if (!arrayOrigin(array2)) {
+      const entries = arrayEntries(array2);
+      if (!entries.length) return;
+      const first = arrayReference(array2, entries[0][0], context2);
+      parent.set(first.array, "array");
+      array2 = parent.get().value;
+    }
+    let origin = arrayOrigin(array2);
+    const cursor = { position: 0 };
+    (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
+    try {
+      while (cursor.position < arrayEntries(origin.current).length) {
+        iteration();
+        const [key2] = arrayEntries(origin.current)[cursor.position];
+        const acquired = arrayReference(origin.current, key2, context2);
+        const guard = {};
+        acquired.reference.cell?.bindings.add(guard);
+        if (arrayOrigin(parent.get().value) === origin) {
+          parent.set(acquired.array, "array");
+          const stored = arrayOrigin(parent.get().value);
+          if (stored && stored !== origin) {
+            origin.iterators.delete(cursor);
+            origin = stored;
+            (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
+          }
+        }
+        acquired.reference.cell?.bindings.delete(guard);
+        yield { key: { value: key2, kind: phpType(key2) }, item: acquired.reference.get(), reference: acquired.reference };
+        if (isPhpArray(parent.get().value) && arrayOrigin(parent.get().value) !== origin) {
+          origin.iterators.delete(cursor);
+          origin = arrayOrigin(parent.get().value);
+          if (!origin) break;
+          (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
+          cursor.position = -1;
+        }
+        cursor.position++;
+      }
+    } finally {
+      origin.iterators.delete(cursor);
+    }
+  }
+
+  // src-js/core/php-operators.js
+  var numericString = (value) => typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
+  var compareStrings = (left, right) => {
+    const a = new TextEncoder().encode(left), b = new TextEncoder().encode(right);
+    for (let index = 0; index < Math.min(a.length, b.length); index++) if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
+    return a.length === b.length ? 0 : a.length < b.length ? -1 : 1;
+  };
+  var compareNumbers = (left, right, leftType, rightType) => {
+    const operand = (value, kind) => {
+      if (typeof value === "number") return kind === "integer" && Number.isSafeInteger(value) ? BigInt(value) : value;
+      if (/^[\t\n\r\f\v ]*[+-]?\d+[\t\n\r\f\v ]*$/.test(value)) {
+        const integer = BigInt(value.trim());
+        if (integer >= -9223372036854775808n && integer <= 9223372036854775807n) return integer;
+      }
+      return Number(value);
+    };
+    let a = operand(left, leftType), b = operand(right, rightType);
+    if (typeof a !== "bigint" || typeof b !== "bigint") {
+      a = Number(a);
+      b = Number(b);
+    }
+    return Number.isNaN(a) || Number.isNaN(b) ? NaN : a === b ? 0 : a < b ? -1 : 1;
+  };
+  var phpIdentical = (left, right, leftType = phpType(left), rightType = phpType(right)) => {
+    if (leftType !== rightType) return false;
+    if (isPhpObject(left) || isPhpObject(right) || isRoundingMode(left) || isRoundingMode(right)) return left === right;
+    if (left instanceof Error || right instanceof Error) return left === right;
+    if (left && right && typeof left === "object" && typeof right === "object") {
+      const a = arrayEntries(left), b = arrayEntries(right);
+      return a.length === b.length && a.every(([key2, value], index) => key2 === b[index][0] && phpIdentical(value, b[index][1], arrayKind(left, key2), arrayKind(right, b[index][0])));
+    }
+    return left === right;
+  };
+  var objectComparisonDepth = 0;
+  var phpCompare = (left, right, leftType = phpType(left), rightType = phpType(right)) => {
+    if (typeof left === "boolean" || typeof right === "boolean") {
+      const a = phpBool(left), b = phpBool(right);
+      return a === b ? 0 : a ? 1 : -1;
+    }
+    if (left == null || right == null) {
+      if (typeof left === "string" || typeof right === "string") return compareStrings(left ?? "", right ?? "");
+      const a = phpBool(left), b = phpBool(right);
+      return a === b ? 0 : a ? 1 : -1;
+    }
+    if (isPhpObject(left) || isPhpObject(right)) {
+      const dateLeft = dateStorage.get(left), dateRight = dateStorage.get(right);
+      if (dateLeft || dateRight) {
+        if (dateLeft && dateLeft.timestamp === void 0 || dateRight && dateRight.timestamp === void 0) throw new TypeError("Use === or compare explicit fields for DateInterval, DatePeriod, DateTimeZone and InternalIterator");
+        if (dateLeft && dateRight) return dateLeft.timestamp === dateRight.timestamp ? Math.sign(dateLeft.microsecond - dateRight.microsecond) : dateLeft.timestamp < dateRight.timestamp ? -1 : 1;
+      }
+      if (left === right) return 0;
+      if (!isPhpObject(left) || !isPhpObject(right)) throw new TypeError("Compare service objects with other service objects or use ===");
+      const a = objectData(left), b = objectData(right);
+      if (a.definition.enum || b.definition.enum) return NaN;
+      if (a.definition.name !== b.definition.name) return NaN;
+      if (++objectComparisonDepth > 128) {
+        objectComparisonDepth--;
+        throw new Error("Recursive object comparison limit exceeded");
+      }
+      try {
+        if (a.fields.size !== b.fields.size) return a.fields.size < b.fields.size ? -1 : 1;
+        for (const [key2, item] of a.fields) {
+          const other = b.fields.get(key2);
+          if (!other) return 1;
+          const result2 = phpCompare(item.value, other.value, item.kind, other.kind);
+          if (result2 !== 0) return result2;
+        }
+        return 0;
+      } finally {
+        objectComparisonDepth--;
+      }
+    }
+    if (left instanceof Error || right instanceof Error) {
+      if (left === right) return 0;
+      throw new TypeError("Use === or compare Throwable messages/codes instead of ordering or loosely comparing exceptions.");
+    }
+    if (isRoundingMode(left) || isRoundingMode(right)) return left === right ? 0 : NaN;
+    if (typeof left === "object" || typeof right === "object") {
+      if (typeof left !== "object") return -1;
+      if (typeof right !== "object") return 1;
+      const a = arrayEntries(left).map(([key2]) => key2), b = arrayEntries(right).map(([key2]) => key2);
+      if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+      for (const key2 of a) {
+        if (!Object.hasOwn(right, key2)) return 1;
+        const result2 = phpCompare(left[key2], right[key2], arrayKind(left, key2), arrayKind(right, key2));
+        if (result2 !== 0) return result2;
+      }
+      return 0;
+    }
+    if (typeof left === "string" && typeof right === "string") {
+      if (numericString(left) && numericString(right)) return compareNumbers(left, right, leftType, rightType);
+      else return compareStrings(left, right);
+    } else if (typeof left === "number" && typeof right === "string") {
+      if (numericString(right)) return compareNumbers(left, right, leftType, rightType);
+      else return compareStrings(phpString(left, leftType), right);
+    } else if (typeof left === "string" && typeof right === "number") {
+      if (numericString(left)) return compareNumbers(left, right, leftType, rightType);
+      else return compareStrings(left, phpString(right, rightType));
+    }
+    return compareNumbers(left, right, leftType, rightType);
+  };
+  var phpMatches = (operator, left, right, leftType = phpType(left), rightType = phpType(right)) => {
+    if (operator === "truthy") return phpBool(left);
+    if (operator === "falsy") return !phpBool(left);
+    if (["eq", "identical"].includes(operator)) return phpIdentical(left, right, leftType, rightType);
+    if (["neq", "notIdentical"].includes(operator)) return !phpIdentical(left, right, leftType, rightType);
+    const comparison = phpCompare(left, right, leftType, rightType);
+    if (["looseEq", "equal"].includes(operator)) return comparison === 0;
+    if (["looseNeq", "notEqual"].includes(operator)) return comparison !== 0;
+    if (["gt", "greater"].includes(operator)) return comparison > 0;
+    if (["gte", "greaterEqual"].includes(operator)) return comparison >= 0;
+    if (["lt", "less"].includes(operator)) return comparison < 0;
+    if (["lte", "lessEqual"].includes(operator)) return comparison <= 0;
+    throw new Error(`Unknown PHP comparison: ${operator}`);
+  };
+  var phpIncrement = (value, kind, direction, context2 = null) => {
+    const deprecated = (message) => {
+      if ((context2?.source?.phpVersion ?? 80400) >= 80300) warn(context2, message, "PHP_DEPRECATED");
+    };
+    if (typeof value === "boolean" || value == null && direction < 0) {
+      deprecated(`${direction > 0 ? "Increment" : "Decrement"} on type ${value == null ? "null" : "bool"} has no effect`);
+      return { value, kind };
+    }
+    if (value == null) return { value: 1, kind: "integer" };
+    if (typeof value === "number" || numericString(value)) {
+      const floating = kind === "double" || typeof value === "string" && /[.eE]/.test(value);
+      const next2 = phpArithmetic("add", phpNumber(value), direction, floating, context2);
+      return { value: next2, kind: floating ? "double" : "integer" };
+    }
+    if (typeof value !== "string") throw new TypeError("Cannot increment or decrement an array or object");
+    if (value === "") {
+      deprecated("Increment/decrement on empty string is deprecated");
+      return direction > 0 ? { value: "1", kind: "string" } : { value: -1, kind: "integer" };
+    }
+    if (direction < 0) {
+      deprecated("Decrement on non-numeric string has no effect and is deprecated");
+      return { value, kind };
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(value)) deprecated("Increment on non-alphanumeric string is deprecated");
+    const chars = [...value];
+    let carry = true, prefix = "1";
+    for (let index = chars.length - 1; index >= 0 && carry; index--) {
+      const c = chars[index];
+      if (c === "9") {
+        chars[index] = "0";
+        prefix = "1";
+      } else if (c === "z") {
+        chars[index] = "a";
+        prefix = "a";
+      } else if (c === "Z") {
+        chars[index] = "A";
+        prefix = "A";
+      } else if (/[a-yA-Y0-8]/.test(c)) {
+        chars[index] = String.fromCharCode(c.charCodeAt(0) + 1);
+        carry = false;
+      } else carry = false;
+    }
+    return { value: (carry ? prefix : "") + chars.join(""), kind: "string" };
+  };
+  var phpBitwise = (operation, left, right, context2) => {
+    if (operation === "bitNot" && typeof left === "string") return text(bytes(left).map((value2) => ~value2 & 255));
+    if (operation === "bitNot" && typeof left !== "number") throw new TypeError("Cannot perform bitwise not on this value");
+    const integer = (value2) => {
+      const number = phpNumber(value2, context2);
+      if (!Number.isFinite(number) || !Number.isSafeInteger(Math.trunc(number))) throw new RangeError("Bitwise operand exceeds safe frontend integer precision");
+      if (!Number.isInteger(number)) warn(context2, "Implicit conversion from float to int loses precision", "PHP_DEPRECATED");
+      return BigInt(Math.trunc(number));
+    };
+    const a = integer(left);
+    let result2;
+    if (operation === "bitNot") result2 = ~a;
+    else {
+      const b = integer(right);
+      if (["bitAnd", "bitOr", "bitXor"].includes(operation)) result2 = operation === "bitAnd" ? a & b : operation === "bitOr" ? a | b : a ^ b;
+      else {
+        if (b < 0n) throw Object.assign(new Error("Bit shift by negative number"), { name: "ArithmeticError" });
+        result2 = b >= 64n ? operation === "shiftRight" && a < 0n ? -1n : 0n : operation === "shiftLeft" ? BigInt.asIntN(64, a << b) : a >> b;
+      }
+    }
+    const value = Number(result2);
+    if (!Number.isSafeInteger(value)) throw new RangeError("Bitwise result exceeds safe frontend integer precision");
+    return value;
+  };
+
+  // src-js/core/php-exceptions.js
+  var parents = {
+    Exception: ["Throwable", "Stringable"],
+    Error: ["Throwable", "Stringable"],
+    ReflectionException: ["Exception"],
+    JsonException: ["Exception"],
+    DateException: ["Exception"],
+    DateMalformedStringException: ["DateException"],
+    DateInvalidTimeZoneException: ["DateException"],
+    DateMalformedIntervalStringException: ["DateException"],
+    DateMalformedPeriodStringException: ["DateException"],
+    DateInvalidOperationException: ["DateException"],
+    LogicException: ["Exception"],
+    RuntimeException: ["Exception"],
+    ErrorException: ["Exception"],
+    InvalidArgumentException: ["LogicException"],
+    DomainException: ["LogicException"],
+    LengthException: ["LogicException"],
+    OutOfRangeException: ["LogicException"],
+    OutOfBoundsException: ["RuntimeException"],
+    OverflowException: ["RuntimeException"],
+    RangeException: ["RuntimeException"],
+    UnderflowException: ["RuntimeException"],
+    UnexpectedValueException: ["RuntimeException"],
+    TypeError: ["Error"],
+    ArgumentCountError: ["TypeError"],
+    ValueError: ["Error"],
+    ArithmeticError: ["Error"],
+    DivisionByZeroError: ["ArithmeticError"],
+    AssertionError: ["Error"],
+    UnhandledMatchError: ["Error"],
+    CompileError: ["Error"],
+    ParseError: ["CompileError"]
+  };
+  var exceptionClass = (error) => {
+    if (isPhpObject(error)) return objectData(error).definition.name;
+    if (!(error instanceof Error)) throw new TypeError("Expected an object value.");
+    if (error.phpHierarchy) return error.name;
+    if (error instanceof RangeError) return ["PHP_LOOP_LIMIT", "PHP_CALL_LIMIT"].includes(error.code) ? "RuntimeException" : "ValueError";
+    return Object.hasOwn(parents, error.name) ? error.name : "Error";
+  };
+  var exceptionIs = (error, type) => {
+    if (isPhpObject(error)) return objectIs(error, type);
+    if (!(error instanceof Error)) return false;
+    const wanted = type.replace(/^\\/, "").toLowerCase();
+    const visit = (name) => name.toLowerCase() === wanted || (parents[name] || []).some(visit);
+    return error.phpHierarchy ? error.phpHierarchy.some((name) => name.toLowerCase() === wanted) : visit(exceptionClass(error));
+  };
+  var raise = (value, source, context2) => {
+    if (!(value instanceof Error)) throw withSource(new Error(typeof value === "function" ? "Cannot throw objects that do not implement Throwable" : "Can only throw objects"), source);
+    value.phpTrace ?? (value.phpTrace = (context2?.trace || []).map((frame) => ({ ...frame })));
+    throw withSource(value, source);
+  };
+  var bindArguments = (nodes, names2, state, context2, resolve, type) => {
+    const args = [];
+    for (const node2 of nodes || []) {
+      const value = resolve(node2.value, state, context2);
+      if (node2.spread) {
+        if (!isPhpArray(value)) throw new TypeError("Only arrays can be unpacked in exception arguments");
+        for (const [key2, item] of arrayEntries(value)) args.push({ ...typeof key2 === "string" ? { name: key2 } : {}, value: item, kind: arrayKind(value, key2) });
+      } else args.push({ ...node2, value, kind: type(node2.value, state, context2, value) });
+    }
+    const values3 = /* @__PURE__ */ Object.create(null);
+    let position2 = 0, named = false;
+    for (const arg of args) {
+      let name = arg.name;
+      if (name !== void 0) {
+        named = true;
+        if (!names2.includes(name)) throw new Error(`Unknown named parameter $${name}`);
+      } else {
+        if (named) throw new Error("Cannot use positional argument after named argument");
+        name = names2[position2++];
+      }
+      if (name === void 0) throw Object.assign(new Error("Too many exception/assertion arguments"), { name: "ArgumentCountError" });
+      if (Object.hasOwn(values3, name)) throw new Error(`Named parameter $${name} overwrites previous argument`);
+      values3[name] = { value: arg.value, kind: arg.kind };
+    }
+    return values3;
+  };
+  var newThrowable = (descriptor, message, code, previous, source, context2) => {
+    const error = new Error(message);
+    error.name = descriptor.name;
+    error.phpHierarchy = [descriptor.name, ...descriptor.parents];
+    error.phpCode = code;
+    error.phpPrevious = previous;
+    error.phpMessage = message;
+    error.phpTrace = (context2.trace || []).map((frame) => ({ ...frame }));
+    return withSource(error, source);
+  };
+  var evaluateException = (expression, state, context2, resolve, type) => {
+    const value = (node2) => resolve(node2, state, context2), options = expression.right || {};
+    if (expression.operation === "throw") return raise(value(expression.left), expression.right || context2.source, context2);
+    if (expression.operation === "exceptionIs") {
+      const left = value(expression.left);
+      let right = expression.right === "@static" ? context2.calledClass : value(expression.right);
+      if (isPhpObject(right)) right = objectData(right).definition.name;
+      else if (right instanceof Error) right = exceptionClass(right);
+      if (typeof right !== "string") throw new Error("Class name must be a valid object or a string");
+      return exceptionIs(left, right);
+    }
+    if (expression.operation === "exceptionGet") {
+      const error2 = value(expression.left);
+      if (error2 == null && options.nullable) return null;
+      const name = exceptionClass(error2);
+      switch (options.method) {
+        case "class":
+          return name;
+        case "getmessage":
+          return error2.phpMessage ?? error2.message;
+        case "getcode":
+          return error2.phpCode ?? 0;
+        case "getprevious":
+          return error2.phpPrevious ?? null;
+        case "getfile":
+          return error2.phpFile ?? error2.source?.file ?? "[browser]";
+        case "getline":
+          return error2.phpLine ?? error2.source?.line ?? 0;
+        case "gettrace":
+          return (error2.phpTrace || []).map((frame) => ({ ...frame }));
+        case "gettraceasstring":
+          return traceString(error2);
+        case "__tostring":
+          return formatThrowable(error2);
+        case "getseverity":
+          if (exceptionIs(error2, "ErrorException")) return error2.phpSeverity ?? 1;
+          break;
+      }
+      throw new Error(`Unsupported Throwable method: ${options.method}`);
+    }
+    if (expression.operation === "assert") {
+      const args2 = bindArguments(expression.left, ["assertion", "description"], state, context2, resolve, type);
+      if (!Object.hasOwn(args2, "assertion")) throw Object.assign(new Error("assert() requires an assertion"), { name: "ArgumentCountError" });
+      const item = args2.description || { value: null, kind: "NULL" };
+      const description = item.value instanceof Error ? item.value : assignType({ types: ["string"], nullable: true, property: "assert() description" }, item.value, item.kind, options.source?.strictTypes ?? true, context2).value;
+      if (phpBool(args2.assertion.value)) return true;
+      if (description instanceof Error) return raise(description, options.source, context2);
+      return raise(newThrowable({ name: "AssertionError", parents: ["Error", "Throwable", "Stringable"] }, description ?? options.description, 0, null, options.source, context2), options.source, context2);
+    }
+    const descriptor = expression.left, extended = descriptor.ctorKind === "ErrorException";
+    const args = bindArguments(options.arguments, extended ? ["message", "code", "severity", "filename", "line", "previous"] : ["message", "code", "previous"], state, context2, resolve, type);
+    const scalar2 = (name, typeName, fallback, nullable2 = false) => {
+      const item = args[name] || { value: fallback, kind: phpType(fallback) };
+      return assignType({ types: [typeName], nullable: nullable2, property: `${descriptor.name}::__construct($${name})` }, item.value, item.kind, options.source?.strictTypes ?? true, context2).value;
+    };
+    const message = scalar2("message", "string", ""), code = scalar2("code", "int", 0);
+    const previous = args.previous?.value ?? null;
+    if (previous !== null && !(previous instanceof Error)) throw new TypeError("Exception previous must be Throwable|null");
+    const error = newThrowable(descriptor, message, code, previous, options.source || context2.source, context2);
+    if (extended) {
+      error.phpSeverity = scalar2("severity", "int", 1);
+      error.phpFile = scalar2("filename", "string", null, true);
+      error.phpLine = scalar2("line", "int", null, true);
+    }
+    return error;
+  };
+  var traceString = (error) => [...(error.phpTrace || []).map((frame, index) => `#${index} ${frame.file || "[browser]"}(${frame.line || 0}): ${frame.function || "{closure}"}()`), `#${(error.phpTrace || []).length} {main}`].join("\n");
+  var formatThrowable = (error, seen = /* @__PURE__ */ new Set()) => {
+    if (seen.has(error)) return "[cyclic exception]";
+    seen.add(error);
+    const previous = error.phpPrevious ? formatThrowable(error.phpPrevious, seen) + "\n\nNext " : "";
+    return previous + `${exceptionClass(error)}: ${error.phpMessage ?? error.message} in ${error.phpFile ?? error.source?.file ?? "[browser]"}:${error.phpLine ?? error.source?.line ?? 0}
+Stack trace:
+${traceString(error)}`;
+  };
+  var linkPrevious = (error, pending4) => {
+    if (!(error instanceof Error) || !(pending4 instanceof Error) || error === pending4) return;
+    const seen = /* @__PURE__ */ new Set();
+    for (let cause = pending4; cause; cause = cause.phpPrevious) {
+      if (seen.has(cause)) return;
+      seen.add(cause);
+    }
+    let tail = error;
+    while (tail) {
+      if (seen.has(tail)) return;
+      seen.add(tail);
+      if (!tail.phpPrevious) {
+        tail.phpPrevious = pending4;
+        return;
+      }
+      tail = tail.phpPrevious;
+    }
+  };
+  function* exceptionFlow(action, bind2, context2) {
+    let pending4, signal;
+    try {
+      signal = yield action.action;
+    } catch (error) {
+      error.phpTrace ?? (error.phpTrace = (context2.trace || []).map((frame) => ({ ...frame })));
+      const branch = (action.catches || []).find((branch2) => branch2.types.some((type) => exceptionIs(error, type)));
+      if (!branch) pending4 = error;
+      else {
+        try {
+          if (branch.variable) bind2(branch.variable, error);
+          signal = yield branch.action;
+        } catch (failure6) {
+          pending4 = failure6;
+        }
+      }
+    }
+    if (action.finally) {
+      try {
+        const final = yield action.finally;
+        if (final) return final;
+      } catch (error) {
+        linkPrevious(error, pending4);
+        throw error;
+      }
+    }
+    if (pending4) throw pending4;
+    return signal;
+  }
+
+  // src-js/core/php-functions.js
+  var closures = /* @__PURE__ */ new WeakMap();
+  var failure3 = (name, message) => Object.assign(new Error(message), { name });
+  var evaluateDisplay = (expression, state, context2) => {
+    const data = {
+      ...context2,
+      functions: expression.right.functions || {},
+      source: expression.right.source,
+      classes: expression.right.classes || {},
+      componentProjection: expression.right.projection === true,
+      thisObject: null,
+      objectScope: null,
+      calledClass: null,
+      objectBudget: { remaining: 1e4 },
+      readOnly: true,
+      builtinBudget: { remaining: 1e6 },
+      builtinMemory: {},
+      locals: /* @__PURE__ */ Object.create(null),
+      localTypes: /* @__PURE__ */ Object.create(null),
+      localReferences: /* @__PURE__ */ Object.create(null),
+      functionDeclarations: /* @__PURE__ */ new Set(),
+      functionDefinitionIds: /* @__PURE__ */ new Map(),
+      callBudget: { depth: 0, remaining: 1e4 },
+      loopBudget: { remaining: 1e4 },
+      evaluated: /* @__PURE__ */ new WeakMap(),
+      assignState: () => {
+        throw new Error("Reactive text cannot modify state");
+      }
+    };
+    try {
+      const value = resolveData2(expression.left, state, data);
+      return { value, kind: resolveType(expression.left, state, data, value) };
+    } catch (error) {
+      throw withSource(error, data.source, data.trace);
+    }
+  };
+  var isFrontendCallable = (value, context2) => isMethodCallable(value, context2) || hasMagicInvoke(value, context2) || typeof value === "string" && builtinNames.includes(value.replace(/^\\/, "").toLowerCase()) || typeof value === "function" && closures.has(value) || typeof value === "string" && Object.values(context2.functions || {}).some((fn) => fn.name.toLowerCase() === value.replace(/^\\/, "").toLowerCase() && (fn.declared || context2.functionDeclarations?.has(fn.name.toLowerCase())));
+  var contract = (rule, item, strict, context2, label) => {
+    if (!rule) return item;
+    if (rule.types.includes("@static")) rule = { ...rule, types: rule.types.map((type) => type === "@static" ? context2.calledClass || "(static)" : type) };
+    if (rule.types.includes("callable") && isFrontendCallable(item.value, context2) || rule.types.includes("closure") && typeof item.value === "function" && closures.has(item.value) || rule.types.includes("iterable") && item.kind === "array") return item;
+    try {
+      return assignType(rule, item.value, item.kind, strict, context2);
+    } catch (error) {
+      if (error instanceof TypeError) throw new TypeError(`${label}: expected ${rule.types.join("|")}, received ${item.kind}`);
+      throw error;
+    }
+  };
+  var createClosure = (id, captures, state, context2) => {
+    if (!Object.hasOwn(context2.functions || {}, id)) throw new Error(`Unknown frontend function: ${id}`);
+    const definition = context2.functions[id];
+    if (!definition.declared) {
+      if (!context2.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition.name}()`);
+      id = context2.functionDefinitionIds?.get(definition.name.toLowerCase()) || id;
+    }
+    const fn = function() {
+    };
+    const values3 = /* @__PURE__ */ Object.create(null), types = /* @__PURE__ */ Object.create(null), refs = /* @__PURE__ */ Object.create(null);
+    for (const capture of captures || []) {
+      if (capture.reference) {
+        refs[capture.id] = promoteReference(capture.value, state, context2);
+        const ref = refs[capture.id];
+        if (ref.cell) observeValueOwnership(fn, (active) => active ? ref.cell.bindings.add(fn) : ref.cell.bindings.delete(fn));
+        if (capture.value?.$local && !Object.hasOwn(context2.locals || {}, capture.value.$local) && !context2.localReferences?.[capture.value.$local]) refs[capture.id].set(null, "NULL");
+      } else {
+        const item = resolveData2(capture.value, state, context2);
+        values3[capture.id] = clonePhp(item);
+        ownArray(values3, capture.id, values3[capture.id]);
+        types[capture.id] = resolveType(capture.value, state, context2, item);
+      }
+    }
+    closures.set(fn, { id, values: values3, types, refs, staticLocals: definition.name.includes("{closure") ? /* @__PURE__ */ new Map() : null, thisObject: definition.bindThis ? context2.thisObject : null, objectScope: definition.objectScope || null, calledClass: definition.objectScope ? context2.calledClass : null });
+    return fn;
+  };
+  var bindGeneratorMethod = (value, method3) => {
+    if (!Object.hasOwn(objectData(value).definition.methods, method3.toLowerCase())) throw new Error(`Call to undefined method Generator::${method3}()`);
+    const fn = function() {
+    };
+    closures.set(fn, { generator: value, method: method3.toLowerCase() });
+    return fn;
+  };
+  var callableDefinition = (target, context2) => {
+    const fn = callable(target, context2);
+    return fn.generator ? generatorSignature(fn.method) : context2.functions?.[fn.id];
+  };
+  var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null, magicClosure = false) => {
+    if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11));
+    const fn = function() {
+    };
+    closures.set(fn, { id, thisObject, objectScope, calledClass, magicName, magicClosure });
+    return fn;
+  };
+  var declareFunction = (id, context2) => {
+    const definition = context2.functions?.[id];
+    if (!definition) throw new Error(`Unknown frontend function declaration: ${id}`);
+    const key2 = definition.name.toLowerCase();
+    if (definition.declared || builtinNames.includes(key2) || context2.functionDeclarations.has(key2) || Object.values(context2.functions).some((fn) => fn.declared && fn.name.toLowerCase() === key2)) throw new Error(`Cannot redeclare ${definition.name}()`);
+    context2.functionDeclarations.add(key2);
+    (context2.functionDefinitionIds || (context2.functionDefinitionIds = /* @__PURE__ */ new Map())).set(key2, id);
+  };
+  var callable = (value, context2) => {
+    const objectTarget = methodCallable(value, context2) || objectInvokeTarget(value, context2);
+    if (objectTarget) return closures.get(objectTarget);
+    if (isPhpObject(value)) throw new Error(`Object of type ${objectData(value).definition.name} is not callable`);
+    if (typeof value === "function" && closures.has(value)) return closures.get(value);
+    if (typeof value === "string") {
+      const key2 = value.replace(/^\\/, "").toLowerCase();
+      const id = context2.functionDefinitionIds?.get(key2) || Object.keys(context2.functions || {}).find((id2) => context2.functions[id2].name.toLowerCase() === key2);
+      if (id) return { id };
+      throw new Error(`Call to undefined frontend function ${value}()`);
+    }
+    if (typeof value === "function") throw new TypeError("Value is not a compiled frontend callable");
+    throw new Error("Value is not a compiled frontend callable");
+  };
+  var assignable = (node2) => node2?.$local || node2?.$state || node2?.$collection || ["componentInput", "dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(node2?.$expression?.operation);
+  var evaluateCall = (expression, state, context2, target = resolveData2(expression.left, state, context2)) => {
+    if (typeof target === "string" && builtinNames.includes(target.replace(/^\\/, "").toLowerCase())) return evaluateBuiltin({ ...expression, left: target.replace(/^\\/, "").toLowerCase() }, state, context2, resolveData2, resolveType, valueReference);
+    const source = expression.right.source || context2.source;
+    try {
+      const args = [];
+      const definition = callableDefinition(target, context2);
+      if (definition.builtin) return evaluateBuiltin({ ...expression, left: definition.builtin }, state, context2, resolveData2, resolveType, valueReference);
+      for (const argument of expression.right.arguments || []) {
+        const parameter = Object.hasOwn(argument, "name") ? definition.parameters.find((p) => p.name === argument.name) || definition.parameters.find((p) => p.variadic) : definition.parameters[args.length] || definition.parameters.find((p) => p.variadic);
+        let ref = assignable(argument.value) && (parameter?.reference || argument.spread) ? valueReference(argument.value, state, context2, false, false, !!argument.spread) : null;
+        if (argument.spread) {
+          const collection = ref ? ref.get().value : resolveData2(argument.value, state, context2);
+          if (isPhpObject(collection)) {
+            for (const { key: key2, item } of spreadEntries(collection, context2)) args.push({ ...item, ...key2.kind === "string" ? { name: key2.value } : {} });
+            continue;
+          }
+          let temporary = collection;
+          const unpacked = ref || { get: () => ({ value: temporary, kind: "array" }), set: (value) => {
+            temporary = value;
+            return { value, kind: "array" };
+          } };
+          for (const [key2, value] of arrayEntries(collection)) args.push({ ...typeof key2 === "string" ? { name: key2 } : {}, value: clonePhp(value), kind: arrayKind(collection, key2), ref: { get: () => arrayRead(unpacked.get().value, key2, context2), set: (value2, kind, source2 = context2.source) => {
+            unpacked.set(arrayWrite(unpacked.get().value, key2, value2, kind, context2), "array", source2);
+            return { value: value2, kind };
+          } } });
+        } else {
+          if (parameter?.reference) ref = ref?.indirect?.() || ref;
+          const item = ref ? parameter?.reference ? ref.acquire?.() || ref.get(true) : ref.get() : { value: resolveData2(argument.value, state, context2) };
+          if (!item.kind) item.kind = resolveType(argument.value, state, context2, item.value);
+          args.push({ ...argument, value: clonePhp(item.value), kind: item.kind, ref });
+        }
+      }
+      return invokeFunction(target, args, state, { ...context2, source });
+    } catch (error) {
+      throw withSource(error, source);
+    }
+  };
+  var invokeFunction = (target, argumentsList, state, context2) => {
+    if (typeof target === "string" && builtinNames.includes(target.replace(/^\\/, "").toLowerCase())) return invokeBuiltin(target, argumentsList, state, context2);
+    const closure = callable(target, context2), definition = context2.functions?.[closure.id];
+    if (definition?.internal && argumentsList.length > definition.parameters.length) throw failure3("ArgumentCountError", "Too many enum method arguments");
+    if (closure.generator) return generatorMethod(closure.generator, closure.method, argumentsList, context2);
+    if (closure.magicClosure && (context2.source?.phpVersion ?? 80400) < 80300) {
+      const named2 = argumentsList.find((argument) => argument.name !== void 0);
+      if (named2) throw new Error(`Unknown named parameter $${named2.name}`);
+    }
+    if (closure.magicName !== null && closure.magicName !== void 0) argumentsList = [{ value: closure.magicName, kind: "string" }, { value: magicArguments(argumentsList), kind: "array" }];
+    if (definition?.builtin) return invokeBuiltin(definition.builtin, argumentsList, state, context2);
+    if (!definition || !definition.declared && !context2.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition?.name || closure.id}()`);
+    const budget = context2.callBudget || (context2.callBudget = { depth: 0, remaining: 1e4 });
+    if (budget.depth >= 128 || --budget.remaining < 0) throw Object.assign(new RangeError("Frontend function call limit exceeded"), { code: "PHP_CALL_LIMIT" });
+    const data = { ...context2, returnsReference: !!definition.returnsReference, functionStatics: closure.staticLocals || null, thisObject: closure.thisObject || null, objectScope: closure.objectScope || definition.objectScope || null, calledClass: closure.calledClass || null, locals: clonePhp(closure.values || {}), localTypes: { ...closure.types }, localReferences: { ...closure.refs }, evaluated: /* @__PURE__ */ new WeakMap(), source: definition.source };
+    data.trace = [{ file: context2.source?.file, line: context2.source?.line, function: definition.name }, ...context2.trace || []];
+    data.assignState = (target2, value, kind, source = data.source) => context2.assignState(target2, value, kind, source);
+    const parameters = definition.parameters || [], assigned = /* @__PURE__ */ new Map(), rest = [], seen = /* @__PURE__ */ new Set();
+    let positional = 0, named = false;
+    for (const argument of argumentsList) {
+      let index;
+      if (Object.hasOwn(argument, "name")) {
+        named = true;
+        if (seen.has(argument.name)) throw new Error(`Named parameter $${argument.name} overwrites previous argument`);
+        seen.add(argument.name);
+        index = parameters.findIndex((parameter) => parameter.name === argument.name && !parameter.variadic);
+        if (index < 0) {
+          if (!parameters.some((parameter) => parameter.variadic)) throw new Error(`Unknown named parameter $${argument.name}`);
+          rest.push(argument);
+          continue;
+        }
+      } else {
+        if (named) throw new Error("Cannot use positional argument after named argument");
+        index = positional++;
+        if (index >= parameters.length || parameters[index].variadic) {
+          rest.push(argument);
+          continue;
+        }
+      }
+      if (assigned.has(index)) throw new Error(`Named parameter $${parameters[index].name} overwrites previous argument`);
+      assigned.set(index, argument);
+    }
+    const bind2 = (parameter, argument) => {
+      if (parameter.reference && !argument.ref) throw new Error(`${definition.name}(): Argument $${parameter.name} cannot be passed by reference`);
+      const original = parameter.reference ? argument.ref.get(true) : argument;
+      let item;
+      try {
+        item = contract(parameter.rule, original, context2.source?.strictTypes ?? true, data, `${definition.name}(): Argument $${parameter.name}`);
+      } catch (error) {
+        throw withSource(error, definition.source, data.trace);
+      }
+      if (parameter.reference) argument.ref.set(item.value, item.kind, context2.source);
+      return item;
+    };
+    for (let index = 0; index < parameters.length; index++) {
+      const parameter = parameters[index];
+      if (parameter.variadic) {
+        const refs = /* @__PURE__ */ new Map();
+        let values3 = makeArray(), position2 = 0;
+        for (const argument2 of rest) {
+          const item2 = bind2(parameter, argument2), key2 = argument2.name ?? position2++;
+          values3 = arrayWrite(values3, key2, item2.value, item2.kind, data);
+          if (parameter.reference) refs.set(key2, argument2.ref);
+        }
+        data.locals[parameter.id] = values3;
+        data.localTypes[parameter.id] = "array";
+        if (parameter.reference) data.localReferences[parameter.id] = {
+          get: () => {
+            for (const [key2, ref] of refs) {
+              const item2 = ref.get();
+              values3 = arrayWrite(values3, key2, item2.value, item2.kind, data);
+            }
+            return { value: values3, kind: "array" };
+          },
+          set: (value, kind, source = data.source) => {
+            for (const [key2, ref] of refs) {
+              if (!Object.hasOwn(value, key2)) {
+                refs.delete(key2);
+                continue;
+              }
+              ref.set(value[key2], arrayKind(value, key2), source);
+            }
+            values3 = clonePhp(value);
+            return { value: values3, kind: "array" };
+          }
+        };
+        continue;
+      }
+      let argument = assigned.get(index);
+      if (!argument) {
+        if (!Object.hasOwn(parameter, "default")) throw withSource(failure3("ArgumentCountError", `${definition.name}(): Missing argument $${parameter.name}`), definition.source, data.trace);
+        const value = resolveData2(parameter.default, state, data), kind = resolveType(parameter.default, state, data, value);
+        let item2 = { value, kind };
+        argument = { value, kind, ref: { get: () => item2, set: (value2, kind2) => item2 = { value: value2, kind: kind2 } } };
+      }
+      const item = bind2(parameter, argument);
+      data.locals[parameter.id] = clonePhp(item.value);
+      ownArray(data.locals, parameter.id, data.locals[parameter.id]);
+      data.localTypes[parameter.id] = item.kind;
+      if (parameter.reference) data.localReferences[parameter.id] = argument.ref;
+    }
+    const last = assigned.size ? Math.max(...assigned.keys()) : -1;
+    data.functionArguments = [...parameters.slice(0, last + 1).map((parameter) => ({ id: parameter.id })), ...rest.filter((argument) => !Object.hasOwn(argument, "name")).map((argument) => ({ value: clonePhp(argument.value), kind: argument.kind }))];
+    if (definition.generator) return contract(definition.returnType, { value: createGenerator(definition, state, data), kind: "object" }, true, data, `${definition.name}(): Return value`);
+    budget.depth++;
+    try {
+      if (definition.nativeReflection) return nativeReflectionMethod(definition, data);
+      if (definition.nativeIntl) {
+        if (rest.length) throw failure3("ArgumentCountError", `${definition.name}(): too many arguments`);
+        return nativeIntlMethod(definition, data);
+      }
+      if (definition.nativeDate) {
+        if (rest.length) throw failure3("ArgumentCountError", `${definition.name}(): too many arguments`);
+        return nativeDateMethod(definition, data);
+      }
+      promoteProperties(definition, state, data);
+      const signal = executeFunctionBody(definition.body, state, data);
+      let result2 = signal?.operation === "return" ? { value: clonePhp(signal.value), kind: signal.kind } : { value: null, kind: "NULL" };
+      const types = definition.returnType?.types || [];
+      if (types.includes("never")) throw new TypeError(`${definition.name}(): never-returning function must not return`);
+      if (types.includes("void")) {
+        if (signal?.hasValue) throw new TypeError(`${definition.name}(): void function must not return a value`);
+        return { value: null, kind: "NULL" };
+      }
+      if (!signal && definition.returnType) throw new TypeError(`${definition.name}(): Return value is required`);
+      try {
+        const output = contract(definition.returnType, result2, definition.source?.strictTypes ?? true, data, `${definition.name}(): Return value`);
+        if (definition.returnsReference && signal?.reference) {
+          signal.reference.set(output.value, output.kind);
+          return { ...output, reference: signal.reference };
+        }
+        return output;
+      } catch (error) {
+        throw withSource(error, signal?.source || definition.source, data.trace);
+      }
+    } catch (error) {
+      error.phpStack || (error.phpStack = []);
+      error.phpStack.push({ function: definition.name, source: context2.source });
+      throw withSource(error, definition.source, data.trace);
+    } finally {
+      releaseLocalReferences(data);
+      releaseArrays(data.locals);
+      budget.depth--;
+    }
+  };
+  var executeFunctionBody = (action, state, context2) => {
+    if (!action) return;
+    const data = { ...context2, source: action.phpSource || context2.source };
+    const value = (node2) => resolveData2(node2, state, data);
+    const item = (node2) => {
+      const result2 = value(node2);
+      return { value: result2, kind: resolveType(node2, state, data, result2) };
+    };
+    const run2 = (child) => executeFunctionBody(child, state, data);
+    const iteration = (count) => checkIteration(data, count, action.limit || 1e3);
+    const outer = (signal) => signal.operation === "return" ? signal : { ...signal, levels: signal.levels - 1 };
+    const bindings4 = (rules, source, kind) => bindOffsetPattern(rules, { value: source, kind }, item, (target, current) => assignTarget(target, current.value, current.kind, state, data), data);
+    try {
+      if (action.type === "try") {
+        const flow = exceptionFlow(action, (target, error) => assignTarget(target, error, "object", state, data), data);
+        let step = flow.next();
+        while (!step.done) {
+          try {
+            step = flow.next(run2(step.value));
+          } catch (error) {
+            step = flow.throw(error);
+          }
+        }
+        return step.value;
+      }
+      if (["sequence", "transaction"].includes(action.type)) {
+        for (const child of action.actions || []) {
+          const signal = run2(child);
+          if (signal) return signal;
+        }
+        return;
+      }
+      if (action.type === "return") {
+        let reference;
+        if (data.returnsReference && action.hasValue) {
+          if (assignable(action.value) || ["call", "objectCall"].includes(action.value?.$expression?.operation)) reference = promoteReference(action.value, state, data);
+          else warn(data, "Only variable references should be returned by reference", "PHP_NOTICE");
+        }
+        return { operation: "return", ...reference ? reference.get() : item(action.value), reference, hasValue: action.hasValue, source: data.source };
+      }
+      if (action.type === "function-declare") {
+        declareFunction(action.id, data);
+        return;
+      }
+      if (action.type === "evaluate") {
+        value(action.value);
+        return;
+      }
+      if (action.type === "local-set") {
+        const result2 = item(action.value);
+        assignTarget({ $local: action.name }, result2.value, result2.kind, state, data);
+        return;
+      }
+      if (action.type === "condition") {
+        const a = item(Object.hasOwn(action, "left") ? action.left : { $state: action.state }), b = item(action.value);
+        return run2(phpMatches(action.operator, a.value, b.value, a.kind, b.kind) ? action.then : action.otherwise);
+      }
+      if (action.type === "loop-control") return { operation: action.operation, levels: action.levels || 1 };
+      if (action.type === "console") {
+        const values3 = (action.values || []).map(item);
+        if (action.level === "echo") console.log(values3.map((entry) => phpString(entry.value, entry.kind, data)).join(""));
+        else if (action.level === "dump") console.log(values3.map((entry) => phpDump(entry.value, entry.kind, 0, void 0, data)).join(""));
+        else console[action.level === "warn" ? "warn" : action.level === "error" ? "error" : "log"](...values3.map((entry) => entry.value));
+        return;
+      }
+      if (action.type === "set") {
+        const result2 = item(action.value);
+        data.assignState(action.target, result2.value, result2.kind, data.source);
+        return;
+      }
+      if (action.type === "increment" || action.type === "decrement") {
+        const current = item({ $state: action.target });
+        const next2 = phpIncrement(current.value, current.kind, action.type === "increment" ? 1 : -1, data);
+        data.assignState(action.target, next2.value, next2.kind, data.source);
+        return;
+      }
+      if (action.type === "destructure") {
+        destructure(action, state, data);
+        return;
+      }
+      if (action.type === "switch") {
+        const subject2 = item(action.value);
+        let start = -1, fallback = -1;
+        for (let i = 0; i < action.cases.length; i++) {
+          const branch = action.cases[i];
+          if (branch.default) {
+            fallback = i;
+            continue;
+          }
+          const candidate = item(branch.value);
+          if (phpMatches("looseEq", subject2.value, candidate.value, subject2.kind, candidate.kind)) {
+            start = i;
+            break;
+          }
+        }
+        if (start < 0) start = fallback;
+        for (let i = start; i >= 0 && i < action.cases.length; i++) {
+          const signal = run2(action.cases[i].action);
+          if (!signal) continue;
+          if (signal.operation === "return" || signal.levels > 1) return outer(signal);
+          if (signal.operation === "continue") warn(data, "continue targeting switch is equivalent to break");
+          break;
+        }
+        return;
+      }
+      if (action.type === "foreach-local") {
+        const patternReference = action.bindings.some((binding) => binding.reference), byReference = action.reference || patternReference;
+        const source = byReference ? null : clonePhp(value(action.source));
+        let count = 0;
+        for (const { key: key2, item: item2, reference } of byReference ? referenceEntries(action.source, state, data, () => iteration(++count)) : foreachEntries(source, !!action.key, data, () => iteration(++count))) {
+          if (reference && patternReference) destructureReference(action.bindings, reference, state, data);
+          else if (reference) bindReferenceTarget(action.bindings[0].target, reference, state, data);
+          else bindings4(action.bindings, item2.value, item2.kind);
+          if (action.key) assignTarget(action.key, key2.value, key2.kind, state, data);
+          const signal = run2(action.action);
+          if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
+          if (signal?.operation === "break") break;
+        }
+        return;
+      }
+      if (action.type === "loop") {
+        run2(action.init);
+        let count = 0;
+        const condition = () => {
+          let result2 = true;
+          for (const node2 of action.conditions) result2 = value(node2);
+          return phpBool(result2);
+        };
+        while (action.kind === "do" && count === 0 || condition()) {
+          iteration(++count);
+          const signal = run2(action.action);
+          if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
+          if (signal?.operation === "break") break;
+          run2(action.update);
+        }
+        return;
+      }
+      throw new Error(`Unsupported instruction in a synchronous frontend function: ${action.type}`);
+    } catch (error) {
+      throw withSource(error, data.source, data.trace);
+    }
+  };
+  var cloneClosure = (value) => {
+    const data = closures.get(value);
+    if (!data) return null;
+    const fn = function() {
+    };
+    const copy = { ...data, values: clonePhp(data.values || {}), types: { ...data.types }, refs: { ...data.refs }, staticLocals: data.staticLocals ? new Map([...data.staticLocals].map(([key2, item]) => [key2, { ...item, value: clonePhp(item.value) }])) : null };
+    closures.set(fn, copy);
+    for (const ref of Object.values(copy.refs)) if (ref.cell) observeValueOwnership(fn, (active) => active ? ref.cell.bindings.add(fn) : ref.cell.bindings.delete(fn));
+    return fn;
+  };
+
+  // src-js/eval/generators.js
+  var containsYield = (node2) => {
+    if (!node2 || typeof node2 !== "object") return false;
+    const rule = node2.$expression;
+    if (["yield", "yieldFrom"].includes(rule?.operation)) return true;
+    if (rule?.operation === "eval") return containsYield(rule.left);
+    return Object.values(node2).some(containsYield);
   };
 
   // src-js/core/builtin-signatures.json
@@ -18446,3429 +22611,26 @@ ${traceString(error)}`;
     ]
   };
 
-  // src-js/core/reflection-definitions.json
-  var reflection_definitions_default = {
-    reflectionclass: {
-      class: {
-        name: "ReflectionClass",
-        parent: null,
-        ancestors: [
-          "Stringable",
-          "Reflector"
-        ],
-        abstract: false,
-        final: false,
-        properties: [],
-        staticProperties: [],
-        constants: {
-          IS_IMPLICIT_ABSTRACT: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 16
-          },
-          IS_EXPLICIT_ABSTRACT: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 64
-          },
-          IS_FINAL: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 32
-          },
-          IS_READONLY: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 65536
-          },
-          SKIP_INITIALIZATION_ON_SERIALIZE: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 8
-          },
-          SKIP_DESTRUCTOR: {
-            owner: "ReflectionClass",
-            visibility: "public",
-            value: 16
-          }
-        },
-        methods: {
-          __construct: {
-            name: "__construct",
-            id: "@reflection:reflectionclass::__construct",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getname: {
-            name: "getName",
-            id: "@reflection:reflectionclass::getname",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getshortname: {
-            name: "getShortName",
-            id: "@reflection:reflectionclass::getshortname",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getnamespacename: {
-            name: "getNamespaceName",
-            id: "@reflection:reflectionclass::getnamespacename",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          innamespace: {
-            name: "inNamespace",
-            id: "@reflection:reflectionclass::innamespace",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isabstract: {
-            name: "isAbstract",
-            id: "@reflection:reflectionclass::isabstract",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isfinal: {
-            name: "isFinal",
-            id: "@reflection:reflectionclass::isfinal",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinterface: {
-            name: "isInterface",
-            id: "@reflection:reflectionclass::isinterface",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          istrait: {
-            name: "isTrait",
-            id: "@reflection:reflectionclass::istrait",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isenum: {
-            name: "isEnum",
-            id: "@reflection:reflectionclass::isenum",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isreadonly: {
-            name: "isReadOnly",
-            id: "@reflection:reflectionclass::isreadonly",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinstantiable: {
-            name: "isInstantiable",
-            id: "@reflection:reflectionclass::isinstantiable",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          iscloneable: {
-            name: "isCloneable",
-            id: "@reflection:reflectionclass::iscloneable",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinternal: {
-            name: "isInternal",
-            id: "@reflection:reflectionclass::isinternal",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isuserdefined: {
-            name: "isUserDefined",
-            id: "@reflection:reflectionclass::isuserdefined",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasmethod: {
-            name: "hasMethod",
-            id: "@reflection:reflectionclass::hasmethod",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getmethod: {
-            name: "getMethod",
-            id: "@reflection:reflectionclass::getmethod",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getmethods: {
-            name: "getMethods",
-            id: "@reflection:reflectionclass::getmethods",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasproperty: {
-            name: "hasProperty",
-            id: "@reflection:reflectionclass::hasproperty",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getproperty: {
-            name: "getProperty",
-            id: "@reflection:reflectionclass::getproperty",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getproperties: {
-            name: "getProperties",
-            id: "@reflection:reflectionclass::getproperties",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasconstant: {
-            name: "hasConstant",
-            id: "@reflection:reflectionclass::hasconstant",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getconstant: {
-            name: "getConstant",
-            id: "@reflection:reflectionclass::getconstant",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getconstants: {
-            name: "getConstants",
-            id: "@reflection:reflectionclass::getconstants",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getparentclass: {
-            name: "getParentClass",
-            id: "@reflection:reflectionclass::getparentclass",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getinterfacenames: {
-            name: "getInterfaceNames",
-            id: "@reflection:reflectionclass::getinterfacenames",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          issubclassof: {
-            name: "isSubclassOf",
-            id: "@reflection:reflectionclass::issubclassof",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          implementsinterface: {
-            name: "implementsInterface",
-            id: "@reflection:reflectionclass::implementsinterface",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinstance: {
-            name: "isInstance",
-            id: "@reflection:reflectionclass::isinstance",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          newinstanceargs: {
-            name: "newInstanceArgs",
-            id: "@reflection:reflectionclass::newinstanceargs",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          newinstancewithoutconstructor: {
-            name: "newInstanceWithoutConstructor",
-            id: "@reflection:reflectionclass::newinstancewithoutconstructor",
-            owner: "ReflectionClass",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          }
-        },
-        nativeReflection: true
-      },
-      functions: {
-        "@reflection:reflectionclass::__construct": {
-          name: "ReflectionClass::__construct",
-          parameters: [
-            {
-              id: "v6f626a6563744f72436c617373",
-              name: "objectOrClass",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object",
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "__construct"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getname": {
-          name: "ReflectionClass::getName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getshortname": {
-          name: "ReflectionClass::getShortName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getshortname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getnamespacename": {
-          name: "ReflectionClass::getNamespaceName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getnamespacename"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::innamespace": {
-          name: "ReflectionClass::inNamespace",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "innamespace"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isabstract": {
-          name: "ReflectionClass::isAbstract",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isabstract"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isfinal": {
-          name: "ReflectionClass::isFinal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isfinal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isinterface": {
-          name: "ReflectionClass::isInterface",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isinterface"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::istrait": {
-          name: "ReflectionClass::isTrait",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "istrait"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isenum": {
-          name: "ReflectionClass::isEnum",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isenum"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isreadonly": {
-          name: "ReflectionClass::isReadOnly",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isreadonly"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isinstantiable": {
-          name: "ReflectionClass::isInstantiable",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isinstantiable"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::iscloneable": {
-          name: "ReflectionClass::isCloneable",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "iscloneable"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isinternal": {
-          name: "ReflectionClass::isInternal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isinternal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isuserdefined": {
-          name: "ReflectionClass::isUserDefined",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isuserdefined"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::hasmethod": {
-          name: "ReflectionClass::hasMethod",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "hasmethod"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getmethod": {
-          name: "ReflectionClass::getMethod",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getmethod"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getmethods": {
-          name: "ReflectionClass::getMethods",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getmethods"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::hasproperty": {
-          name: "ReflectionClass::hasProperty",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "hasproperty"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getproperty": {
-          name: "ReflectionClass::getProperty",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getproperty"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getproperties": {
-          name: "ReflectionClass::getProperties",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getproperties"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::hasconstant": {
-          name: "ReflectionClass::hasConstant",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "hasconstant"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getconstant": {
-          name: "ReflectionClass::getConstant",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getconstant"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getconstants": {
-          name: "ReflectionClass::getConstants",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getconstants"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getparentclass": {
-          name: "ReflectionClass::getParentClass",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getparentclass"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::getinterfacenames": {
-          name: "ReflectionClass::getInterfaceNames",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "getinterfacenames"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::issubclassof": {
-          name: "ReflectionClass::isSubclassOf",
-          parameters: [
-            {
-              id: "v636c617373",
-              name: "class",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "reflectionclass",
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "issubclassof"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::implementsinterface": {
-          name: "ReflectionClass::implementsInterface",
-          parameters: [
-            {
-              id: "v696e74657266616365",
-              name: "interface",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "reflectionclass",
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "implementsinterface"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::isinstance": {
-          name: "ReflectionClass::isInstance",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "isinstance"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::newinstanceargs": {
-          name: "ReflectionClass::newInstanceArgs",
-          parameters: [
-            {
-              id: "v61726773",
-              name: "args",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "array"
-                ],
-                nullable: false
-              },
-              default: []
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "newinstanceargs"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionclass::newinstancewithoutconstructor": {
-          name: "ReflectionClass::newInstanceWithoutConstructor",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionClass",
-            method: "newinstancewithoutconstructor"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        }
-      }
-    },
-    reflectionobject: {
-      class: {
-        name: "ReflectionObject",
-        parent: null,
-        ancestors: [
-          "ReflectionClass",
-          "Reflector",
-          "Stringable"
-        ],
-        abstract: false,
-        final: false,
-        properties: [],
-        staticProperties: [],
-        constants: {
-          IS_IMPLICIT_ABSTRACT: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 16
-          },
-          IS_EXPLICIT_ABSTRACT: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 64
-          },
-          IS_FINAL: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 32
-          },
-          IS_READONLY: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 65536
-          },
-          SKIP_INITIALIZATION_ON_SERIALIZE: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 8
-          },
-          SKIP_DESTRUCTOR: {
-            owner: "ReflectionObject",
-            visibility: "public",
-            value: 16
-          }
-        },
-        methods: {
-          __construct: {
-            name: "__construct",
-            id: "@reflection:reflectionobject::__construct",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getname: {
-            name: "getName",
-            id: "@reflection:reflectionobject::getname",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getshortname: {
-            name: "getShortName",
-            id: "@reflection:reflectionobject::getshortname",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getnamespacename: {
-            name: "getNamespaceName",
-            id: "@reflection:reflectionobject::getnamespacename",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          innamespace: {
-            name: "inNamespace",
-            id: "@reflection:reflectionobject::innamespace",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isabstract: {
-            name: "isAbstract",
-            id: "@reflection:reflectionobject::isabstract",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isfinal: {
-            name: "isFinal",
-            id: "@reflection:reflectionobject::isfinal",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinterface: {
-            name: "isInterface",
-            id: "@reflection:reflectionobject::isinterface",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          istrait: {
-            name: "isTrait",
-            id: "@reflection:reflectionobject::istrait",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isenum: {
-            name: "isEnum",
-            id: "@reflection:reflectionobject::isenum",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isreadonly: {
-            name: "isReadOnly",
-            id: "@reflection:reflectionobject::isreadonly",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinstantiable: {
-            name: "isInstantiable",
-            id: "@reflection:reflectionobject::isinstantiable",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          iscloneable: {
-            name: "isCloneable",
-            id: "@reflection:reflectionobject::iscloneable",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinternal: {
-            name: "isInternal",
-            id: "@reflection:reflectionobject::isinternal",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isuserdefined: {
-            name: "isUserDefined",
-            id: "@reflection:reflectionobject::isuserdefined",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasmethod: {
-            name: "hasMethod",
-            id: "@reflection:reflectionobject::hasmethod",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getmethod: {
-            name: "getMethod",
-            id: "@reflection:reflectionobject::getmethod",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getmethods: {
-            name: "getMethods",
-            id: "@reflection:reflectionobject::getmethods",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasproperty: {
-            name: "hasProperty",
-            id: "@reflection:reflectionobject::hasproperty",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getproperty: {
-            name: "getProperty",
-            id: "@reflection:reflectionobject::getproperty",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getproperties: {
-            name: "getProperties",
-            id: "@reflection:reflectionobject::getproperties",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          hasconstant: {
-            name: "hasConstant",
-            id: "@reflection:reflectionobject::hasconstant",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getconstant: {
-            name: "getConstant",
-            id: "@reflection:reflectionobject::getconstant",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getconstants: {
-            name: "getConstants",
-            id: "@reflection:reflectionobject::getconstants",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getparentclass: {
-            name: "getParentClass",
-            id: "@reflection:reflectionobject::getparentclass",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getinterfacenames: {
-            name: "getInterfaceNames",
-            id: "@reflection:reflectionobject::getinterfacenames",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          issubclassof: {
-            name: "isSubclassOf",
-            id: "@reflection:reflectionobject::issubclassof",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          implementsinterface: {
-            name: "implementsInterface",
-            id: "@reflection:reflectionobject::implementsinterface",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinstance: {
-            name: "isInstance",
-            id: "@reflection:reflectionobject::isinstance",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          newinstanceargs: {
-            name: "newInstanceArgs",
-            id: "@reflection:reflectionobject::newinstanceargs",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          newinstancewithoutconstructor: {
-            name: "newInstanceWithoutConstructor",
-            id: "@reflection:reflectionobject::newinstancewithoutconstructor",
-            owner: "ReflectionObject",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          }
-        },
-        nativeReflection: true
-      },
-      functions: {
-        "@reflection:reflectionobject::__construct": {
-          name: "ReflectionObject::__construct",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "__construct"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getname": {
-          name: "ReflectionObject::getName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getshortname": {
-          name: "ReflectionObject::getShortName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getshortname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getnamespacename": {
-          name: "ReflectionObject::getNamespaceName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getnamespacename"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::innamespace": {
-          name: "ReflectionObject::inNamespace",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "innamespace"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isabstract": {
-          name: "ReflectionObject::isAbstract",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isabstract"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isfinal": {
-          name: "ReflectionObject::isFinal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isfinal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isinterface": {
-          name: "ReflectionObject::isInterface",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isinterface"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::istrait": {
-          name: "ReflectionObject::isTrait",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "istrait"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isenum": {
-          name: "ReflectionObject::isEnum",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isenum"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isreadonly": {
-          name: "ReflectionObject::isReadOnly",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isreadonly"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isinstantiable": {
-          name: "ReflectionObject::isInstantiable",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isinstantiable"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::iscloneable": {
-          name: "ReflectionObject::isCloneable",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "iscloneable"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isinternal": {
-          name: "ReflectionObject::isInternal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isinternal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isuserdefined": {
-          name: "ReflectionObject::isUserDefined",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isuserdefined"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::hasmethod": {
-          name: "ReflectionObject::hasMethod",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "hasmethod"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getmethod": {
-          name: "ReflectionObject::getMethod",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getmethod"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getmethods": {
-          name: "ReflectionObject::getMethods",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getmethods"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::hasproperty": {
-          name: "ReflectionObject::hasProperty",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "hasproperty"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getproperty": {
-          name: "ReflectionObject::getProperty",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getproperty"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getproperties": {
-          name: "ReflectionObject::getProperties",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getproperties"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::hasconstant": {
-          name: "ReflectionObject::hasConstant",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "hasconstant"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getconstant": {
-          name: "ReflectionObject::getConstant",
-          parameters: [
-            {
-              id: "v6e616d65",
-              name: "name",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getconstant"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getconstants": {
-          name: "ReflectionObject::getConstants",
-          parameters: [
-            {
-              id: "v66696c746572",
-              name: "filter",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "int"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getconstants"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getparentclass": {
-          name: "ReflectionObject::getParentClass",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getparentclass"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::getinterfacenames": {
-          name: "ReflectionObject::getInterfaceNames",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "getinterfacenames"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::issubclassof": {
-          name: "ReflectionObject::isSubclassOf",
-          parameters: [
-            {
-              id: "v636c617373",
-              name: "class",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "reflectionclass",
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "issubclassof"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::implementsinterface": {
-          name: "ReflectionObject::implementsInterface",
-          parameters: [
-            {
-              id: "v696e74657266616365",
-              name: "interface",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "reflectionclass",
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "implementsinterface"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::isinstance": {
-          name: "ReflectionObject::isInstance",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "isinstance"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::newinstanceargs": {
-          name: "ReflectionObject::newInstanceArgs",
-          parameters: [
-            {
-              id: "v61726773",
-              name: "args",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "array"
-                ],
-                nullable: false
-              },
-              default: []
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "newinstanceargs"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionobject::newinstancewithoutconstructor": {
-          name: "ReflectionObject::newInstanceWithoutConstructor",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionObject",
-            method: "newinstancewithoutconstructor"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        }
-      }
-    },
-    reflectionmethod: {
-      class: {
-        name: "ReflectionMethod",
-        parent: null,
-        ancestors: [
-          "ReflectionFunctionAbstract",
-          "Stringable",
-          "Reflector"
-        ],
-        abstract: false,
-        final: false,
-        properties: [],
-        staticProperties: [],
-        constants: {
-          IS_STATIC: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 16
-          },
-          IS_PUBLIC: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 1
-          },
-          IS_PROTECTED: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 2
-          },
-          IS_PRIVATE: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 4
-          },
-          IS_ABSTRACT: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 64
-          },
-          IS_FINAL: {
-            owner: "ReflectionMethod",
-            visibility: "public",
-            value: 32
-          }
-        },
-        methods: {
-          __construct: {
-            name: "__construct",
-            id: "@reflection:reflectionmethod::__construct",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getname: {
-            name: "getName",
-            id: "@reflection:reflectionmethod::getname",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getdeclaringclass: {
-            name: "getDeclaringClass",
-            id: "@reflection:reflectionmethod::getdeclaringclass",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          ispublic: {
-            name: "isPublic",
-            id: "@reflection:reflectionmethod::ispublic",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isprotected: {
-            name: "isProtected",
-            id: "@reflection:reflectionmethod::isprotected",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isprivate: {
-            name: "isPrivate",
-            id: "@reflection:reflectionmethod::isprivate",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isstatic: {
-            name: "isStatic",
-            id: "@reflection:reflectionmethod::isstatic",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isfinal: {
-            name: "isFinal",
-            id: "@reflection:reflectionmethod::isfinal",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isabstract: {
-            name: "isAbstract",
-            id: "@reflection:reflectionmethod::isabstract",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isconstructor: {
-            name: "isConstructor",
-            id: "@reflection:reflectionmethod::isconstructor",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isdestructor: {
-            name: "isDestructor",
-            id: "@reflection:reflectionmethod::isdestructor",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getnumberofparameters: {
-            name: "getNumberOfParameters",
-            id: "@reflection:reflectionmethod::getnumberofparameters",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getnumberofrequiredparameters: {
-            name: "getNumberOfRequiredParameters",
-            id: "@reflection:reflectionmethod::getnumberofrequiredparameters",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          invokeargs: {
-            name: "invokeArgs",
-            id: "@reflection:reflectionmethod::invokeargs",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          setaccessible: {
-            name: "setAccessible",
-            id: "@reflection:reflectionmethod::setaccessible",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isuserdefined: {
-            name: "isUserDefined",
-            id: "@reflection:reflectionmethod::isuserdefined",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinternal: {
-            name: "isInternal",
-            id: "@reflection:reflectionmethod::isinternal",
-            owner: "ReflectionMethod",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          }
-        },
-        nativeReflection: true
-      },
-      functions: {
-        "@reflection:reflectionmethod::__construct": {
-          name: "ReflectionMethod::__construct",
-          parameters: [
-            {
-              id: "v6f626a6563744f724d6574686f64",
-              name: "objectOrMethod",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object",
-                  "string"
-                ],
-                nullable: false
-              }
-            },
-            {
-              id: "v6d6574686f64",
-              name: "method",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "__construct"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::getname": {
-          name: "ReflectionMethod::getName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "getname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::getdeclaringclass": {
-          name: "ReflectionMethod::getDeclaringClass",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "getdeclaringclass"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::ispublic": {
-          name: "ReflectionMethod::isPublic",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "ispublic"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isprotected": {
-          name: "ReflectionMethod::isProtected",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isprotected"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isprivate": {
-          name: "ReflectionMethod::isPrivate",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isprivate"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isstatic": {
-          name: "ReflectionMethod::isStatic",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isstatic"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isfinal": {
-          name: "ReflectionMethod::isFinal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isfinal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isabstract": {
-          name: "ReflectionMethod::isAbstract",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isabstract"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isconstructor": {
-          name: "ReflectionMethod::isConstructor",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isconstructor"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isdestructor": {
-          name: "ReflectionMethod::isDestructor",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isdestructor"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::getnumberofparameters": {
-          name: "ReflectionMethod::getNumberOfParameters",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "getnumberofparameters"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::getnumberofrequiredparameters": {
-          name: "ReflectionMethod::getNumberOfRequiredParameters",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "getnumberofrequiredparameters"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::invokeargs": {
-          name: "ReflectionMethod::invokeArgs",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: true
-              }
-            },
-            {
-              id: "v61726773",
-              name: "args",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "array"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "invokeargs"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::setaccessible": {
-          name: "ReflectionMethod::setAccessible",
-          parameters: [
-            {
-              id: "v61636365737369626c65",
-              name: "accessible",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "bool"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "setaccessible"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isuserdefined": {
-          name: "ReflectionMethod::isUserDefined",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isuserdefined"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionmethod::isinternal": {
-          name: "ReflectionMethod::isInternal",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionMethod",
-            method: "isinternal"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        }
-      }
-    },
-    reflectionproperty: {
-      class: {
-        name: "ReflectionProperty",
-        parent: null,
-        ancestors: [
-          "Stringable",
-          "Reflector"
-        ],
-        abstract: false,
-        final: false,
-        properties: [],
-        staticProperties: [],
-        constants: {
-          IS_STATIC: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 16
-          },
-          IS_READONLY: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 128
-          },
-          IS_PUBLIC: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 1
-          },
-          IS_PROTECTED: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 2
-          },
-          IS_PRIVATE: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 4
-          },
-          IS_ABSTRACT: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 64
-          },
-          IS_PROTECTED_SET: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 2048
-          },
-          IS_PRIVATE_SET: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 4096
-          },
-          IS_VIRTUAL: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 512
-          },
-          IS_FINAL: {
-            owner: "ReflectionProperty",
-            visibility: "public",
-            value: 32
-          }
-        },
-        methods: {
-          __construct: {
-            name: "__construct",
-            id: "@reflection:reflectionproperty::__construct",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getname: {
-            name: "getName",
-            id: "@reflection:reflectionproperty::getname",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getdeclaringclass: {
-            name: "getDeclaringClass",
-            id: "@reflection:reflectionproperty::getdeclaringclass",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          ispublic: {
-            name: "isPublic",
-            id: "@reflection:reflectionproperty::ispublic",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isprotected: {
-            name: "isProtected",
-            id: "@reflection:reflectionproperty::isprotected",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isprivate: {
-            name: "isPrivate",
-            id: "@reflection:reflectionproperty::isprivate",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isstatic: {
-            name: "isStatic",
-            id: "@reflection:reflectionproperty::isstatic",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isreadonly: {
-            name: "isReadOnly",
-            id: "@reflection:reflectionproperty::isreadonly",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isdefault: {
-            name: "isDefault",
-            id: "@reflection:reflectionproperty::isdefault",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          isinitialized: {
-            name: "isInitialized",
-            id: "@reflection:reflectionproperty::isinitialized",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          getvalue: {
-            name: "getValue",
-            id: "@reflection:reflectionproperty::getvalue",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          setvalue: {
-            name: "setValue",
-            id: "@reflection:reflectionproperty::setvalue",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          },
-          setaccessible: {
-            name: "setAccessible",
-            id: "@reflection:reflectionproperty::setaccessible",
-            owner: "ReflectionProperty",
-            visibility: "public",
-            static: false,
-            abstract: false,
-            final: false
-          }
-        },
-        nativeReflection: true
-      },
-      functions: {
-        "@reflection:reflectionproperty::__construct": {
-          name: "ReflectionProperty::__construct",
-          parameters: [
-            {
-              id: "v636c617373",
-              name: "class",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object",
-                  "string"
-                ],
-                nullable: false
-              }
-            },
-            {
-              id: "v70726f7065727479",
-              name: "property",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "string"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "__construct"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::getname": {
-          name: "ReflectionProperty::getName",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "getname"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::getdeclaringclass": {
-          name: "ReflectionProperty::getDeclaringClass",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "getdeclaringclass"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::ispublic": {
-          name: "ReflectionProperty::isPublic",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "ispublic"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isprotected": {
-          name: "ReflectionProperty::isProtected",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isprotected"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isprivate": {
-          name: "ReflectionProperty::isPrivate",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isprivate"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isstatic": {
-          name: "ReflectionProperty::isStatic",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isstatic"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isreadonly": {
-          name: "ReflectionProperty::isReadOnly",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isreadonly"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isdefault": {
-          name: "ReflectionProperty::isDefault",
-          parameters: [],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isdefault"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::isinitialized": {
-          name: "ReflectionProperty::isInitialized",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "isinitialized"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::getvalue": {
-          name: "ReflectionProperty::getValue",
-          parameters: [
-            {
-              id: "v6f626a656374",
-              name: "object",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "object"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "getvalue"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::setvalue": {
-          name: "ReflectionProperty::setValue",
-          parameters: [
-            {
-              id: "v6f626a6563744f7256616c7565",
-              name: "objectOrValue",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "mixed"
-                ],
-                nullable: true
-              }
-            },
-            {
-              id: "v76616c7565",
-              name: "value",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "mixed"
-                ],
-                nullable: true
-              },
-              default: null
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "setvalue"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        },
-        "@reflection:reflectionproperty::setaccessible": {
-          name: "ReflectionProperty::setAccessible",
-          parameters: [
-            {
-              id: "v61636365737369626c65",
-              name: "accessible",
-              reference: false,
-              variadic: false,
-              rule: {
-                types: [
-                  "bool"
-                ],
-                nullable: false
-              }
-            }
-          ],
-          returnType: null,
-          declared: true,
-          nativeReflection: {
-            class: "ReflectionProperty",
-            method: "setaccessible"
-          },
-          body: {
-            type: "sequence",
-            actions: []
-          }
-        }
-      }
-    }
-  };
-
-  // src-js/core/php-static-properties.js
-  var serviceRuntime = (config, action) => {
-    if (!action.serviceScope && !Object.keys(action.classes || {}).length) return { fields: /* @__PURE__ */ new Map(), classes: {}, functions: action.functions || {} };
-    const scopes = config ? config.serviceScopes || (config.serviceScopes = /* @__PURE__ */ new Map()) : /* @__PURE__ */ new Map();
-    const scope = action.serviceScope || "__aml_services";
-    const runtime = scopes.get(scope) || { fields: /* @__PURE__ */ new Map(), classes: {}, functions: {} };
-    const classes2 = { ...runtime.classes, ...action.classes }, functions2 = { ...runtime.functions, ...action.functions };
-    if (Object.keys(classes2).length > 64 || Object.keys(functions2).length > 256) throw new RangeError("Frontend component service catalogue exceeds 64 classes or 256 functions");
-    runtime.classes = classes2;
-    runtime.functions = functions2;
-    scopes.set(scope, runtime);
-    return runtime;
-  };
-  var stores = /* @__PURE__ */ new WeakMap();
-  var staticPropertyReference = (expression, state, context2) => {
-    const className2 = expression.left === "@static" ? context2.calledClass : resolveData2(expression.left, state, context2);
-    const name = phpString(resolveData2(expression.right.name, state, context2), void 0, context2), property2 = objectMemberLookup(className2, name, "staticProperties", context2, false);
-    const allowed = property2 && objectMemberAccessible(property2, context2);
-    const fields = context2.staticFields || (context2.staticFields = /* @__PURE__ */ new Map());
-    const key2 = property2 && property2.owner.toLowerCase() + "::$" + name;
-    const check = (quiet = false) => {
-      if (!property2) {
-        if (quiet) return false;
-        throw new Error(`Access to undeclared static property ${className2}::$${name}`);
-      }
-      if (!allowed) {
-        if (quiet) return false;
-        throw new Error(`Cannot access ${property2.visibility} property ${property2.owner}::$${name}`);
-      }
-      return true;
-    };
-    const initialize = () => {
-      if (!fields.has(key2) && Object.hasOwn(property2, "default")) {
-        const value = resolveData2(property2.default, state, { ...context2, objectScope: property2.owner, calledClass: className2 });
-        fields.set(key2, assignType(property2.rule, clonePhp(value), resolveType(property2.default, state, { ...context2, objectScope: property2.owner, calledClass: className2 }, value), true, context2));
-        ownArray(fields, key2, fields.get(key2).value);
-      }
-    };
-    let bindings = stores.get(fields);
-    if (!bindings) {
-      bindings = /* @__PURE__ */ new Map();
-      stores.set(fields, bindings);
-    }
-    const reference = {
-      initialized: () => {
-        check();
-        initialize();
-        return fields.has(key2);
-      },
-      get: (quiet = false) => {
-        if (!check(quiet)) return { value: null, kind: "NULL" };
-        initialize();
-        if (!fields.has(key2)) {
-          if (quiet) return { value: null, kind: "NULL" };
-          throw new Error(`Typed static property ${property2.owner}::$${name} must not be accessed before initialization`);
-        }
-        return fields.get(key2);
-      },
-      acquire: () => {
-        check();
-        initialize();
-        if (!fields.has(key2)) {
-          if (property2.rule && !property2.rule.nullable) throw new Error(`Cannot access uninitialized non-nullable property ${property2.owner}::$${name} by reference`);
-          fields.set(key2, { value: null, kind: "NULL" });
-        }
-        return fields.get(key2);
-      },
-      set: (value, kind, source = context2.source) => {
-        check();
-        if (context2.readOnly) throw new Error("Static properties must be modified in frontend events");
-        const result2 = assignType(property2.rule, value, kind, source?.strictTypes ?? true, context2);
-        if (bindings.has(key2)) return bindings.get(key2).ref.set(result2.value, result2.kind);
-        fields.set(key2, { value: clonePhp(result2.value), kind: result2.kind });
-        ownArray(fields, key2, fields.get(key2).value);
-        return result2;
-      },
-      remove: () => {
-        check();
-        throw new Error(`Attempt to unset static property ${property2.owner}::$${name}`);
-      },
-      bind: (ref) => {
-        check();
-        if (!ref.cell) throw new Error("Property binding requires a reference cell");
-        const item = ref.get(), checked = assignType(property2.rule, item.value, item.kind, context2.source?.strictTypes ?? true, context2);
-        ref.set(checked.value, checked.kind);
-        const previous = bindings.get(key2);
-        previous?.ref.cell.guards.delete(previous.token);
-        previous?.ref.cell.bindings.delete(previous.token);
-        const token2 = {};
-        bindings.set(key2, { ref, token: token2 });
-        ref.cell.bindings.add(token2);
-        ref.cell.guards.set(token2, (value, kind) => assignType(property2.rule, value, kind, context2.source?.strictTypes ?? true, context2));
-        fields.set(key2, { get value() {
-          return ref.get().value;
-        }, get kind() {
-          return ref.get().kind;
-        }, reference: ref });
-        return ref;
-      },
-      reference: () => bindings.get(key2)?.ref || reference.bind(createReference(reference.get()))
-    };
-    return reference;
-  };
-
-  // src-js/core/php-reflection.js
-  var storage4 = /* @__PURE__ */ new WeakMap();
-  var fail2 = (message) => {
-    throw Object.assign(new Error(message), { name: "ReflectionException" });
-  };
-  var create2 = (name, data) => {
-    const object = makeObject(reflection_definitions_default[name.toLowerCase()].class);
-    storage4.set(object, data);
-    return object;
-  };
-  var className = (value) => storage4.get(value)?.className || objectData(value)?.definition.name || value;
-  var lineage = (name, context2) => {
-    const output = [];
-    while (name) {
-      const data = context2.classes[name.toLowerCase()];
-      if (!data) fail2("Class " + name + " does not exist");
-      output.push(data);
-      name = data.parent;
-    }
-    return output;
-  };
-  var table = (data, type, context2) => Object.assign({}, ...lineage(data.className, context2).reverse().map((row) => row[type]));
-  var nativeReflectionMethod = (definition, context2) => {
-    const operation = definition.nativeReflection.method, name = definition.nativeReflection.class, values3 = definition.parameters.map((p) => context2.locals[p.id]), object = context2.thisObject, state = context2.objectState || {}, result2 = (value) => ({ value, kind: phpType(value) });
-    if (operation === "__construct") {
-      let target = className(values3[0]), member2 = values3[1];
-      if (name === "ReflectionMethod" && !member2 && typeof target === "string" && target.includes("::")) [target, member2] = target.split("::");
-      if (typeof target !== "string") fail2("Expected a compiled class");
-      const type = name === "ReflectionMethod" ? "methods" : name === "ReflectionProperty" ? "properties" : null;
-      const klass2 = lineage(target, context2)[0];
-      const found = type ? objectMemberLookup(klass2.name, type === "methods" ? member2.toLowerCase() : member2, type, context2, false) || type === "properties" && objectMemberLookup(klass2.name, member2, "staticProperties", context2, false) : null;
-      if (type && !found) fail2("Unknown reflected member " + member2);
-      storage4.set(object, { className: klass2.name, member: found, type });
-      return result2(null);
-    }
-    const data = storage4.get(object);
-    if (!data) fail2("Uninitialized reflection");
-    const klass = lineage(data.className, context2)[0], member = data.member;
-    if (operation === "getname") return result2(member?.name || klass.name);
-    if (operation === "getshortname") return result2(klass.name.split("\\").at(-1));
-    if (operation === "getnamespacename") return result2(klass.name.split("\\").slice(0, -1).join("\\"));
-    if (operation === "innamespace") return result2(klass.name.includes("\\"));
-    if (operation === "isinternal") return result2(!!(klass.nativeDate || klass.nativeIntl || klass.nativeSpl || klass.nativeReflection));
-    if (operation === "isuserdefined") return result2(!(klass.nativeDate || klass.nativeIntl || klass.nativeSpl || klass.nativeReflection));
-    if (operation === "getdeclaringclass") return result2(create2("ReflectionClass", { className: member.owner }));
-    if (["ispublic", "isprivate", "isprotected"].includes(operation)) return result2(member.visibility === operation.slice(2));
-    if (operation === "isstatic") return result2(!!member.static || Object.values(table(data, "staticProperties", context2)).includes(member));
-    if (["isabstract", "isfinal", "isinterface", "istrait", "isenum", "isreadonly"].includes(operation)) return result2(!!(member || klass)[operation.slice(2)]);
-    if (operation === "isinstantiable") return result2(!klass.abstract && !klass.interface && !klass.enum && (!klass.methods.__construct || klass.methods.__construct.visibility === "public"));
-    if (operation === "iscloneable") return result2(!klass.enum && !klass.interface && !klass.abstract);
-    if (operation === "setaccessible") return result2(null);
-    if (operation === "isconstructor" || operation === "isdestructor") return result2(member.name.toLowerCase() === (operation === "isconstructor" ? "__construct" : "__destruct"));
-    if (operation === "isdefault") return result2(true);
-    if (operation === "getnumberofparameters" || operation === "getnumberofrequiredparameters") {
-      const params = context2.functions[member.id].parameters;
-      return result2(params.filter((p) => operation === "getnumberofparameters" || !Object.hasOwn(p, "default") && !p.variadic).length);
-    }
-    if (operation === "invokeargs") {
-      const args = arrayEntries(values3[1]).map(([key2, value]) => ({ value, kind: arrayKind(values3[1], key2), ...typeof key2 === "string" ? { name: key2 } : {} }));
-      return invokeFunction(bindMethod(member.id, member.static ? null : values3[0], member.owner, data.className), args, state, context2);
-    }
-    if (["getvalue", "setvalue", "isinitialized"].includes(operation)) {
-      const scoped = { ...context2, objectScope: member.owner }, isStatic = Object.values(table(data, "staticProperties", context2)).includes(member), ref = isStatic ? staticPropertyReference({ left: member.owner, right: { name: member.name } }, state, scoped) : objectPropertyReference({ left: resolvedNode2({ value: values3[0], kind: "object" }), right: { name: member.name } }, state, scoped);
-      if (operation === "setvalue") {
-        const next2 = isStatic && context2.functionArguments.length === 1 ? values3[0] : values3[1];
-        ref.set(next2, phpType(next2));
-        return result2(null);
-      }
-      if (operation === "isinitialized") return result2(ref.initialized());
-      return ref.get();
-    }
-    if (operation === "getparentclass") return result2(klass.parent ? create2("ReflectionClass", { className: klass.parent }) : false);
-    if (operation === "getinterfacenames") return result2(klass.ancestors.filter((name2) => context2.classes[name2.toLowerCase()]?.interface));
-    if (operation === "issubclassof" || operation === "implementsinterface") return result2(klass.ancestors.some((name2) => name2.toLowerCase() === className(values3[0]).toLowerCase()));
-    if (operation === "isinstance") return result2(objectIs(values3[0], klass.name));
-    if (operation === "newinstanceargs" || operation === "newinstancewithoutconstructor") {
-      const arguments_ = operation === "newinstanceargs" ? arrayEntries(values3[0]).map(([key2, value]) => ({ value: resolvedNode2({ value, kind: arrayKind(values3[0], key2) }), ...typeof key2 === "string" ? { name: key2 } : {} })) : [];
-      return evaluateObject({ operation: "objectNew", left: klass.name, right: { arguments: arguments_, skipConstructor: operation === "newinstancewithoutconstructor" } }, state, context2);
-    }
-    if (["hasmethod", "getmethod", "hasproperty", "getproperty", "hasconstant", "getconstant"].includes(operation)) {
-      const type = operation.endsWith("method") ? "methods" : operation.endsWith("property") ? "properties" : "constants", key2 = type === "methods" ? values3[0].toLowerCase() : values3[0], found = objectMemberLookup(klass.name, key2, type, context2, false) || type === "properties" && objectMemberLookup(klass.name, key2, "staticProperties", context2, false);
-      if (operation.startsWith("has")) return result2(!!found);
-      if (!found) {
-        if (type === "constants") return result2(false);
-        fail2("Unknown reflected member " + key2);
-      }
-      if (type === "constants") return evaluateObject({ operation: "objectConstant", left: klass.name, right: key2 }, state, { ...context2, objectScope: found.owner });
-      return result2(create2(type === "methods" ? "ReflectionMethod" : "ReflectionProperty", { className: klass.name, member: found, type }));
-    }
-    if (operation === "getconstants") {
-      const entries = [];
-      for (const [key2, constant] of Object.entries(table(data, "constants", context2))) {
-        const item = evaluateObject({ operation: "objectConstant", left: klass.name, right: key2 }, state, { ...context2, objectScope: constant.owner });
-        entries.push([key2, item.value, item.kind]);
-      }
-      return result2(makeArray(entries));
-    }
-    if (operation === "getmethods" || operation === "getproperties") {
-      const type = operation === "getmethods" ? "methods" : "properties", members = Object.values({ ...table(data, type, context2), ...type === "properties" ? table(data, "staticProperties", context2) : {} });
-      const mask = values3[0];
-      return result2(members.filter((member2) => mask === null || mask & ({ public: 1, protected: 2, private: 4 }[member2.visibility] | (member2.static ? 16 : 0) | (member2.final ? 32 : 0) | (member2.abstract ? 64 : 0))).map((member2) => create2(type === "methods" ? "ReflectionMethod" : "ReflectionProperty", { className: klass.name, member: member2, type })));
-    }
-    fail2("Unsupported reflection method " + operation);
-  };
-
-  // src-js/eval/generators.js
-  var containsYield = (node) => {
-    if (!node || typeof node !== "object") return false;
-    const rule = node.$expression;
-    if (["yield", "yieldFrom"].includes(rule?.operation)) return true;
-    if (rule?.operation === "eval") return containsYield(rule.left);
-    return Object.values(node).some(containsYield);
-  };
-
-  // src-js/core/php-iterators.js
-  var isIterable = (value) => isPhpArray(value) || objectIs(value, "Traversable");
-  function* foreachEntries(source, withKey, context2, iteration2) {
-    if (!isPhpObject(source)) {
-      if (source == null || typeof source !== "object") {
-        warn(context2, "foreach() argument must be of type array|object");
-        return;
-      }
-      for (const [key2, value] of arrayEntries(source)) {
-        iteration2();
-        yield { key: { value: key2, kind: phpType(key2) }, item: { value, kind: arrayKind(source, key2), reference: arrayElementReference(source, key2) } };
-      }
-      return;
-    }
-    let depth = 0;
-    while (objectIs(source, "IteratorAggregate")) {
-      if (++depth > 128) throw Object.assign(new RangeError("Frontend iterator delegation exceeds 128 levels"), { code: "PHP_ITERATOR_LIMIT" });
-      const next2 = invokeCollectionMethod(source, "getiterator", [], context2).value;
-      if (!isPhpObject(next2) || !objectIs(next2, "Traversable") || next2 === source) throw Object.assign(new Error(`Objects returned by ${objectData(source).definition.name}::getIterator() must be traversable or implement interface Iterator`), { name: "Exception" });
-      source = next2;
-    }
-    if (!objectIs(source, "Iterator")) throw new TypeError("Frontend foreach on service objects requires Iterator or IteratorAggregate");
-    if (isGenerator(source) && generatorClosed(source)) throw Object.assign(new Error("Cannot traverse an already closed generator"), { name: "Exception" });
-    const call = (method3) => invokeCollectionMethod(source, method3, [], context2);
-    call("rewind");
-    while (phpBool(call("valid").value)) {
-      iteration2();
-      const result2 = call("current"), item = { ...result2, value: clonePhp(result2.value) };
-      const key2 = withKey ? call("key") : null;
-      if (isSplObject(source)) item.reference = arrayElementReference(splStorageReference(source).get().value, key2?.value ?? call("key").value);
-      yield { key: key2, item };
-      call("next");
-    }
-  }
-  function* spreadEntries(value, context2) {
-    if (isPhpArray(value)) {
-      for (const [key2, item] of arrayEntries(value)) yield { key: { value: key2, kind: phpType(key2) }, item: { value: item, kind: arrayKind(value, key2) } };
-      return;
-    }
-    if (!objectIs(value, "Traversable")) throw new TypeError("Only arrays and Traversables can be unpacked");
-    let count = 0;
-    const iteration2 = () => {
-      if (++count > 1e3 || --(context2.loopBudget || (context2.loopBudget = { remaining: 1e4 })).remaining < 0) throw Object.assign(new RangeError("Frontend loop limit exceeded"), { code: "PHP_LOOP_LIMIT" });
-    };
-    for (const entry of foreachEntries(value, true, context2, iteration2)) {
-      if (!["integer", "string"].includes(entry.key.kind)) throw new Error("Keys must be of type int|string during unpacking");
-      yield entry;
-    }
-  }
-  function* referenceEntries(target, state, context2, iteration2) {
-    if (["call", "objectCall"].includes(target?.$expression?.operation)) {
-      const value = resolveData(target, state, context2);
-      target = resolvedNode({ value, kind: "object" });
-    }
-    let parent = target?.$expression || target?.$local || target?.$state ? promoteReference(target, state, context2) : { get: () => ({ value: resolveData(target, state, context2) }) };
-    let initial = parent.get().value;
-    if (isSplObject(initial)) {
-      parent = splStorageReference(initial);
-      initial = parent.get().value;
-    }
-    if (isGenerator(initial)) {
-      generatorReference(initial, context2);
-      generatorMethod(initial, "rewind", [], context2);
-      while (generatorMethod(initial, "valid", [], context2).value) {
-        iteration2();
-        const reference = generatorReference(initial, context2);
-        yield { key: generatorMethod(initial, "key", [], context2), item: reference.get(), reference };
-        generatorMethod(initial, "next", [], context2);
-      }
-      return;
-    }
-    if (!isPhpArray(initial)) throw new Error("Frontend foreach by reference requires an array");
-    let array2 = initial;
-    if (!arrayOrigin(array2)) {
-      array2 = clonePhp(array2);
-      parent.set(array2, "array");
-      array2 = parent.get().value;
-    }
-    if (!arrayOrigin(array2)) {
-      const entries = arrayEntries(array2);
-      if (!entries.length) return;
-      const first = arrayReference(array2, entries[0][0], context2);
-      parent.set(first.array, "array");
-      array2 = parent.get().value;
-    }
-    let origin = arrayOrigin(array2);
-    const cursor = { position: 0 };
-    (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
-    try {
-      while (cursor.position < arrayEntries(origin.current).length) {
-        iteration2();
-        const [key2] = arrayEntries(origin.current)[cursor.position];
-        const acquired = arrayReference(origin.current, key2, context2);
-        const guard = {};
-        acquired.reference.cell?.bindings.add(guard);
-        if (arrayOrigin(parent.get().value) === origin) {
-          parent.set(acquired.array, "array");
-          const stored = arrayOrigin(parent.get().value);
-          if (stored && stored !== origin) {
-            origin.iterators.delete(cursor);
-            origin = stored;
-            (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
-          }
-        }
-        acquired.reference.cell?.bindings.delete(guard);
-        yield { key: { value: key2, kind: phpType(key2) }, item: acquired.reference.get(), reference: acquired.reference };
-        if (isPhpArray(parent.get().value) && arrayOrigin(parent.get().value) !== origin) {
-          origin.iterators.delete(cursor);
-          origin = arrayOrigin(parent.get().value);
-          if (!origin) break;
-          (origin.iterators || (origin.iterators = /* @__PURE__ */ new Set())).add(cursor);
-          cursor.position = -1;
-        }
-        cursor.position++;
-      }
-    } finally {
-      origin.iterators.delete(cursor);
-    }
-  }
-
-  // src-js/core/php-operators.js
-  var numericString = (value) => typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
-  var compareStrings = (left, right) => {
-    const a = new TextEncoder().encode(left), b = new TextEncoder().encode(right);
-    for (let index = 0; index < Math.min(a.length, b.length); index++) if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
-    return a.length === b.length ? 0 : a.length < b.length ? -1 : 1;
-  };
-  var compareNumbers = (left, right, leftType, rightType) => {
-    const operand = (value, kind) => {
-      if (typeof value === "number") return kind === "integer" && Number.isSafeInteger(value) ? BigInt(value) : value;
-      if (/^[\t\n\r\f\v ]*[+-]?\d+[\t\n\r\f\v ]*$/.test(value)) {
-        const integer = BigInt(value.trim());
-        if (integer >= -9223372036854775808n && integer <= 9223372036854775807n) return integer;
-      }
-      return Number(value);
-    };
-    let a = operand(left, leftType), b = operand(right, rightType);
-    if (typeof a !== "bigint" || typeof b !== "bigint") {
-      a = Number(a);
-      b = Number(b);
-    }
-    return Number.isNaN(a) || Number.isNaN(b) ? NaN : a === b ? 0 : a < b ? -1 : 1;
-  };
-  var phpIdentical = (left, right, leftType = phpType(left), rightType = phpType(right)) => {
-    if (leftType !== rightType) return false;
-    if (isPhpObject(left) || isPhpObject(right) || isRoundingMode(left) || isRoundingMode(right)) return left === right;
-    if (left instanceof Error || right instanceof Error) return left === right;
-    if (left && right && typeof left === "object" && typeof right === "object") {
-      const a = arrayEntries(left), b = arrayEntries(right);
-      return a.length === b.length && a.every(([key2, value], index) => key2 === b[index][0] && phpIdentical(value, b[index][1], arrayKind(left, key2), arrayKind(right, b[index][0])));
-    }
-    return left === right;
-  };
-  var objectComparisonDepth = 0;
-  var phpCompare = (left, right, leftType = phpType(left), rightType = phpType(right)) => {
-    if (typeof left === "boolean" || typeof right === "boolean") {
-      const a = phpBool(left), b = phpBool(right);
-      return a === b ? 0 : a ? 1 : -1;
-    }
-    if (left == null || right == null) {
-      if (typeof left === "string" || typeof right === "string") return compareStrings(left ?? "", right ?? "");
-      const a = phpBool(left), b = phpBool(right);
-      return a === b ? 0 : a ? 1 : -1;
-    }
-    if (isPhpObject(left) || isPhpObject(right)) {
-      const dateLeft = dateStorage.get(left), dateRight = dateStorage.get(right);
-      if (dateLeft || dateRight) {
-        if (dateLeft && dateLeft.timestamp === void 0 || dateRight && dateRight.timestamp === void 0) throw new TypeError("Use === or compare explicit fields for DateInterval, DatePeriod, DateTimeZone and InternalIterator");
-        if (dateLeft && dateRight) return dateLeft.timestamp === dateRight.timestamp ? Math.sign(dateLeft.microsecond - dateRight.microsecond) : dateLeft.timestamp < dateRight.timestamp ? -1 : 1;
-      }
-      if (left === right) return 0;
-      if (!isPhpObject(left) || !isPhpObject(right)) throw new TypeError("Compare service objects with other service objects or use ===");
-      const a = objectData(left), b = objectData(right);
-      if (a.definition.enum || b.definition.enum) return NaN;
-      if (a.definition.name !== b.definition.name) return NaN;
-      if (++objectComparisonDepth > 128) {
-        objectComparisonDepth--;
-        throw new Error("Recursive object comparison limit exceeded");
-      }
-      try {
-        if (a.fields.size !== b.fields.size) return a.fields.size < b.fields.size ? -1 : 1;
-        for (const [key2, item] of a.fields) {
-          const other = b.fields.get(key2);
-          if (!other) return 1;
-          const result2 = phpCompare(item.value, other.value, item.kind, other.kind);
-          if (result2 !== 0) return result2;
-        }
-        return 0;
-      } finally {
-        objectComparisonDepth--;
-      }
-    }
-    if (left instanceof Error || right instanceof Error) {
-      if (left === right) return 0;
-      throw new TypeError("Use === or compare Throwable messages/codes instead of ordering or loosely comparing exceptions.");
-    }
-    if (isRoundingMode(left) || isRoundingMode(right)) return left === right ? 0 : NaN;
-    if (typeof left === "object" || typeof right === "object") {
-      if (typeof left !== "object") return -1;
-      if (typeof right !== "object") return 1;
-      const a = arrayEntries(left).map(([key2]) => key2), b = arrayEntries(right).map(([key2]) => key2);
-      if (a.length !== b.length) return a.length < b.length ? -1 : 1;
-      for (const key2 of a) {
-        if (!Object.hasOwn(right, key2)) return 1;
-        const result2 = phpCompare(left[key2], right[key2], arrayKind(left, key2), arrayKind(right, key2));
-        if (result2 !== 0) return result2;
-      }
-      return 0;
-    }
-    if (typeof left === "string" && typeof right === "string") {
-      if (numericString(left) && numericString(right)) return compareNumbers(left, right, leftType, rightType);
-      else return compareStrings(left, right);
-    } else if (typeof left === "number" && typeof right === "string") {
-      if (numericString(right)) return compareNumbers(left, right, leftType, rightType);
-      else return compareStrings(phpString(left, leftType), right);
-    } else if (typeof left === "string" && typeof right === "number") {
-      if (numericString(left)) return compareNumbers(left, right, leftType, rightType);
-      else return compareStrings(left, phpString(right, rightType));
-    }
-    return compareNumbers(left, right, leftType, rightType);
-  };
-  var phpMatches = (operator, left, right, leftType = phpType(left), rightType = phpType(right)) => {
-    if (operator === "truthy") return phpBool(left);
-    if (operator === "falsy") return !phpBool(left);
-    if (["eq", "identical"].includes(operator)) return phpIdentical(left, right, leftType, rightType);
-    if (["neq", "notIdentical"].includes(operator)) return !phpIdentical(left, right, leftType, rightType);
-    const comparison = phpCompare(left, right, leftType, rightType);
-    if (["looseEq", "equal"].includes(operator)) return comparison === 0;
-    if (["looseNeq", "notEqual"].includes(operator)) return comparison !== 0;
-    if (["gt", "greater"].includes(operator)) return comparison > 0;
-    if (["gte", "greaterEqual"].includes(operator)) return comparison >= 0;
-    if (["lt", "less"].includes(operator)) return comparison < 0;
-    if (["lte", "lessEqual"].includes(operator)) return comparison <= 0;
-    throw new Error(`Unknown PHP comparison: ${operator}`);
-  };
-  var phpIncrement = (value, kind, direction, context2 = null) => {
-    const deprecated = (message) => {
-      if ((context2?.source?.phpVersion ?? 80400) >= 80300) warn(context2, message, "PHP_DEPRECATED");
-    };
-    if (typeof value === "boolean" || value == null && direction < 0) {
-      deprecated(`${direction > 0 ? "Increment" : "Decrement"} on type ${value == null ? "null" : "bool"} has no effect`);
-      return { value, kind };
-    }
-    if (value == null) return { value: 1, kind: "integer" };
-    if (typeof value === "number" || numericString(value)) {
-      const floating = kind === "double" || typeof value === "string" && /[.eE]/.test(value);
-      const next2 = phpArithmetic("add", phpNumber(value), direction, floating, context2);
-      return { value: next2, kind: floating ? "double" : "integer" };
-    }
-    if (typeof value !== "string") throw new TypeError("Cannot increment or decrement an array or object");
-    if (value === "") {
-      deprecated("Increment/decrement on empty string is deprecated");
-      return direction > 0 ? { value: "1", kind: "string" } : { value: -1, kind: "integer" };
-    }
-    if (direction < 0) {
-      deprecated("Decrement on non-numeric string has no effect and is deprecated");
-      return { value, kind };
-    }
-    if (!/^[a-zA-Z0-9]+$/.test(value)) deprecated("Increment on non-alphanumeric string is deprecated");
-    const chars = [...value];
-    let carry = true, prefix = "1";
-    for (let index = chars.length - 1; index >= 0 && carry; index--) {
-      const c = chars[index];
-      if (c === "9") {
-        chars[index] = "0";
-        prefix = "1";
-      } else if (c === "z") {
-        chars[index] = "a";
-        prefix = "a";
-      } else if (c === "Z") {
-        chars[index] = "A";
-        prefix = "A";
-      } else if (/[a-yA-Y0-8]/.test(c)) {
-        chars[index] = String.fromCharCode(c.charCodeAt(0) + 1);
-        carry = false;
-      } else carry = false;
-    }
-    return { value: (carry ? prefix : "") + chars.join(""), kind: "string" };
-  };
-  var phpBitwise = (operation, left, right, context2) => {
-    if (operation === "bitNot" && typeof left === "string") return text(bytes(left).map((value2) => ~value2 & 255));
-    if (operation === "bitNot" && typeof left !== "number") throw new TypeError("Cannot perform bitwise not on this value");
-    const integer = (value2) => {
-      const number = phpNumber(value2, context2);
-      if (!Number.isFinite(number) || !Number.isSafeInteger(Math.trunc(number))) throw new RangeError("Bitwise operand exceeds safe frontend integer precision");
-      if (!Number.isInteger(number)) warn(context2, "Implicit conversion from float to int loses precision", "PHP_DEPRECATED");
-      return BigInt(Math.trunc(number));
-    };
-    const a = integer(left);
-    let result2;
-    if (operation === "bitNot") result2 = ~a;
-    else {
-      const b = integer(right);
-      if (["bitAnd", "bitOr", "bitXor"].includes(operation)) result2 = operation === "bitAnd" ? a & b : operation === "bitOr" ? a | b : a ^ b;
-      else {
-        if (b < 0n) throw Object.assign(new Error("Bit shift by negative number"), { name: "ArithmeticError" });
-        result2 = b >= 64n ? operation === "shiftRight" && a < 0n ? -1n : 0n : operation === "shiftLeft" ? BigInt.asIntN(64, a << b) : a >> b;
-      }
-    }
-    const value = Number(result2);
-    if (!Number.isSafeInteger(value)) throw new RangeError("Bitwise result exceeds safe frontend integer precision");
-    return value;
-  };
-
   // src-js/core/php-generator-values.js
   var empty = () => ({ value: null, kind: "NULL" });
   var expr = (operation, left, right) => ({ $expression: { operation, left, right } });
-  var assignable = (node) => node?.$local || node?.$state || ["dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(node?.$expression?.operation);
-  var read = (node, state, context2) => {
-    const value = resolveData2(node, state, context2);
-    return { value, kind: resolveType(node, state, context2, value) };
+  var assignable2 = (node2) => node2?.$local || node2?.$state || ["componentInput", "dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(node2?.$expression?.operation);
+  var read = (node2, state, context2) => {
+    const value = resolveData2(node2, state, context2);
+    return { value, kind: resolveType(node2, state, context2, value) };
   };
-  function* generatorTarget(node, state, context2, frame) {
-    const rule = node?.$expression;
-    if (!rule) return node;
+  function* generatorTarget(node2, state, context2, frame) {
+    const rule = node2?.$expression;
+    if (!rule) return node2;
     if (["offset", "appendOffset"].includes(rule.operation)) return expr(rule.operation, yield* generatorTarget(rule.left, state, context2, frame), rule.operation === "offset" ? resolvedNode2(yield* generatorValue(rule.right, state, context2, frame)) : null);
     if (rule.operation === "objectProperty") return expr(rule.operation, resolvedNode2(yield* generatorValue(rule.left, state, context2, frame)), { ...rule.right, name: resolvedNode2(yield* generatorValue(rule.right.name, state, context2, frame)) });
-    return node;
+    return node2;
   }
-  function* shape(node, state, context2, frame) {
-    if (!node || typeof node !== "object") return node;
-    if (Object.keys(node).some((key2) => key2.startsWith("$"))) return resolvedNode2(yield* generatorValue(node, state, context2, frame));
-    const result2 = Array.isArray(node) ? [] : {};
-    for (const [key2, value] of Object.entries(node)) result2[key2] = yield* shape(value, state, context2, frame);
+  function* shape(node2, state, context2, frame) {
+    if (!node2 || typeof node2 !== "object") return node2;
+    if (Object.keys(node2).some((key2) => key2.startsWith("$"))) return resolvedNode2(yield* generatorValue(node2, state, context2, frame));
+    const result2 = Array.isArray(node2) ? [] : {};
+    for (const [key2, value] of Object.entries(node2)) result2[key2] = yield* shape(value, state, context2, frame);
     return result2;
   }
   function* delegate(source, context2) {
@@ -21878,7 +22640,7 @@ ${traceString(error)}`;
       const call = (method3, args = []) => generatorMethod(source, method3, args, context2);
       let count2 = 0;
       while (call("valid").value) {
-        if (++count2 > 1e3 || --context2.loopBudget.remaining < 0) throw Object.assign(new RangeError("Frontend generator delegation exceeds its iteration limit"), { code: "PHP_LOOP_LIMIT" });
+        checkIteration(context2, ++count2);
         let sent;
         try {
           sent = yield { key: call("key"), item: call("current") };
@@ -21892,36 +22654,36 @@ ${traceString(error)}`;
     }
     let count = 0;
     for (const entry of foreachEntries(source, true, context2, () => {
-      if (++count > 1e3 || --context2.loopBudget.remaining < 0) throw Object.assign(new RangeError("Frontend generator delegation exceeds its iteration limit"), { code: "PHP_LOOP_LIMIT" });
+      checkIteration(context2, ++count);
     })) yield entry;
     return empty();
   }
-  function* nullsafeGenerator(node, state, context2, frame) {
-    const rule = node?.$expression;
+  function* nullsafeGenerator(node2, state, context2, frame) {
+    const rule = node2?.$expression;
     if (rule?.operation === "nullsafeChain") return yield* nullsafeGenerator(rule.left, state, context2, frame);
-    if (!["objectProperty", "objectCall", "objectMethodRef", "offset", "objectClassName", "objectStaticProperty", "objectClass", "objectConstant"].includes(rule?.operation)) return yield* generatorValue(node, state, context2, frame);
+    if (!["objectProperty", "objectCall", "objectMethodRef", "offset", "objectClassName", "objectStaticProperty", "objectClass", "objectConstant"].includes(rule?.operation)) return yield* generatorValue(node2, state, context2, frame);
     const isStatic = ["objectCall", "objectMethodRef"].includes(rule.operation) && rule.right?.class != null;
     const item = yield* nullsafeGenerator(isStatic ? rule.right.class : rule.left, state, context2, frame);
     if (item.skipped || item.value === null && rule.right?.nullable) return { ...empty(), skipped: true };
     const next2 = isStatic ? expr(rule.operation, rule.left, { ...rule.right, class: resolvedNode2(item) }) : expr(rule.operation, resolvedNode2(item), rule.right);
     return yield* generatorValue(next2, state, context2, frame);
   }
-  function* generatorValue(node, state, context2, frame) {
-    if (!containsYield(node)) return read(node, state, context2);
+  function* generatorValue(node2, state, context2, frame) {
+    if (!containsYield(node2)) return read(node2, state, context2);
     const evaluate = function* (value) {
       return yield* generatorValue(value, state, context2, frame);
     };
-    const rule = node?.$expression;
-    if (node?.$conditional) {
-      const c = node.$conditional, a = yield* evaluate(c.left), b = yield* evaluate(c.right);
+    const rule = node2?.$expression;
+    if (node2?.$conditional) {
+      const c = node2.$conditional, a = yield* evaluate(c.left), b = yield* evaluate(c.right);
       return yield* evaluate(phpMatches(c.operator, a.value, b.value, a.kind, b.kind) ? c.then : c.otherwise);
     }
-    if (!rule) return read(yield* shape(node, state, context2, frame), state, context2);
+    if (!rule) return read(yield* shape(node2, state, context2, frame), state, context2);
     if (rule.operation === "nullsafeChain") return yield* nullsafeGenerator(rule.left, state, context2, frame);
     if (rule.operation === "yield") {
       const key2 = rule.right.keyed ? yield* evaluate(rule.left) : { value: frame.index + 1, kind: "integer" };
       let reference = null, item;
-      if (frame.definition.returnsReference && assignable(rule.right.value)) {
+      if (frame.definition.returnsReference && assignable2(rule.right.value)) {
         reference = promoteReference(yield* generatorTarget(rule.right.value, state, context2, frame), state, context2);
         item = reference.get();
       } else {
@@ -21987,7 +22749,7 @@ ${traceString(error)}`;
       for (const argument of rule.right.arguments || []) {
         const parameter = argument.name !== void 0 ? parameters.find((p) => p.name === argument.name) || parameters.find((p) => p.variadic) : parameters[position2] || parameters.find((p) => p.variadic);
         let ref = null, item;
-        if ((parameter?.reference || argument.spread) && assignable(argument.value)) {
+        if ((parameter?.reference || argument.spread) && assignable2(argument.value)) {
           ref = valueReference(yield* generatorTarget(argument.value, state, context2, frame), state, context2, false, false, !!argument.spread);
           if (parameter?.reference) ref = ref.indirect?.() || ref;
           item = parameter?.reference ? ref.acquire?.() || ref.get(true) : ref.get();
@@ -22020,30 +22782,28 @@ ${traceString(error)}`;
     if (!action) return;
     if (!containsYield(action)) return executeFunctionBody(action, state, context2);
     const data = { ...context2, source: action.phpSource || context2.source };
-    const item = function* (node) {
-      return yield* generatorValue(node, state, data, frame);
+    const item = function* (node2) {
+      return yield* generatorValue(node2, state, data, frame);
     };
-    const value = function* (node) {
-      return (yield* item(node)).value;
+    const value = function* (node2) {
+      return (yield* item(node2)).value;
     };
     const run2 = function* (child) {
       return yield* executeGeneratorBody(child, state, data, frame);
     };
-    const iteration2 = (count) => {
-      if (count > (action.limit || 1e3) || --data.loopBudget.remaining < 0) throw Object.assign(new RangeError("Frontend loop exceeds its safe iteration limit"), { code: "PHP_LOOP_LIMIT" });
-    };
+    const iteration = (count) => checkIteration(data, count, action.limit || 1e3);
     const outer = (signal) => signal.operation === "return" ? signal : { ...signal, levels: signal.levels - 1 };
-    const bindings = function* (rules, source, kind) {
-      const cache = /* @__PURE__ */ new Map();
+    const bindings4 = function* (rules, source, kind) {
+      const cache2 = /* @__PURE__ */ new Map();
       for (const binding of rules) {
         let current = { value: source, kind };
-        for (const [depth, node] of binding.path.entries()) {
+        for (const [depth, node2] of binding.path.entries()) {
           const slot = binding.slots && depth + 1 < binding.path.length ? binding.slots.slice(0, depth + 1).join(".") : null;
-          if (slot !== null && cache.has(slot)) current = cache.get(slot);
+          if (slot !== null && cache2.has(slot)) current = cache2.get(slot);
           else {
-            const offset = yield* item(node);
+            const offset = yield* item(node2);
             current = readOffset(current.value, offset.value, offset.kind, data);
-            if (slot !== null) cache.set(slot, current);
+            if (slot !== null) cache2.set(slot, current);
           }
         }
         assignTarget(yield* generatorTarget(binding.target, state, data, frame), current.value, current.kind, state, data);
@@ -22090,7 +22850,7 @@ ${traceString(error)}`;
       if (action.type === "loop-control") return { operation: action.operation, levels: action.levels || 1 };
       if (action.type === "console") {
         const values3 = [];
-        for (const node of action.values || []) values3.push(yield* item(node));
+        for (const node2 of action.values || []) values3.push(yield* item(node2));
         if (action.level === "echo") console.log(values3.map((entry) => phpString(entry.value, entry.kind, data)).join(""));
         else if (action.level === "dump") console.log(values3.map((entry) => phpDump(entry.value, entry.kind, 0, void 0, data)).join(""));
         else console[action.level === "warn" ? "warn" : action.level === "error" ? "error" : "log"](...values3.map((entry) => entry.value));
@@ -22109,7 +22869,7 @@ ${traceString(error)}`;
       }
       if (action.type === "destructure") {
         const result2 = yield* item(action.value);
-        yield* bindings(action.bindings, clonePhp(result2.value), result2.kind);
+        yield* bindings4(action.bindings, clonePhp(result2.value), result2.kind);
         return;
       }
       if (action.type === "switch") {
@@ -22141,10 +22901,10 @@ ${traceString(error)}`;
         const patternReference = action.bindings.some((binding) => binding.reference), byReference = action.reference || patternReference;
         const source = byReference ? null : clonePhp(yield* value(action.source));
         let count = 0;
-        for (const { key: key2, item: item2, reference } of byReference ? referenceEntries(action.source, state, data, () => iteration2(++count)) : foreachEntries(source, !!action.key, data, () => iteration2(++count))) {
+        for (const { key: key2, item: item2, reference } of byReference ? referenceEntries(action.source, state, data, () => iteration(++count)) : foreachEntries(source, !!action.key, data, () => iteration(++count))) {
           if (reference && patternReference) destructureReference(action.bindings, reference, state, data);
           else if (reference) bindReferenceTarget(yield* generatorTarget(action.bindings[0].target, state, data, frame), reference, state, data);
-          else yield* bindings(action.bindings, item2.value, item2.kind);
+          else yield* bindings4(action.bindings, item2.value, item2.kind);
           if (action.key) assignTarget(yield* generatorTarget(action.key, state, data, frame), key2.value, key2.kind, state, data);
           const signal = yield* run2(action.action);
           if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
@@ -22157,11 +22917,11 @@ ${traceString(error)}`;
         let count = 0;
         const condition = function* () {
           let result2 = true;
-          for (const node of action.conditions) result2 = yield* value(node);
+          for (const node2 of action.conditions) result2 = yield* value(node2);
           return phpBool(result2);
         };
         while (action.kind === "do" && count === 0 || (yield* condition())) {
-          iteration2(++count);
+          iteration(++count);
           const signal = yield* run2(action.action);
           if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
           if (signal?.operation === "break") break;
@@ -22179,7 +22939,7 @@ ${traceString(error)}`;
   var generators = /* @__PURE__ */ new WeakMap();
   var generatorDefinition = (version = 80400) => ({ name: "Generator", ancestors: ["Iterator", "Traversable"], parent: null, interfaces: ["Iterator"], properties: {}, staticProperties: {}, constants: {}, final: true, abstract: false, methods: Object.fromEntries(["rewind", "valid", "current", "key", "next", "send", "throw", "getReturn", ...version >= 80400 ? ["__debugInfo"] : []].map((name) => [name.toLowerCase(), { name, id: "@generator:" + name.toLowerCase(), visibility: "public", owner: "Generator", static: false, abstract: false }])) });
   var empty2 = () => ({ value: null, kind: "NULL" });
-  var failure3 = (message) => Object.assign(new Error(message), { name: "Exception" });
+  var failure4 = (message) => Object.assign(new Error(message), { name: "Exception" });
   var generatorMethods = ["current", "key", "next", "rewind", "valid", "send", "throw", "getreturn", "__debuginfo", "__wakeup"];
   var generatorSignature = (method3) => ({ parameters: ["send", "throw"].includes(method3) ? [{ name: method3 === "send" ? "value" : "exception", reference: false, variadic: false }] : [] });
   var isGenerator = (value) => generators.has(value);
@@ -22254,15 +23014,15 @@ ${traceString(error)}`;
     if (values3.length !== names2.length) throw Object.assign(new Error(`Generator::${method3}() expects ${names2.length} arguments`), { name: "ArgumentCountError" });
     if (method3 === "throw" && !(values3[0].value instanceof Error)) throw new TypeError("Generator::throw(): expected Throwable");
     if (frame.running) throw new Error("Cannot resume an already running generator");
-    if (method3 === "__wakeup") throw failure3("Unserialization of Generator is not allowed");
+    if (method3 === "__wakeup") throw failure4("Unserialization of Generator is not allowed");
     if (method3 === "__debuginfo") return { value: { function: frame.definition.name }, kind: "array" };
     if (!frame.started) advance(frame, "next", empty2(), context2);
     if (method3 === "getreturn") {
-      if (!frame.done || !frame.result) throw failure3("Cannot get return value of a generator that hasn't returned");
+      if (!frame.done || !frame.result) throw failure4("Cannot get return value of a generator that hasn't returned");
       return frame.result;
     }
     if (method3 === "rewind") {
-      if (frame.advanced) throw failure3("Cannot rewind a generator that was already run");
+      if (frame.advanced) throw failure4("Cannot rewind a generator that was already run");
       return empty2();
     }
     if (method3 === "valid") return { value: !frame.done, kind: "boolean" };
@@ -22358,492 +23118,146 @@ ${traceString(error)}`;
     if (phpType(value) === "object") throw new Error("Cannot use object as array");
     return arrayRead(value, key2, context2, quiet);
   };
-  var bindOffsetPattern = (bindings, source, read2, write, context2, cache = /* @__PURE__ */ new Map()) => {
-    for (const binding of bindings) {
+  var bindOffsetPattern = (bindings4, source, read2, write, context2, cache2 = /* @__PURE__ */ new Map()) => {
+    for (const binding of bindings4) {
       let current = source;
       for (const [depth, key2] of binding.path.entries()) {
         const slot = binding.slots && depth + 1 < binding.path.length ? binding.slots.slice(0, depth + 1).join(".") : null;
-        if (slot !== null && cache.has(slot)) current = cache.get(slot);
+        if (slot !== null && cache2.has(slot)) current = cache2.get(slot);
         else {
           const offset = read2(key2);
           current = readOffset(current.value, offset.value, offset.kind, context2);
-          if (slot !== null) cache.set(slot, current);
+          if (slot !== null) cache2.set(slot, current);
         }
       }
       write(binding.target, current);
     }
   };
 
-  // src-js/core/php-destructure.js
-  var destructure = (action, state, context2) => {
-    const references = action.bindings.some((binding) => binding.reference);
-    const ref = references ? valueReference(action.value, state, context2) : null;
-    const value = ref ? ref.get().value : resolveData2(action.value, state, context2), kind = resolveType(action.value, state, context2, value);
-    const root = resolvedNode2({ value, kind }, ref);
-    const cache = /* @__PURE__ */ new Map();
-    for (const binding of action.bindings) {
-      if (binding.reference) {
-        let node = root;
-        for (const key2 of binding.path) node = { $expression: { operation: "offset", left: node, right: key2 } };
-        bindReferenceTarget(binding.target, promoteReference(node, state, context2), state, context2);
-      } else bindOffsetPattern([binding], { value: clonePhp(value), kind }, (key2) => {
-        const value2 = resolveData2(key2, state, context2);
-        return { value: value2, kind: resolveType(key2, state, context2, value2) };
-      }, (target, item) => assignTarget(target, item.value, item.kind, state, context2), context2, cache);
+  // src-js/core/php-casts.js
+  var compoundCast = (operation, value, kind, context2) => {
+    if (operation === "toObject" && (isPhpObject(value) || value instanceof Error || typeof value === "function" || isRoundingMode(value))) return { value, kind: "object" };
+    if (value instanceof Error || typeof value === "function") throw new TypeError("Frontend compound casts do not expose exception or closure internals");
+    if (operation === "toObject") {
+      if (context2.readOnly) throw new Error("Create objects inside frontend events");
+      if (--(context2.objectBudget || (context2.objectBudget = { remaining: 1e4 })).remaining < 0) throw new RangeError("Frontend object allocation limit exceeded");
+      const temporary = {};
+      ownArray(temporary, "source", value);
+      try {
+        return { value: isPhpArray(value) ? makeStdClassFromArray(value) : makeStdClass(value == null ? [] : [["scalar", { value, kind }]]), kind: "object" };
+      } finally {
+        ownArray(temporary, "source", null);
+      }
     }
+    if (isRoundingMode(value)) return { value: makeArray([["name", value.name, "string"]]), kind: "array" };
+    if (isPhpObject(value)) {
+      const name = objectData(value).definition.name.toLowerCase();
+      if (name === "stdclass") return { value: stdClassArray(value) || makeArray(), kind: "array" };
+      if (["dateinterval", "dateperiod"].includes(name)) {
+        const entries2 = advancedDateEntries(value, context2);
+        return { value: makeArray(entries2.map(([key2, item2]) => [key2, item2.value, item2.kind])), kind: "array" };
+      }
+      if (["arrayiterator", "arrayobject"].includes(name)) return invokeCollectionMethod(value, "getarraycopy", [], context2);
+      if (["datetime", "datetimeimmutable", "datetimezone"].includes(name)) throw new TypeError("Frontend array casts do not expose internal date fields; use format()");
+      const data = objectData(value), properties = /* @__PURE__ */ new Map(), chain = [];
+      let item = data.definition;
+      while (item) {
+        chain.unshift(item);
+        item = item.parent && context2.classes?.[item.parent.toLowerCase()];
+      }
+      for (const definition of chain) for (const property2 of Object.values(definition.properties || {})) properties.set(property2.visibility === "private" ? property2.owner + "::$" + property2.name : property2.name, property2);
+      const types = /* @__PURE__ */ new Map();
+      const entries = [...data.fields].map(([key2, item2]) => {
+        const property2 = properties.get(key2), name2 = arrayKey(property2 && property2.visibility !== "public" ? "\0" + (property2.visibility === "private" ? property2.owner : "*") + "\0" + property2.name : key2, context2);
+        types.set(name2, item2.kind);
+        return [name2, clonePhp(item2.value)];
+      });
+      return { value: makeArray(entries, types), kind: "array" };
+    }
+    return { value: isPhpArray(value) ? clonePhp(value) : makeArray(value == null ? [] : [[0, value, kind]]), kind: "array" };
   };
-  var destructureReference = (bindings, reference, state, context2) => destructure({ bindings, value: resolvedNode2(reference.get(), reference) }, state, context2);
 
-  // src-js/core/php-functions.js
-  var closures = /* @__PURE__ */ new WeakMap();
-  var failure4 = (name, message) => Object.assign(new Error(message), { name });
-  var evaluateDisplay = (expression, state, context2) => {
-    const data = {
-      ...context2,
-      functions: expression.right.functions || {},
-      source: expression.right.source,
-      classes: expression.right.classes || {},
-      componentProjection: expression.right.projection === true,
-      thisObject: null,
-      objectScope: null,
-      calledClass: null,
-      objectBudget: { remaining: 1e4 },
-      readOnly: true,
-      builtinBudget: { remaining: 1e6 },
-      builtinMemory: {},
-      locals: /* @__PURE__ */ Object.create(null),
-      localTypes: /* @__PURE__ */ Object.create(null),
-      localReferences: /* @__PURE__ */ Object.create(null),
-      functionDeclarations: /* @__PURE__ */ new Set(),
-      functionDefinitionIds: /* @__PURE__ */ new Map(),
-      callBudget: { depth: 0, remaining: 1e4 },
-      loopBudget: { remaining: 1e4 },
-      evaluated: /* @__PURE__ */ new WeakMap(),
-      assignState: () => {
-        throw new Error("Reactive text cannot modify state");
-      }
-    };
-    try {
-      const value = resolveData2(expression.left, state, data);
-      return { value, kind: resolveType(expression.left, state, data, value) };
-    } catch (error) {
-      throw withSource(error, data.source, data.trace);
+  // src-js/core/php-symbols.js
+  var encoder3 = new TextEncoder();
+  var decoder2 = new TextDecoder();
+  var dynamicLocalId = (value, context2) => {
+    const name = phpString(value, void 0, context2);
+    if (["this", "GLOBALS", "_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_SESSION", "_REQUEST", "_ENV"].includes(name)) throw new Error("Cannot access reserved frontend variable $" + name);
+    return "v" + [...encoder3.encode(name)].map((n) => n.toString(16).padStart(2, "0")).join("");
+  };
+  var localName2 = (id) => decoder2.decode(Uint8Array.from(id.slice(1).match(/../g) || [], (pair) => parseInt(pair, 16)));
+  var valid = (name) => /^[A-Za-z_\x80-\uffff][A-Za-z0-9_\x80-\uffff]*$/.test(name);
+  var runSymbols = (name, items, state, context2) => {
+    if (!["get_debug_type", "settype", "get_defined_vars", "compact", "extract"].includes(name)) return null;
+    const [a, b, c] = items.map((item) => item.value);
+    if (name === "get_debug_type") {
+      const value = isPhpObject(a) ? objectData(a).definition.name.replace(/class@anonymous:.*/, "class@anonymous") : a instanceof Error ? a.name : typeof a === "function" ? "Closure" : { integer: "int", double: "float", boolean: "bool", NULL: "null" }[items[0].kind] || items[0].kind;
+      return { value, kind: "string" };
     }
-  };
-  var isFrontendCallable = (value, context2) => isMethodCallable(value, context2) || hasMagicInvoke(value, context2) || typeof value === "string" && builtinNames.includes(value.replace(/^\\/, "").toLowerCase()) || typeof value === "function" && closures.has(value) || typeof value === "string" && Object.values(context2.functions || {}).some((fn) => fn.name.toLowerCase() === value.replace(/^\\/, "").toLowerCase() && (fn.declared || context2.functionDeclarations?.has(fn.name.toLowerCase())));
-  var contract = (rule, item, strict, context2, label) => {
-    if (!rule) return item;
-    if (rule.types.includes("@static")) rule = { ...rule, types: rule.types.map((type) => type === "@static" ? context2.calledClass || "(static)" : type) };
-    if (rule.types.includes("callable") && isFrontendCallable(item.value, context2) || rule.types.includes("closure") && typeof item.value === "function" && closures.has(item.value) || rule.types.includes("iterable") && item.kind === "array") return item;
-    try {
-      return assignType(rule, item.value, item.kind, strict, context2);
-    } catch (error) {
-      if (error instanceof TypeError) throw new TypeError(`${label}: expected ${rule.types.join("|")}, received ${item.kind}`);
-      throw error;
-    }
-  };
-  var createClosure = (id, captures, state, context2) => {
-    if (!Object.hasOwn(context2.functions || {}, id)) throw new Error(`Unknown frontend function: ${id}`);
-    const definition = context2.functions[id];
-    if (!definition.declared) {
-      if (!context2.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition.name}()`);
-      id = context2.functionDefinitionIds?.get(definition.name.toLowerCase()) || id;
-    }
-    const fn = function() {
-    };
-    const values3 = /* @__PURE__ */ Object.create(null), types = /* @__PURE__ */ Object.create(null), refs = /* @__PURE__ */ Object.create(null);
-    for (const capture of captures || []) {
-      if (capture.reference) {
-        refs[capture.id] = promoteReference(capture.value, state, context2);
-        const ref = refs[capture.id];
-        if (ref.cell) observeValueOwnership(fn, (active) => active ? ref.cell.bindings.add(fn) : ref.cell.bindings.delete(fn));
-        if (capture.value?.$local && !Object.hasOwn(context2.locals || {}, capture.value.$local) && !context2.localReferences?.[capture.value.$local]) refs[capture.id].set(null, "NULL");
-      } else {
-        const item = resolveData2(capture.value, state, context2);
-        values3[capture.id] = clonePhp(item);
-        ownArray(values3, capture.id, values3[capture.id]);
-        types[capture.id] = resolveType(capture.value, state, context2, item);
-      }
-    }
-    closures.set(fn, { id, values: values3, types, refs, staticLocals: definition.name.includes("{closure") ? /* @__PURE__ */ new Map() : null, thisObject: definition.bindThis ? context2.thisObject : null, objectScope: definition.objectScope || null, calledClass: definition.objectScope ? context2.calledClass : null });
-    return fn;
-  };
-  var bindGeneratorMethod = (value, method3) => {
-    if (!Object.hasOwn(objectData(value).definition.methods, method3.toLowerCase())) throw new Error(`Call to undefined method Generator::${method3}()`);
-    const fn = function() {
-    };
-    closures.set(fn, { generator: value, method: method3.toLowerCase() });
-    return fn;
-  };
-  var callableDefinition = (target, context2) => {
-    const fn = callable(target, context2);
-    return fn.generator ? generatorSignature(fn.method) : context2.functions?.[fn.id];
-  };
-  var bindMethod = (id, thisObject, objectScope, calledClass, magicName = null, magicClosure = false) => {
-    if (isGenerator(thisObject)) return bindGeneratorMethod(thisObject, id.slice(11));
-    const fn = function() {
-    };
-    closures.set(fn, { id, thisObject, objectScope, calledClass, magicName, magicClosure });
-    return fn;
-  };
-  var declareFunction = (id, context2) => {
-    const definition = context2.functions?.[id];
-    if (!definition) throw new Error(`Unknown frontend function declaration: ${id}`);
-    const key2 = definition.name.toLowerCase();
-    if (definition.declared || builtinNames.includes(key2) || context2.functionDeclarations.has(key2) || Object.values(context2.functions).some((fn) => fn.declared && fn.name.toLowerCase() === key2)) throw new Error(`Cannot redeclare ${definition.name}()`);
-    context2.functionDeclarations.add(key2);
-    (context2.functionDefinitionIds || (context2.functionDefinitionIds = /* @__PURE__ */ new Map())).set(key2, id);
-  };
-  var callable = (value, context2) => {
-    const objectTarget = methodCallable(value, context2) || objectInvokeTarget(value, context2);
-    if (objectTarget) return closures.get(objectTarget);
-    if (isPhpObject(value)) throw new Error(`Object of type ${objectData(value).definition.name} is not callable`);
-    if (typeof value === "function" && closures.has(value)) return closures.get(value);
-    if (typeof value === "string") {
-      const key2 = value.replace(/^\\/, "").toLowerCase();
-      const id = context2.functionDefinitionIds?.get(key2) || Object.keys(context2.functions || {}).find((id2) => context2.functions[id2].name.toLowerCase() === key2);
-      if (id) return { id };
-      throw new Error(`Call to undefined frontend function ${value}()`);
-    }
-    if (typeof value === "function") throw new TypeError("Value is not a compiled frontend callable");
-    throw new Error("Value is not a compiled frontend callable");
-  };
-  var assignable2 = (node) => node?.$local || node?.$state || node?.$collection || ["dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(node?.$expression?.operation);
-  var evaluateCall = (expression, state, context2, target = resolveData2(expression.left, state, context2)) => {
-    if (typeof target === "string" && builtinNames.includes(target.replace(/^\\/, "").toLowerCase())) return evaluateBuiltin({ ...expression, left: target.replace(/^\\/, "").toLowerCase() }, state, context2, resolveData2, resolveType, valueReference);
-    const source = expression.right.source || context2.source;
-    try {
-      const args = [];
-      const definition = callableDefinition(target, context2);
-      if (definition.builtin) return evaluateBuiltin({ ...expression, left: definition.builtin }, state, context2, resolveData2, resolveType, valueReference);
-      for (const argument of expression.right.arguments || []) {
-        const parameter = Object.hasOwn(argument, "name") ? definition.parameters.find((p) => p.name === argument.name) || definition.parameters.find((p) => p.variadic) : definition.parameters[args.length] || definition.parameters.find((p) => p.variadic);
-        let ref = assignable2(argument.value) && (parameter?.reference || argument.spread) ? valueReference(argument.value, state, context2, false, false, !!argument.spread) : null;
-        if (argument.spread) {
-          const collection = ref ? ref.get().value : resolveData2(argument.value, state, context2);
-          if (isPhpObject(collection)) {
-            for (const { key: key2, item } of spreadEntries(collection, context2)) args.push({ ...item, ...key2.kind === "string" ? { name: key2.value } : {} });
-            continue;
-          }
-          let temporary = collection;
-          const unpacked = ref || { get: () => ({ value: temporary, kind: "array" }), set: (value) => {
-            temporary = value;
-            return { value, kind: "array" };
-          } };
-          for (const [key2, value] of arrayEntries(collection)) args.push({ ...typeof key2 === "string" ? { name: key2 } : {}, value: clonePhp(value), kind: arrayKind(collection, key2), ref: { get: () => arrayRead(unpacked.get().value, key2, context2), set: (value2, kind, source2 = context2.source) => {
-            unpacked.set(arrayWrite(unpacked.get().value, key2, value2, kind, context2), "array", source2);
-            return { value: value2, kind };
-          } } });
-        } else {
-          if (parameter?.reference) ref = ref?.indirect?.() || ref;
-          const item = ref ? parameter?.reference ? ref.acquire?.() || ref.get(true) : ref.get() : { value: resolveData2(argument.value, state, context2) };
-          if (!item.kind) item.kind = resolveType(argument.value, state, context2, item.value);
-          args.push({ ...argument, value: clonePhp(item.value), kind: item.kind, ref });
-        }
-      }
-      return invokeFunction(target, args, state, { ...context2, source });
-    } catch (error) {
-      throw withSource(error, source);
-    }
-  };
-  var invokeFunction = (target, argumentsList, state, context2) => {
-    if (typeof target === "string" && builtinNames.includes(target.replace(/^\\/, "").toLowerCase())) return invokeBuiltin(target, argumentsList, state, context2);
-    const closure = callable(target, context2), definition = context2.functions?.[closure.id];
-    if (definition?.internal && argumentsList.length > definition.parameters.length) throw failure4("ArgumentCountError", "Too many enum method arguments");
-    if (closure.generator) return generatorMethod(closure.generator, closure.method, argumentsList, context2);
-    if (closure.magicClosure && (context2.source?.phpVersion ?? 80400) < 80300) {
-      const named2 = argumentsList.find((argument) => argument.name !== void 0);
-      if (named2) throw new Error(`Unknown named parameter $${named2.name}`);
-    }
-    if (closure.magicName !== null && closure.magicName !== void 0) argumentsList = [{ value: closure.magicName, kind: "string" }, { value: magicArguments(argumentsList), kind: "array" }];
-    if (definition?.builtin) return invokeBuiltin(definition.builtin, argumentsList, state, context2);
-    if (!definition || !definition.declared && !context2.functionDeclarations?.has(definition.name.toLowerCase())) throw new Error(`Call to undefined function ${definition?.name || closure.id}()`);
-    const budget = context2.callBudget || (context2.callBudget = { depth: 0, remaining: 1e4 });
-    if (budget.depth >= 128 || --budget.remaining < 0) throw Object.assign(new RangeError("Frontend function call limit exceeded"), { code: "PHP_CALL_LIMIT" });
-    const data = { ...context2, returnsReference: !!definition.returnsReference, functionStatics: closure.staticLocals || null, thisObject: closure.thisObject || null, objectScope: closure.objectScope || definition.objectScope || null, calledClass: closure.calledClass || null, locals: clonePhp(closure.values || {}), localTypes: { ...closure.types }, localReferences: { ...closure.refs }, evaluated: /* @__PURE__ */ new WeakMap(), source: definition.source };
-    data.trace = [{ file: context2.source?.file, line: context2.source?.line, function: definition.name }, ...context2.trace || []];
-    data.assignState = (target2, value, kind, source = data.source) => context2.assignState(target2, value, kind, source);
-    const parameters = definition.parameters || [], assigned = /* @__PURE__ */ new Map(), rest = [], seen = /* @__PURE__ */ new Set();
-    let positional = 0, named = false;
-    for (const argument of argumentsList) {
-      let index;
-      if (Object.hasOwn(argument, "name")) {
-        named = true;
-        if (seen.has(argument.name)) throw new Error(`Named parameter $${argument.name} overwrites previous argument`);
-        seen.add(argument.name);
-        index = parameters.findIndex((parameter) => parameter.name === argument.name && !parameter.variadic);
-        if (index < 0) {
-          if (!parameters.some((parameter) => parameter.variadic)) throw new Error(`Unknown named parameter $${argument.name}`);
-          rest.push(argument);
-          continue;
-        }
-      } else {
-        if (named) throw new Error("Cannot use positional argument after named argument");
-        index = positional++;
-        if (index >= parameters.length || parameters[index].variadic) {
-          rest.push(argument);
-          continue;
-        }
-      }
-      if (assigned.has(index)) throw new Error(`Named parameter $${parameters[index].name} overwrites previous argument`);
-      assigned.set(index, argument);
-    }
-    const bind2 = (parameter, argument) => {
-      if (parameter.reference && !argument.ref) throw new Error(`${definition.name}(): Argument $${parameter.name} cannot be passed by reference`);
-      const original = parameter.reference ? argument.ref.get(true) : argument;
+    if (context2.readOnly) throw new Error(name + "() requires an event scope");
+    const read2 = (id) => context2.localReferences?.[id]?.get() || { value: context2.locals[id], kind: context2.localTypes[id] || phpType(context2.locals[id]) };
+    const exists = (id) => Object.hasOwn(context2.locals, id) || Object.hasOwn(context2.localReferences || {}, id);
+    if (name === "settype") {
+      const type = b.toLowerCase();
       let item;
-      try {
-        item = contract(parameter.rule, original, context2.source?.strictTypes ?? true, data, `${definition.name}(): Argument $${parameter.name}`);
-      } catch (error) {
-        throw withSource(error, definition.source, data.trace);
-      }
-      if (parameter.reference) argument.ref.set(item.value, item.kind, context2.source);
-      return item;
-    };
-    for (let index = 0; index < parameters.length; index++) {
-      const parameter = parameters[index];
-      if (parameter.variadic) {
-        const refs = /* @__PURE__ */ new Map();
-        let values3 = makeArray(), position2 = 0;
-        for (const argument2 of rest) {
-          const item2 = bind2(parameter, argument2), key2 = argument2.name ?? position2++;
-          values3 = arrayWrite(values3, key2, item2.value, item2.kind, data);
-          if (parameter.reference) refs.set(key2, argument2.ref);
-        }
-        data.locals[parameter.id] = values3;
-        data.localTypes[parameter.id] = "array";
-        if (parameter.reference) data.localReferences[parameter.id] = {
-          get: () => {
-            for (const [key2, ref] of refs) {
-              const item2 = ref.get();
-              values3 = arrayWrite(values3, key2, item2.value, item2.kind, data);
-            }
-            return { value: values3, kind: "array" };
-          },
-          set: (value, kind, source = data.source) => {
-            for (const [key2, ref] of refs) {
-              if (!Object.hasOwn(value, key2)) {
-                refs.delete(key2);
-                continue;
-              }
-              ref.set(value[key2], arrayKind(value, key2), source);
-            }
-            values3 = clonePhp(value);
-            return { value: values3, kind: "array" };
-          }
-        };
-        continue;
-      }
-      let argument = assigned.get(index);
-      if (!argument) {
-        if (!Object.hasOwn(parameter, "default")) throw withSource(failure4("ArgumentCountError", `${definition.name}(): Missing argument $${parameter.name}`), definition.source, data.trace);
-        const value = resolveData2(parameter.default, state, data), kind = resolveType(parameter.default, state, data, value);
-        let item2 = { value, kind };
-        argument = { value, kind, ref: { get: () => item2, set: (value2, kind2) => item2 = { value: value2, kind: kind2 } } };
-      }
-      const item = bind2(parameter, argument);
-      data.locals[parameter.id] = clonePhp(item.value);
-      ownArray(data.locals, parameter.id, data.locals[parameter.id]);
-      data.localTypes[parameter.id] = item.kind;
-      if (parameter.reference) data.localReferences[parameter.id] = argument.ref;
+      if (["int", "integer"].includes(type)) item = { value: phpInt(a, context2), kind: "integer" };
+      else if (["float", "double"].includes(type)) item = { value: phpFloat(a, context2), kind: "double" };
+      else if (["bool", "boolean"].includes(type)) item = { value: phpBool(a), kind: "boolean" };
+      else if (type === "string") item = { value: phpString(a, items[0].kind, context2), kind: "string" };
+      else if (type === "null") item = { value: null, kind: "NULL" };
+      else if (["array", "object"].includes(type)) item = compoundCast(type === "array" ? "toArray" : "toObject", a, items[0].kind, context2);
+      else throw failure("ValueError", "settype(): Argument #2 ($type) must be a valid type");
+      items[0].ref.set(item.value, item.kind);
+      return { value: true, kind: "boolean" };
     }
-    const last = assigned.size ? Math.max(...assigned.keys()) : -1;
-    data.functionArguments = [...parameters.slice(0, last + 1).map((parameter) => ({ id: parameter.id })), ...rest.filter((argument) => !Object.hasOwn(argument, "name")).map((argument) => ({ value: clonePhp(argument.value), kind: argument.kind }))];
-    if (definition.generator) return contract(definition.returnType, { value: createGenerator(definition, state, data), kind: "object" }, true, data, `${definition.name}(): Return value`);
-    budget.depth++;
-    try {
-      if (definition.nativeReflection) return nativeReflectionMethod(definition, data);
-      if (definition.nativeIntl) {
-        if (rest.length) throw failure4("ArgumentCountError", `${definition.name}(): too many arguments`);
-        return nativeIntlMethod(definition, data);
-      }
-      if (definition.nativeDate) {
-        if (rest.length) throw failure4("ArgumentCountError", `${definition.name}(): too many arguments`);
-        return nativeDateMethod(definition, data);
-      }
-      promoteProperties(definition, state, data);
-      const signal = executeFunctionBody(definition.body, state, data);
-      let result2 = signal?.operation === "return" ? { value: clonePhp(signal.value), kind: signal.kind } : { value: null, kind: "NULL" };
-      const types = definition.returnType?.types || [];
-      if (types.includes("never")) throw new TypeError(`${definition.name}(): never-returning function must not return`);
-      if (types.includes("void")) {
-        if (signal?.hasValue) throw new TypeError(`${definition.name}(): void function must not return a value`);
-        return { value: null, kind: "NULL" };
-      }
-      if (!signal && definition.returnType) throw new TypeError(`${definition.name}(): Return value is required`);
-      try {
-        const output = contract(definition.returnType, result2, definition.source?.strictTypes ?? true, data, `${definition.name}(): Return value`);
-        if (definition.returnsReference && signal?.reference) {
-          signal.reference.set(output.value, output.kind);
-          return { ...output, reference: signal.reference };
-        }
-        return output;
-      } catch (error) {
-        throw withSource(error, signal?.source || definition.source, data.trace);
-      }
-    } catch (error) {
-      error.phpStack || (error.phpStack = []);
-      error.phpStack.push({ function: definition.name, source: context2.source });
-      throw withSource(error, definition.source, data.trace);
-    } finally {
-      releaseLocalReferences(data);
-      releaseArrays(data.locals);
-      budget.depth--;
+    if (name === "get_defined_vars") {
+      return { value: makeArray([.../* @__PURE__ */ new Set([...context2.source?.localOrder || [], ...Object.keys(context2.locals), ...Object.keys(context2.localReferences || {})])].filter((id) => exists(id) && /^v(?:[0-9a-f]{2})*$/.test(id)).map((id) => {
+        const item = read2(id);
+        return [localName2(id), clonePhp(item.value), item.kind];
+      })), kind: "array" };
     }
-  };
-  var executeFunctionBody = (action, state, context2) => {
-    if (!action) return;
-    const data = { ...context2, source: action.phpSource || context2.source };
-    const value = (node) => resolveData2(node, state, data);
-    const item = (node) => {
-      const result2 = value(node);
-      return { value: result2, kind: resolveType(node, state, data, result2) };
-    };
-    const run2 = (child) => executeFunctionBody(child, state, data);
-    const iteration2 = (count) => {
-      if (count > (action.limit || 1e3) || --data.loopBudget.remaining < 0) throw Object.assign(new RangeError("Frontend loop exceeds its safe iteration limit"), { code: "PHP_LOOP_LIMIT" });
-    };
-    const outer = (signal) => signal.operation === "return" ? signal : { ...signal, levels: signal.levels - 1 };
-    const bindings = (rules, source, kind) => bindOffsetPattern(rules, { value: source, kind }, item, (target, current) => assignTarget(target, current.value, current.kind, state, data), data);
-    try {
-      if (action.type === "try") {
-        const flow = exceptionFlow(action, (target, error) => assignTarget(target, error, "object", state, data), data);
-        let step = flow.next();
-        while (!step.done) {
-          try {
-            step = flow.next(run2(step.value));
-          } catch (error) {
-            step = flow.throw(error);
-          }
+    if (name === "compact") {
+      const entries = /* @__PURE__ */ new Map();
+      const visit = (value, depth = 0) => {
+        work(context2);
+        if (depth > 64) throw new RangeError("compact() nesting exceeds 64 levels");
+        if (isPhpArray(value)) {
+          for (const [, part] of arrayEntries(value)) visit(part, depth + 1);
+          return;
         }
-        return step.value;
-      }
-      if (["sequence", "transaction"].includes(action.type)) {
-        for (const child of action.actions || []) {
-          const signal = run2(child);
-          if (signal) return signal;
+        if (typeof value !== "string") {
+          warn(context2, "compact(): Argument must be string or array of strings");
+          return;
         }
-        return;
-      }
-      if (action.type === "return") {
-        let reference;
-        if (data.returnsReference && action.hasValue) {
-          if (assignable2(action.value) || ["call", "objectCall"].includes(action.value?.$expression?.operation)) reference = promoteReference(action.value, state, data);
-          else warn(data, "Only variable references should be returned by reference", "PHP_NOTICE");
+        const id = dynamicLocalId(value, context2);
+        if (!exists(id)) {
+          warn(context2, "compact(): Undefined variable $" + value);
+          return;
         }
-        return { operation: "return", ...reference ? reference.get() : item(action.value), reference, hasValue: action.hasValue, source: data.source };
-      }
-      if (action.type === "function-declare") {
-        declareFunction(action.id, data);
-        return;
-      }
-      if (action.type === "evaluate") {
-        value(action.value);
-        return;
-      }
-      if (action.type === "local-set") {
-        const result2 = item(action.value);
-        assignTarget({ $local: action.name }, result2.value, result2.kind, state, data);
-        return;
-      }
-      if (action.type === "condition") {
-        const a = item(Object.hasOwn(action, "left") ? action.left : { $state: action.state }), b = item(action.value);
-        return run2(phpMatches(action.operator, a.value, b.value, a.kind, b.kind) ? action.then : action.otherwise);
-      }
-      if (action.type === "loop-control") return { operation: action.operation, levels: action.levels || 1 };
-      if (action.type === "console") {
-        const values3 = (action.values || []).map(item);
-        if (action.level === "echo") console.log(values3.map((entry) => phpString(entry.value, entry.kind, data)).join(""));
-        else if (action.level === "dump") console.log(values3.map((entry) => phpDump(entry.value, entry.kind, 0, void 0, data)).join(""));
-        else console[action.level === "warn" ? "warn" : action.level === "error" ? "error" : "log"](...values3.map((entry) => entry.value));
-        return;
-      }
-      if (action.type === "set") {
-        const result2 = item(action.value);
-        data.assignState(action.target, result2.value, result2.kind, data.source);
-        return;
-      }
-      if (action.type === "increment" || action.type === "decrement") {
-        const current = item({ $state: action.target });
-        const next2 = phpIncrement(current.value, current.kind, action.type === "increment" ? 1 : -1, data);
-        data.assignState(action.target, next2.value, next2.kind, data.source);
-        return;
-      }
-      if (action.type === "destructure") {
-        destructure(action, state, data);
-        return;
-      }
-      if (action.type === "switch") {
-        const subject2 = item(action.value);
-        let start = -1, fallback = -1;
-        for (let i = 0; i < action.cases.length; i++) {
-          const branch = action.cases[i];
-          if (branch.default) {
-            fallback = i;
-            continue;
-          }
-          const candidate = item(branch.value);
-          if (phpMatches("looseEq", subject2.value, candidate.value, subject2.kind, candidate.kind)) {
-            start = i;
-            break;
-          }
-        }
-        if (start < 0) start = fallback;
-        for (let i = start; i >= 0 && i < action.cases.length; i++) {
-          const signal = run2(action.cases[i].action);
-          if (!signal) continue;
-          if (signal.operation === "return" || signal.levels > 1) return outer(signal);
-          if (signal.operation === "continue") warn(data, "continue targeting switch is equivalent to break");
-          break;
-        }
-        return;
-      }
-      if (action.type === "foreach-local") {
-        const patternReference = action.bindings.some((binding) => binding.reference), byReference = action.reference || patternReference;
-        const source = byReference ? null : clonePhp(value(action.source));
-        let count = 0;
-        for (const { key: key2, item: item2, reference } of byReference ? referenceEntries(action.source, state, data, () => iteration2(++count)) : foreachEntries(source, !!action.key, data, () => iteration2(++count))) {
-          if (reference && patternReference) destructureReference(action.bindings, reference, state, data);
-          else if (reference) bindReferenceTarget(action.bindings[0].target, reference, state, data);
-          else bindings(action.bindings, item2.value, item2.kind);
-          if (action.key) assignTarget(action.key, key2.value, key2.kind, state, data);
-          const signal = run2(action.action);
-          if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
-          if (signal?.operation === "break") break;
-        }
-        return;
-      }
-      if (action.type === "loop") {
-        run2(action.init);
-        let count = 0;
-        const condition = () => {
-          let result2 = true;
-          for (const node of action.conditions) result2 = value(node);
-          return phpBool(result2);
-        };
-        while (action.kind === "do" && count === 0 || condition()) {
-          iteration2(++count);
-          const signal = run2(action.action);
-          if (signal?.operation === "return" || signal?.levels > 1) return outer(signal);
-          if (signal?.operation === "break") break;
-          run2(action.update);
-        }
-        return;
-      }
-      throw new Error(`Unsupported instruction in a synchronous frontend function: ${action.type}`);
-    } catch (error) {
-      throw withSource(error, data.source, data.trace);
+        const item = read2(id);
+        entries.set(value, [value, clonePhp(item.value), item.kind]);
+      };
+      items.forEach((item) => visit(item.value));
+      return { value: makeArray([...entries.values()]), kind: "array" };
     }
-  };
-  var cloneClosure = (value) => {
-    const data = closures.get(value);
-    if (!data) return null;
-    const fn = function() {
-    };
-    const copy = { ...data, values: clonePhp(data.values || {}), types: { ...data.types }, refs: { ...data.refs }, staticLocals: data.staticLocals ? new Map([...data.staticLocals].map(([key2, item]) => [key2, { ...item, value: clonePhp(item.value) }])) : null };
-    closures.set(fn, copy);
-    for (const ref of Object.values(copy.refs)) if (ref.cell) observeValueOwnership(fn, (active) => active ? ref.cell.bindings.add(fn) : ref.cell.bindings.delete(fn));
-    return fn;
+    const mode = b & ~256, references = !!(b & 256), prefix = c;
+    if (b < 0 || b & ~263 || mode > 6) throw failure("ValueError", "extract(): Argument #2 ($flags) must be a valid extract type");
+    if ([2, 3, 4, 5].includes(mode) && !valid(prefix)) throw failure("ValueError", "extract(): Argument #3 ($prefix) must be a valid identifier");
+    let count = 0;
+    for (const [key2, part] of arrayEntries(a)) {
+      work(context2);
+      let target = String(key2), id = "v" + [...encoder3.encode(target)].map((n) => n.toString(16).padStart(2, "0")).join(""), present = exists(id), good = valid(target);
+      if (mode === 1 && present || mode === 5 && !present || mode === 6 && !present) continue;
+      if (mode === 3 || mode === 2 && present || mode === 4 && !good || mode === 5) target = prefix + "_" + target;
+      if (!valid(target)) continue;
+      id = dynamicLocalId(target, context2);
+      if (references) {
+        const parent = resolvedNode2({ value: a, kind: "array" }, items[0].ref), node2 = { $expression: { operation: "offset", left: parent, right: key2 } };
+        bindLocalReference(context2, id, promoteReference(node2, state, context2));
+      } else valueReference({ $local: id }, state, context2).set(clonePhp(part), arrayKind(a, key2));
+      count++;
+    }
+    return { value: count, kind: "integer" };
   };
 
   // src-js/core/php-filter.js
@@ -23626,16 +24040,16 @@ ${traceString(error)}`;
       return { type: "sequence", nodes };
     };
     const repetition = () => {
-      let node = atom();
+      let node2 = atom();
       const match2 = source.slice(i).match(/^(\*|\+|\?|\{(\d+)(?:,(\d*))?\})/);
-      if (!match2) return node;
+      if (!match2) return node2;
       i += match2[0].length;
       const min = match2[1] === "*" || match2[1] === "?" ? 0 : match2[1] === "+" ? 1 : Number(match2[2]), max = match2[1] === "?" ? 1 : match2[1] === "*" || match2[1] === "+" ? Infinity : match2[3] === void 0 ? min : match2[3] === "" ? Infinity : Number(match2[3]);
       if (max < min) error("numbers out of order in quantifier");
       if (min > 1e3 || Number.isFinite(max) && max > 1e3) error("quantifier exceeds frontend limit");
       const lazy = source[i] === "?", possessive = source[i] === "+";
       if (lazy || possessive) i++;
-      return { type: "repeat", node, min, max, lazy, possessive };
+      return { type: "repeat", node: node2, min, max, lazy, possessive };
     };
     const atom = () => {
       const start = i, c = source[i++];
@@ -23666,9 +24080,9 @@ ${traceString(error)}`;
             }
           } else error("unsupported group prefix");
         }
-        const node = choice();
+        const node2 = choice();
         if (source[i++] !== ")") error("missing closing parenthesis");
-        return { type, node, number, name, negative, behind };
+        return { type, node: node2, number, name, negative, behind };
       }
       if (c === "^") return { type: "start" };
       if (c === "$") return { type: "end" };
@@ -23721,14 +24135,14 @@ ${traceString(error)}`;
     const tick = () => {
       if (++steps > 2e5) throw Object.assign(new Error("Backtrack limit exhausted"), { pcreError: 2 });
     };
-    function* match(node, state, input, depth = 0) {
+    function* match(node2, state, input, depth = 0) {
       tick();
       if (depth > 256) throw Object.assign(new Error("Recursion limit exhausted"), { pcreError: 3 });
-      switch (node.type) {
+      switch (node2.type) {
         case "atom": {
-          node.regex.lastIndex = state.pos;
-          const found = node.regex.exec(input);
-          if (found) yield { ...state, pos: node.regex.lastIndex };
+          node2.regex.lastIndex = state.pos;
+          const found = node2.regex.exec(input);
+          if (found) yield { ...state, pos: node2.regex.lastIndex };
           return;
         }
         case "start":
@@ -23739,58 +24153,58 @@ ${traceString(error)}`;
           return;
         case "boundary": {
           const word = (c) => c !== void 0 && /[A-Za-z0-9_]/.test(c);
-          if (word(input[state.pos - 1]) !== word(input[state.pos]) !== node.negative) yield state;
+          if (word(input[state.pos - 1]) !== word(input[state.pos]) !== node2.negative) yield state;
           return;
         }
         case "backref": {
-          const capture = state.caps[node.number ?? names2.get(node.name)];
+          const capture = state.caps[node2.number ?? names2.get(node2.name)];
           if (!capture) return;
           const text3 = input.slice(...capture), part = input.slice(state.pos, state.pos + text3.length);
           if (flags.includes("i") ? part.toLowerCase() === text3.toLowerCase() : part === text3) yield { ...state, pos: state.pos + text3.length };
           return;
         }
         case "or":
-          for (const branch of node.branches) yield* match(branch, state, input, depth + 1);
+          for (const branch of node2.branches) yield* match(branch, state, input, depth + 1);
           return;
         case "sequence":
-          yield* chain(node.nodes, 0, state, input, depth + 1);
+          yield* chain(node2.nodes, 0, state, input, depth + 1);
           return;
         case "group":
-          yield* match(node.node, state, input, depth + 1);
+          yield* match(node2.node, state, input, depth + 1);
           return;
         case "atomic": {
-          for (const found of match(node.node, state, input, depth + 1)) {
+          for (const found of match(node2.node, state, input, depth + 1)) {
             yield found;
             break;
           }
           return;
         }
         case "capture":
-          for (const found of match(node.node, state, input, depth + 1)) {
+          for (const found of match(node2.node, state, input, depth + 1)) {
             const caps = [...found.caps];
-            caps[node.number] = [state.pos, found.pos];
+            caps[node2.number] = [state.pos, found.pos];
             yield { ...found, caps };
           }
           return;
         case "look": {
           let found = null;
-          if (node.behind) {
-            for (let start = state.pos; start >= 0 && !found; start--) for (const result2 of match(node.node, { ...state, pos: start }, input, depth + 1)) if (result2.pos === state.pos) {
+          if (node2.behind) {
+            for (let start = state.pos; start >= 0 && !found; start--) for (const result2 of match(node2.node, { ...state, pos: start }, input, depth + 1)) if (result2.pos === state.pos) {
               found = result2;
               break;
             }
-          } else for (const result2 of match(node.node, state, input, depth + 1)) {
+          } else for (const result2 of match(node2.node, state, input, depth + 1)) {
             found = result2;
             break;
           }
-          if (node.negative ? !found : !!found) yield found && !node.negative ? { ...found, pos: state.pos } : state;
+          if (node2.negative ? !found : !!found) yield found && !node2.negative ? { ...found, pos: state.pos } : state;
           return;
         }
         case "repeat": {
           let count = 0;
-          for (const found of repeat(node, state, input, 0, depth + 1)) {
+          for (const found of repeat(node2, state, input, 0, depth + 1)) {
             yield found;
-            if (node.possessive && ++count) break;
+            if (node2.possessive && ++count) break;
           }
           return;
         }
@@ -23803,17 +24217,17 @@ ${traceString(error)}`;
       }
       for (const found of match(nodes[index], state, input, depth)) yield* chain(nodes, index + 1, found, input, depth + 1);
     }
-    function* repeat(node, state, input, count, depth) {
+    function* repeat(node2, state, input, count, depth) {
       tick();
       if (count > 1e3) throw Object.assign(new Error("Backtrack limit exhausted"), { pcreError: 2 });
-      if (node.lazy && count >= node.min) yield state;
-      if (count < node.max) for (const found of match(node.node, state, input, depth)) {
+      if (node2.lazy && count >= node2.min) yield state;
+      if (count < node2.max) for (const found of match(node2.node, state, input, depth)) {
         if (found.pos === state.pos) {
-          if (count + 1 >= node.min) yield found;
-          else yield* repeat(node, found, input, count + 1, depth + 1);
-        } else yield* repeat(node, found, input, count + 1, depth + 1);
+          if (count + 1 >= node2.min) yield found;
+          else yield* repeat(node2, found, input, count + 1, depth + 1);
+        } else yield* repeat(node2, found, input, count + 1, depth + 1);
       }
-      if (!node.lazy && count >= node.min) yield state;
+      if (!node2.lazy && count >= node2.min) yield state;
     }
     const engine = { lastIndex: 0, execAt(input, start, nonempty = false) {
       steps = 0;
@@ -25829,12 +26243,12 @@ ${" ".repeat(depth * 8)})
   var builtinNames = Object.freeze(Object.keys(builtin_signatures_default));
   var failure5 = (name, message) => Object.assign(new Error(message), { name });
   var limit2 = (message) => Object.assign(new RangeError(message), { code: "PHP_BUILTIN_LIMIT" });
-  var encoder3 = new TextEncoder();
-  var decoder2 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
-  var bytes2 = (value) => encoder3.encode(value);
+  var encoder4 = new TextEncoder();
+  var decoder3 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+  var bytes2 = (value) => encoder4.encode(value);
   var text2 = (value) => {
     try {
-      return decoder2.decode(value);
+      return decoder3.decode(value);
     } catch {
       throw Object.assign(new RangeError("This byte operation produced invalid UTF-8; frontend strings must remain valid UTF-8"), { code: "PHP_INVALID_UTF8" });
     }
@@ -25845,7 +26259,7 @@ ${" ".repeat(depth * 8)})
   };
   var asciiUpper2 = (value) => value.replace(/[a-z]/g, (letter) => letter.toUpperCase());
   var asciiLower2 = (value) => value.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
-  var numeric2 = (value) => typeof value === "number" || typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
+  var numeric = (value) => typeof value === "number" || typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
   var phpRound = (value, precision = 0, mode = 1, phpVersion = 80400) => {
     if (![1, 2, 3, 4].includes(mode)) {
       if (phpVersion < 80400) mode = 1;
@@ -26022,7 +26436,7 @@ ${" ".repeat(depth * 8)})
       const parts = arrayEntries(collection).map(([key2, value]) => phpString(value, arrayKind(collection, key2), context2));
       if (parts.reduce((length, value) => length + value.length, 0) + Math.max(0, parts.length - 1) * separator.length > 1048576) throw limit2("Frontend string result exceeds 1 MiB");
       result2 = parts.join(separator);
-    } else if (name === "is_numeric") result2 = numeric2(a);
+    } else if (name === "is_numeric") result2 = numeric(a);
     else if (name === "random_int") return { value: randomInt(a, b), kind: "integer" };
     else if (name === "intdiv") {
       if (b === 0) throw failure5("DivisionByZeroError", "Division by zero");
@@ -26125,7 +26539,7 @@ ${" ".repeat(depth * 8)})
       const args = [];
       let position2 = 0;
       for (const argument of expression.right.arguments) {
-        const target = argument.value, assignable3 = target?.$local || target?.$state || ["dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(target?.$expression?.operation);
+        const target = argument.value, assignable3 = target?.$local || target?.$state || ["componentInput", "dynamicLocal", "offset", "appendOffset", "objectProperty", "objectStaticProperty"].includes(target?.$expression?.operation);
         if (argument.spread) {
           const parent = assignable3 ? reference(target, state, data, false, false, true) : null;
           let array2 = parent ? parent.get().value : resolve(target, state, data);
@@ -26177,9 +26591,9 @@ ${" ".repeat(depth * 8)})
   var splMethod = (expression, state, context2) => {
     const value = resolveData2(expression.left, state, context2), method3 = expression.right.method;
     if (!isSplObject(value) && !isSplList(value)) throw new TypeError("Invalid frontend SPL receiver");
-    const args = expression.right.arguments.map((node) => {
-      const value2 = resolveData2(node, state, context2);
-      return { value: value2, kind: resolveType(node, state, context2, value2) };
+    const args = expression.right.arguments.map((node2) => {
+      const value2 = resolveData2(node2, state, context2);
+      return { value: value2, kind: resolveType(node2, state, context2, value2) };
     });
     const extra = splListMethod(value, method3, args, context2);
     if (extra) return extra;
@@ -26277,10 +26691,8 @@ ${" ".repeat(depth * 8)})
     const source = items[0].value;
     if (name === "iterator_apply" && !objectIs(source, "Traversable")) throw new TypeError("iterator_apply(): Argument #1 must be Traversable");
     let count = 0, output = makeArray();
-    const iteration2 = () => {
-      if (count >= 1e3 || --(context2.loopBudget || (context2.loopBudget = { remaining: 1e4 })).remaining < 0) throw Object.assign(new RangeError("Frontend loop limit exceeded"), { code: "PHP_LOOP_LIMIT" });
-    };
-    for (const { key: key2, item } of foreachEntries(source, name === "iterator_to_array" && items[1].value, context2, iteration2)) {
+    const iteration = () => checkIteration(context2, count + 1);
+    for (const { key: key2, item } of foreachEntries(source, name === "iterator_to_array" && items[1].value, context2, iteration)) {
       count++;
       if (name === "iterator_to_array") output = item.reference ? arrayWithReference(output, key2?.value, item.reference, context2, !items[1].value) : arrayWrite(output, key2?.value, item.value, item.kind, context2, !items[1].value);
       if (name === "iterator_apply") {
@@ -26821,139 +27233,82 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
 `;
   };
 
-  // src-js/core/php-casts.js
-  var compoundCast = (operation, value, kind, context2) => {
-    if (operation === "toObject" && (isPhpObject(value) || value instanceof Error || typeof value === "function" || isRoundingMode(value))) return { value, kind: "object" };
-    if (value instanceof Error || typeof value === "function") throw new TypeError("Frontend compound casts do not expose exception or closure internals");
-    if (operation === "toObject") {
-      if (context2.readOnly) throw new Error("Create objects inside frontend events");
-      if (--(context2.objectBudget || (context2.objectBudget = { remaining: 1e4 })).remaining < 0) throw new RangeError("Frontend object allocation limit exceeded");
-      const temporary = {};
-      ownArray(temporary, "source", value);
-      try {
-        return { value: isPhpArray(value) ? makeStdClassFromArray(value) : makeStdClass(value == null ? [] : [["scalar", { value, kind }]]), kind: "object" };
-      } finally {
-        ownArray(temporary, "source", null);
+  // src-js/core/php-types.js
+  var nativeType = (type) => ({ integer: "int", double: "float", boolean: "bool", NULL: "null" })[type] || type;
+  var numeric2 = (value) => typeof value === "number" || typeof value === "string" && /^[\t\n\r\f\v ]*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[\t\n\r\f\v ]*$/.test(value);
+  var assignType = (rule, value, kind = phpType(value), strict = true, context2 = null) => {
+    if (!rule) return { value, kind };
+    const types = rule.types.map((type) => type.replace(/^\?/, ""));
+    const actual = nativeType(kind);
+    if (isPhpObject(value) && types.some((type) => type.split("&").every((member) => objectIs(value, member)))) return { value, kind: "object" };
+    if (isRoundingMode(value) && types.some((type) => type.toLowerCase() === "roundingmode")) return { value, kind: "object" };
+    if (value instanceof Error && types.some((type) => type.split("&").every((member) => exceptionIs(value, member)))) return { value, kind: "object" };
+    if (types.includes("iterable") && (kind === "array" || objectIs(value, "Traversable"))) return { value, kind };
+    if (types.includes("mixed") || value == null && rule.nullable) return { value, kind };
+    if (types.includes(actual) || value === true && types.includes("true") || value === false && types.includes("false")) {
+      if (actual === "int" && !Number.isSafeInteger(value)) throw new RangeError("Frontend integer exceeds JavaScript safe integer precision");
+      return { value, kind };
+    }
+    if (actual === "int" && types.includes("float")) return { value, kind: "double" };
+    if (!strict && isPhpObject(value) && types.includes("string") && objectIs(value, "Stringable")) return { value: phpString(value, kind, context2), kind: "string" };
+    if (!strict && value != null && ["int", "float", "string", "bool"].includes(actual)) {
+      let preferred = ["int", "float", "string", "bool"];
+      if (actual === "string" && numeric2(value) && /[.eE]/.test(value) && types.includes("float")) preferred = ["float", "int", "string", "bool"];
+      for (const type of preferred.filter((item) => types.includes(item))) {
+        if (type === "string") return { value: phpString(value, kind, context2), kind: "string" };
+        if (type === "bool") return { value: phpBool(value), kind: "boolean" };
+        if (actual === "string" && !numeric2(value)) continue;
+        if (type === "float") return { value: phpFloat(value), kind: "double" };
+        const number = phpFloat(value);
+        if (!Number.isFinite(number)) continue;
+        if (!Number.isInteger(number)) warn(context2, `Implicit conversion from ${actual} to int loses precision`, "PHP_DEPRECATED");
+        return { value: phpInt(value), kind: "integer" };
       }
     }
-    if (isRoundingMode(value)) return { value: makeArray([["name", value.name, "string"]]), kind: "array" };
-    if (isPhpObject(value)) {
-      const name = objectData(value).definition.name.toLowerCase();
-      if (name === "stdclass") return { value: stdClassArray(value) || makeArray(), kind: "array" };
-      if (["dateinterval", "dateperiod"].includes(name)) {
-        const entries2 = advancedDateEntries(value, context2);
-        return { value: makeArray(entries2.map(([key2, item2]) => [key2, item2.value, item2.kind])), kind: "array" };
-      }
-      if (["arrayiterator", "arrayobject"].includes(name)) return invokeCollectionMethod(value, "getarraycopy", [], context2);
-      if (["datetime", "datetimeimmutable", "datetimezone"].includes(name)) throw new TypeError("Frontend array casts do not expose internal date fields; use format()");
-      const data = objectData(value), properties = /* @__PURE__ */ new Map(), chain = [];
-      let item = data.definition;
-      while (item) {
-        chain.unshift(item);
-        item = item.parent && context2.classes?.[item.parent.toLowerCase()];
-      }
-      for (const definition of chain) for (const property2 of Object.values(definition.properties || {})) properties.set(property2.visibility === "private" ? property2.owner + "::$" + property2.name : property2.name, property2);
-      const types = /* @__PURE__ */ new Map();
-      const entries = [...data.fields].map(([key2, item2]) => {
-        const property2 = properties.get(key2), name2 = arrayKey(property2 && property2.visibility !== "public" ? "\0" + (property2.visibility === "private" ? property2.owner : "*") + "\0" + property2.name : key2, context2);
-        types.set(name2, item2.kind);
-        return [name2, clonePhp(item2.value)];
-      });
-      return { value: makeArray(entries, types), kind: "array" };
-    }
-    return { value: isPhpArray(value) ? clonePhp(value) : makeArray(value == null ? [] : [[0, value, kind]]), kind: "array" };
+    throw new TypeError(`Cannot assign ${actual} to property ${rule.property || "(state)"} of type ${types.join("|")}${rule.nullable && !types.includes("null") ? "|null" : ""}`);
   };
 
-  // src-js/core/php-symbols.js
-  var encoder4 = new TextEncoder();
-  var decoder3 = new TextDecoder();
-  var dynamicLocalId = (value, context2) => {
-    const name = phpString(value, void 0, context2);
-    if (["this", "GLOBALS", "_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_SESSION", "_REQUEST", "_ENV"].includes(name)) throw new Error("Cannot access reserved frontend variable $" + name);
-    return "v" + [...encoder4.encode(name)].map((n) => n.toString(16).padStart(2, "0")).join("");
-  };
-  var localName2 = (id) => decoder3.decode(Uint8Array.from(id.slice(1).match(/../g) || [], (pair) => parseInt(pair, 16)));
-  var valid = (name) => /^[A-Za-z_\x80-\uffff][A-Za-z0-9_\x80-\uffff]*$/.test(name);
-  var runSymbols = (name, items, state, context2) => {
-    if (!["get_debug_type", "settype", "get_defined_vars", "compact", "extract"].includes(name)) return null;
-    const [a, b, c] = items.map((item) => item.value);
-    if (name === "get_debug_type") {
-      const value = isPhpObject(a) ? objectData(a).definition.name.replace(/class@anonymous:.*/, "class@anonymous") : a instanceof Error ? a.name : typeof a === "function" ? "Closure" : { integer: "int", double: "float", boolean: "bool", NULL: "null" }[items[0].kind] || items[0].kind;
-      return { value, kind: "string" };
-    }
-    if (context2.readOnly) throw new Error(name + "() requires an event scope");
-    const read2 = (id) => context2.localReferences?.[id]?.get() || { value: context2.locals[id], kind: context2.localTypes[id] || phpType(context2.locals[id]) };
-    const exists = (id) => Object.hasOwn(context2.locals, id) || Object.hasOwn(context2.localReferences || {}, id);
-    if (name === "settype") {
-      const type = b.toLowerCase();
-      let item;
-      if (["int", "integer"].includes(type)) item = { value: phpInt(a, context2), kind: "integer" };
-      else if (["float", "double"].includes(type)) item = { value: phpFloat(a, context2), kind: "double" };
-      else if (["bool", "boolean"].includes(type)) item = { value: phpBool(a), kind: "boolean" };
-      else if (type === "string") item = { value: phpString(a, items[0].kind, context2), kind: "string" };
-      else if (type === "null") item = { value: null, kind: "NULL" };
-      else if (["array", "object"].includes(type)) item = compoundCast(type === "array" ? "toArray" : "toObject", a, items[0].kind, context2);
-      else throw failure("ValueError", "settype(): Argument #2 ($type) must be a valid type");
-      items[0].ref.set(item.value, item.kind);
-      return { value: true, kind: "boolean" };
-    }
-    if (name === "get_defined_vars") {
-      return { value: makeArray([.../* @__PURE__ */ new Set([...context2.source?.localOrder || [], ...Object.keys(context2.locals), ...Object.keys(context2.localReferences || {})])].filter((id) => exists(id) && /^v(?:[0-9a-f]{2})*$/.test(id)).map((id) => {
-        const item = read2(id);
-        return [localName2(id), clonePhp(item.value), item.kind];
-      })), kind: "array" };
-    }
-    if (name === "compact") {
-      const entries = /* @__PURE__ */ new Map();
-      const visit = (value, depth = 0) => {
-        work(context2);
-        if (depth > 64) throw new RangeError("compact() nesting exceeds 64 levels");
-        if (isPhpArray(value)) {
-          for (const [, part] of arrayEntries(value)) visit(part, depth + 1);
-          return;
-        }
-        if (typeof value !== "string") {
-          warn(context2, "compact(): Argument must be string or array of strings");
-          return;
-        }
-        const id = dynamicLocalId(value, context2);
-        if (!exists(id)) {
-          warn(context2, "compact(): Undefined variable $" + value);
-          return;
-        }
-        const item = read2(id);
-        entries.set(value, [value, clonePhp(item.value), item.kind]);
-      };
-      items.forEach((item) => visit(item.value));
-      return { value: makeArray([...entries.values()]), kind: "array" };
-    }
-    const mode = b & ~256, references = !!(b & 256), prefix = c;
-    if (b < 0 || b & ~263 || mode > 6) throw failure("ValueError", "extract(): Argument #2 ($flags) must be a valid extract type");
-    if ([2, 3, 4, 5].includes(mode) && !valid(prefix)) throw failure("ValueError", "extract(): Argument #3 ($prefix) must be a valid identifier");
-    let count = 0;
-    for (const [key2, part] of arrayEntries(a)) {
-      work(context2);
-      let target = String(key2), id = "v" + [...encoder4.encode(target)].map((n) => n.toString(16).padStart(2, "0")).join(""), present = exists(id), good = valid(target);
-      if (mode === 1 && present || mode === 5 && !present || mode === 6 && !present) continue;
-      if (mode === 3 || mode === 2 && present || mode === 4 && !good || mode === 5) target = prefix + "_" + target;
-      if (!valid(target)) continue;
-      id = dynamicLocalId(target, context2);
-      if (references) {
-        const parent = resolvedNode2({ value: a, kind: "array" }, items[0].ref), node = { $expression: { operation: "offset", left: parent, right: key2 } };
-        bindLocalReference(context2, id, promoteReference(node, state, context2));
-      } else valueReference({ $local: id }, state, context2).set(clonePhp(part), arrayKind(a, key2));
-      count++;
-    }
-    return { value: count, kind: "integer" };
+  // src-js/core/component-inputs.js
+  var componentInputReference = (expression, state, context2) => {
+    const { target, rule, property: property2, readonly } = expression.right;
+    const parent = valueReference(target, state, context2);
+    const writable = () => {
+      if (context2.readOnly) throw new Error("Reactive text cannot modify state");
+      if (readonly) throw new Error(`Cannot modify readonly property ${property2}`);
+    };
+    const reference = {
+      embeddable: false,
+      get: () => {
+        const value = resolveData2(expression.left, state, context2);
+        return { value, kind: resolveType(expression.left, state, context2, value) };
+      },
+      set: (value, kind, source = context2.source) => {
+        writable();
+        const checked = assignType(rule, value, kind, source?.strictTypes ?? true, context2);
+        return parent.set(checked.value, checked.kind, source);
+      },
+      remove: () => {
+        throw new Error(`Cannot unset bound component property ${property2}`);
+      },
+      acquire: () => {
+        writable();
+        return reference.get();
+      },
+      reference: () => {
+        writable();
+        return reference;
+      }
+    };
+    return reference;
   };
 
   // src-js/core/php-nullsafe.js
-  var resolveNullsafe = (node, state, context2, quiet = false, issetOnly = false) => {
-    const expression = node?.$expression, operation = expression?.operation;
+  var resolveNullsafe = (node2, state, context2, quiet = false, issetOnly = false) => {
+    const expression = node2?.$expression, operation = expression?.operation;
     if (operation === "nullsafeChain") return resolveNullsafe(expression.left, state, context2, quiet, issetOnly);
     if (!["objectProperty", "objectCall", "objectMethodRef", "offset", "objectClassName", "objectStaticProperty", "objectClass", "objectConstant"].includes(operation)) {
-      const value2 = quiet ? resolveQuiet(node, state, context2, issetOnly) : resolveData2(node, state, context2);
-      return { value: value2, kind: resolveType(node, state, context2, value2) };
+      const value2 = quiet ? resolveQuiet(node2, state, context2, issetOnly) : resolveData2(node2, state, context2);
+      return { value: value2, kind: resolveType(node2, state, context2, value2) };
     }
     const isStatic = ["objectCall", "objectMethodRef"].includes(operation) && expression.right?.class != null;
     const item = resolveNullsafe(isStatic ? expression.right.class : expression.left, state, context2, quiet);
@@ -26987,13 +27342,13 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     assetUrl = url;
     assetNonce = nonce;
   };
-  var needsEvalParser = (node) => {
-    if (!node || typeof node !== "object") return false;
-    if (node.$expression?.operation === "eval" && !node.$expression.right?.program) return true;
-    return Object.values(node).some(needsEvalParser);
+  var needsEvalParser = (node2) => {
+    if (!node2 || typeof node2 !== "object") return false;
+    if (node2.$expression?.operation === "eval" && !node2.$expression.right?.program) return true;
+    return Object.values(node2).some(needsEvalParser);
   };
-  var prepareEval = async (node) => {
-    if (compiler || !needsEvalParser(node)) return;
+  var prepareEval = async (node2) => {
+    if (compiler || !needsEvalParser(node2)) return;
     if (!loading) loading = new Promise((resolve, reject) => {
       if (!assetUrl || typeof document === "undefined") {
         reject(new Error("The optional PHP eval parser has not been configured"));
@@ -27071,15 +27426,15 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   var collectionOperations = /* @__PURE__ */ new Set(["array", "count", "sum", "contains", "filter", "map", "reduce", "find", "any", "all", "sortBy", "sort", "keys", "values", "keyExists", "arrayMutate"]);
   var evaluateCollection = (expression, state, context2, resolve, type, reference) => {
     const operation = expression.operation;
-    const value = (node, data = context2) => resolve(node, state, data);
-    const kind = (node, result2, data = context2) => type(node, state, data, result2);
+    const value = (node2, data = context2) => resolve(node2, state, data);
+    const kind = (node2, result2, data = context2) => type(node2, state, data, result2);
     const callableCache = /* @__PURE__ */ new Map();
-    const callback = (node, args, kinds = []) => {
-      if (node && Object.hasOwn(node, "$callable")) {
-        if (!callableCache.has(node)) callableCache.set(node, value(node.$callable));
-        return invokeFunction(callableCache.get(node), args.map((value2, index) => ({ value: value2, kind: kinds[index] || phpType(value2) })), state, { ...context2, source: { ...context2.source, strictTypes: false } });
+    const callback = (node2, args, kinds = []) => {
+      if (node2 && Object.hasOwn(node2, "$callable")) {
+        if (!callableCache.has(node2)) callableCache.set(node2, value(node2.$callable));
+        return invokeFunction(callableCache.get(node2), args.map((value2, index) => ({ value: value2, kind: kinds[index] || phpType(value2) })), state, { ...context2, source: { ...context2.source, strictTypes: false } });
       }
-      const rule = node?.$callback;
+      const rule = node2?.$callback;
       if (!rule) throw new TypeError("Expected a frontend arrow callback");
       const data = { ...context2, locals: clonePhp(context2.locals || {}), localTypes: { ...context2.localTypes }, evaluated: /* @__PURE__ */ new WeakMap(), collection: { ...context2.collection }, collectionTypes: { ...context2.collectionTypes } };
       rule.parameters.forEach((name, index) => {
@@ -27089,10 +27444,10 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       const result2 = value(rule.expression, data);
       return { value: result2, kind: kind(rule.expression, result2, data) };
     };
-    for (const node of [expression.right, expression.right?.callback]) if (node && Object.hasOwn(node, "$callable")) {
-      const fn = value(node.$callable);
+    for (const node2 of [expression.right, expression.right?.callback]) if (node2 && Object.hasOwn(node2, "$callable")) {
+      const fn = value(node2.$callable);
       if (!isFrontendCallable(fn, context2)) throw new TypeError("Expected a compiled frontend callable");
-      callableCache.set(node, fn);
+      callableCache.set(node2, fn);
     }
     if (operation === "array") {
       let result2 = makeArray();
@@ -27122,7 +27477,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       const source2 = original.value;
       const entries2 = arrayEntries(source2), options = expression.right;
       const refsFor2 = (pairs, sourceEntries = entries2) => new Map(pairs.map(([key2], index) => [key2, arrayElementReference(source2, sourceEntries[index][0])]).filter(([, ref2]) => ref2));
-      const args = (options.args || []).map((node) => ({ value: value(node), node }));
+      const args = (options.args || []).map((node2) => ({ value: value(node2), node: node2 }));
       let next2, result2 = { value: true, kind: "boolean" };
       const fn = options.function;
       if (fn === "array_pop" || fn === "array_shift") {
@@ -27219,9 +27574,9 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   // src-js/core/value.js
   var resolved = /* @__PURE__ */ new WeakMap();
   var resolvedNode2 = (item, reference = null) => {
-    const node = reference ? { $local: "v67656e657261746f72" } : {};
-    resolved.set(node, { ...item, reference });
-    return node;
+    const node2 = reference ? { $local: "v67656e657261746f72" } : {};
+    resolved.set(node2, { ...item, reference });
+    return node2;
   };
   var resolveData2 = (value, state, eventData = null) => {
     eventData ?? (eventData = {});
@@ -27236,8 +27591,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     if (value && typeof value === "object") eventData.evaluated.set(value, { ...eventData.evaluated.get(value), value: result2, kind: resultType(value, state, eventData, result2) });
     return result2;
   };
-  var record = (node, result2, context2) => {
-    context2.evaluated.set(node, result2);
+  var record = (node2, result2, context2) => {
+    context2.evaluated.set(node2, result2);
     return result2.value;
   };
   var assign = (target, value, kind, state, context2) => {
@@ -27258,6 +27613,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     throw new Error("A mutating expression requires an action scope and an assignable target");
   };
   var valueReference = (target, state, context2, indirect = false, quiet = false, unpack = false) => {
+    if (target?.$expression?.operation === "componentInput") return componentInputReference(target.$expression, state, context2);
     if (target?.$expression?.operation === "dynamicLocal") target = { $local: dynamicLocalId(resolveData2(target.$expression.left, state, context2), context2) };
     if (resolved.get(target)?.reference) return resolved.get(target).reference;
     if (target?.$local) {
@@ -27348,19 +27704,19 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     };
   };
   var assignTarget = (target, value, kind, state, context2) => valueReference(target, state, context2).set(value, kind);
-  var resolveQuiet = (node, state, context2, issetOnly = false) => {
-    if (node?.$expression?.operation === "nullsafeChain") return record(node, resolveNullsafe(node.$expression.left, state, context2, true, issetOnly), context2);
-    if (node?.$expression?.operation === "dynamicLocal") return resolveQuiet({ $local: dynamicLocalId(resolveData2(node.$expression.left, state, context2), context2) }, state, context2, issetOnly);
-    if (node?.$expression?.operation === "objectStaticProperty") return record(node, staticPropertyReference(node.$expression, state, context2).get(true), context2);
-    if (node?.$expression?.operation === "objectProperty") return record(node, objectPropertyReference(node.$expression, state, context2).probe(issetOnly), context2);
-    if (node?.$local && context2.localReferences?.[node.$local]) return record(node, context2.localReferences[node.$local].get(true), context2);
-    if (node?.$local && !Object.hasOwn(context2.locals || {}, node.$local)) return record(node, { value: null, kind: "NULL" }, context2);
-    if (node?.$expression?.operation === "offset") {
-      const parent = resolveQuiet(node.$expression.left, state, context2);
-      const key2 = resolveData2(node.$expression.right, state, context2);
-      return record(node, readOffset(parent, key2, resolveType(node.$expression.right, state, context2, key2), context2, true, issetOnly), context2);
+  var resolveQuiet = (node2, state, context2, issetOnly = false) => {
+    if (node2?.$expression?.operation === "nullsafeChain") return record(node2, resolveNullsafe(node2.$expression.left, state, context2, true, issetOnly), context2);
+    if (node2?.$expression?.operation === "dynamicLocal") return resolveQuiet({ $local: dynamicLocalId(resolveData2(node2.$expression.left, state, context2), context2) }, state, context2, issetOnly);
+    if (node2?.$expression?.operation === "objectStaticProperty") return record(node2, staticPropertyReference(node2.$expression, state, context2).get(true), context2);
+    if (node2?.$expression?.operation === "objectProperty") return record(node2, objectPropertyReference(node2.$expression, state, context2).probe(issetOnly), context2);
+    if (node2?.$local && context2.localReferences?.[node2.$local]) return record(node2, context2.localReferences[node2.$local].get(true), context2);
+    if (node2?.$local && !Object.hasOwn(context2.locals || {}, node2.$local)) return record(node2, { value: null, kind: "NULL" }, context2);
+    if (node2?.$expression?.operation === "offset") {
+      const parent = resolveQuiet(node2.$expression.left, state, context2);
+      const key2 = resolveData2(node2.$expression.right, state, context2);
+      return record(node2, readOffset(parent, key2, resolveType(node2.$expression.right, state, context2, key2), context2, true, issetOnly), context2);
     }
-    return resolveData2(node, state, context2);
+    return resolveData2(node2, state, context2);
   };
   var resolveValue = (value, state, eventData) => {
     if (Array.isArray(value)) return value.map((item) => resolveData2(item, state, eventData));
@@ -27377,6 +27733,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       if (typeof value.$collection === "string") return readPath(eventData?.collection || {}, value.$collection);
       if (value.$expression && typeof value.$expression === "object") {
         const expression = value.$expression;
+        if (expression.operation === "componentInput") return record(value, componentInputReference(expression, state, eventData).get(), eventData);
         if (expression.operation === "dynamicLocal") {
           const target = { $local: dynamicLocalId(resolveData2(expression.left, state, eventData), eventData) };
           const result2 = resolveData2(target, state, eventData);
@@ -27573,13 +27930,13 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     if (expression.$conditional) return context2.evaluated?.get(expression)?.kind || phpType(value);
     const rule = expression.$expression;
     if (!rule) return phpType(value);
-    if (collectionOperations.has(rule.operation) || ["match", "offset", "call", "builtin", "display", "eval", "objectProperty", "objectStaticProperty", "objectCall", "objectConstant"].includes(rule.operation)) return context2.evaluated?.get(expression)?.kind || phpType(value);
+    if (collectionOperations.has(rule.operation) || ["componentInput", "match", "offset", "call", "builtin", "display", "eval", "objectProperty", "objectStaticProperty", "objectCall", "objectConstant"].includes(rule.operation)) return context2.evaluated?.get(expression)?.kind || phpType(value);
     if (["compoundAssign", "assign", "coalesceAssign", "preIncrement", "postIncrement", "preDecrement", "postDecrement", "incrementValue", "decrementValue", "coalesce", "elvis"].includes(rule.operation)) return context2.evaluated?.get(expression)?.kind || phpType(value);
     if (["toFloat", "ceil", "floor", "round"].includes(rule.operation)) return "double";
     if (["toInt", "count", "compare", "modulo"].includes(rule.operation)) return "integer";
     if (["add", "subtract", "multiply", "divide", "power", "min", "max"].includes(rule.operation)) {
-      for (const node of [rule.left, rule.right]) {
-        const evaluated = node && typeof node === "object" ? context2.evaluated?.get(node) : { value: node, kind: phpType(node) };
+      for (const node2 of [rule.left, rule.right]) {
+        const evaluated = node2 && typeof node2 === "object" ? context2.evaluated?.get(node2) : { value: node2, kind: phpType(node2) };
         if (evaluated?.kind === "double" || hasFloatNumericPrefix(evaluated?.value)) return "double";
       }
       const exponent = rule.right && typeof rule.right === "object" ? context2.evaluated?.get(rule.right)?.value : rule.right;
@@ -27632,15 +27989,451 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     throw new Error("Reference binding requires a local variable or an array offset");
   };
 
+  // src-js/storage.js
+  var migrateValue = (root, target, value, storedVersion, config) => {
+    let migrated = clone(value);
+    for (let version = Number(storedVersion) + 1; version <= Number(config.version || 1); version++) {
+      const migration = config.migrations?.[version] || config.migrations?.[String(version)];
+      if (!migration) {
+        root.dispatchEvent(new CustomEvent("aml:storage-migration-required", { detail: { target, storedVersion, expectedVersion: config.version || 1, missingVersion: version } }));
+        return void 0;
+      }
+      Object.entries(migration.rename || {}).forEach(([from, to]) => {
+        const previous = readPath(migrated, from);
+        if (previous !== void 0) {
+          writePath(migrated, to, previous);
+          deletePath(migrated, from);
+        }
+      });
+      Object.entries(migration.defaults || {}).forEach(([path, fallback]) => {
+        if (readPath(migrated, path) === void 0) writePath(migrated, path, fallback);
+      });
+      (migration.remove || []).forEach((path) => deletePath(migrated, path));
+    }
+    root.dispatchEvent(new CustomEvent("aml:storage-migrated", { detail: { target, from: storedVersion, to: config.version || 1 } }));
+    return migrated;
+  };
+  var openStateDatabase = () => new Promise((resolve, reject) => {
+    const request2 = indexedDB.open("phpaml-engine", 1);
+    request2.onupgradeneeded = () => request2.result.createObjectStore("state");
+    request2.onsuccess = () => resolve(request2.result);
+    request2.onerror = () => reject(request2.error);
+  });
+  var indexedState = async (operation, key2, value = void 0) => {
+    const database = await openStateDatabase();
+    try {
+      return await new Promise((resolve, reject) => {
+        const transaction = database.transaction("state", operation === "get" ? "readonly" : "readwrite");
+        const store = transaction.objectStore("state");
+        const request2 = operation === "get" ? store.get(key2) : operation === "delete" ? store.delete(key2) : store.put(value, key2);
+        request2.onsuccess = () => resolve(request2.result);
+        request2.onerror = () => reject(request2.error);
+      });
+    } finally {
+      database.close();
+    }
+  };
+  var persistedPayload = (config, value, phpType2 = void 0) => JSON.stringify({
+    __amlPersisted: true,
+    version: Number(config.version || 1),
+    savedAt: Date.now(),
+    value,
+    ...phpType2 ? { phpType: phpType2 } : {},
+    ...value && typeof value === "object" ? { phpArray: describeArray(value) } : {}
+  });
+  var restoredValue = (root, target, config, serialized, type, stateConfig = null) => {
+    const parsed = JSON.parse(serialized);
+    const restore2 = (value2, savedKind = null) => {
+      const kind = typeof value2 === "number" && ["integer", "double"].includes(savedKind) ? savedKind : phpType(value2);
+      const typed = stateConfig?.typeRules?.[target] ? assignType(stateConfig.typeRules[target], value2, kind, false) : { value: coerce(type, value2), kind: type === "float" && value2 !== null ? "double" : kind };
+      if (typeof typed.value === "number" && (!Number.isFinite(typed.value) || typed.kind === "integer" && !Number.isSafeInteger(typed.value))) throw new RangeError("Persisted number cannot be represented safely");
+      if (stateConfig?.valueTypes) stateConfig.valueTypes[target] = typed.kind;
+      return typed.value;
+    };
+    if (!parsed || parsed.__amlPersisted !== true) return restore2(parsed);
+    if (Number(parsed.version) > Number(config.version || 1)) {
+      root.dispatchEvent(new CustomEvent("aml:storage-version-newer", { detail: { target, storedVersion: parsed.version, expectedVersion: config.version || 1 } }));
+      return void 0;
+    }
+    if (config.expiresAfter && Date.now() - Number(parsed.savedAt || 0) > Number(config.expiresAfter) * 1e3) {
+      root.dispatchEvent(new CustomEvent("aml:storage-expired", { detail: { target } }));
+      return void 0;
+    }
+    restoreArrayMetadata(parsed.value, parsed.phpArray);
+    const value = Number(parsed.version) < Number(config.version || 1) ? migrateValue(root, target, parsed.value, parsed.version, config) : parsed.value;
+    return value === void 0 ? void 0 : restore2(value, Number(parsed.version) === Number(config.version || 1) ? parsed.phpType : null);
+  };
+
+  // src-js/browser-storage.js
+  var persistState = (root, target, persisted, value, kind) => {
+    try {
+      const payload = persistedPayload(persisted, value, kind);
+      if (persisted.storage === "indexeddb") indexedState("put", persisted.key, payload).catch((error) => root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } })));
+      else (persisted.storage === "session" ? sessionStorage : localStorage).setItem(persisted.key, payload);
+    } catch (error) {
+      root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+    }
+  };
+  var storageListenerInstalled = false;
+  var installStorageListener = () => {
+    if (storageListenerInstalled) return;
+    storageListenerInstalled = true;
+    addEventListener("storage", (event) => {
+      mountedRoots.forEach((root) => {
+        const state = rootStates.get(root);
+        const config = rootConfigs.get(root) || {};
+        Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
+          if (persisted.storage !== "local" || persisted.key !== event.key) return;
+          try {
+            const value = event.newValue === null ? void 0 : restoredValue(root, target, persisted, event.newValue, config.types?.[target]);
+            if (value === void 0) return;
+            writePath(state, target, value);
+            const changes = /* @__PURE__ */ new Map([[target, value]]);
+            recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
+            scheduleUpdate(root, state, changes);
+          } catch (error) {
+            root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+          }
+        });
+      });
+    });
+  };
+  var restorePersisted = (root, state, config) => {
+    installStorageListener();
+    Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
+      if (persisted.storage === "indexeddb") return;
+      try {
+        const storage6 = persisted.storage === "session" ? sessionStorage : localStorage;
+        const saved = storage6.getItem(persisted.key);
+        if (saved !== null) {
+          const restored = restoredValue(root, target, persisted, saved, config.types?.[target], config);
+          if (restored === void 0) storage6.removeItem(persisted.key);
+          else writePath(state, target, restored);
+        }
+      } catch (error) {
+        root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+      }
+    });
+  };
+  var restoreIndexed = (root, state, config) => Object.entries(config.persisted || {}).filter(([, persisted]) => persisted.storage === "indexeddb").map(async ([target, persisted]) => {
+    try {
+      const saved = await indexedState("get", persisted.key);
+      if (saved === void 0) return;
+      const restored = restoredValue(root, target, persisted, saved, config.types?.[target], config);
+      if (restored === void 0) await indexedState("delete", persisted.key);
+      else {
+        writePath(state, target, restored);
+        const changes = /* @__PURE__ */ new Map([[target, restored]]);
+        recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
+        scheduleUpdate(root, state, changes);
+      }
+    } catch (error) {
+      root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+    }
+  });
+  var restoreContexts = (root, state) => {
+    root.querySelectorAll("[data-aml-context-provider]").forEach((provider) => {
+      const rule = JSON.parse(provider.dataset.amlContextProvider);
+      if (!rule.persist) return;
+      try {
+        const stored = localStorage.getItem(rule.storageKey || `phpaml.context.${rule.name}`);
+        if (stored === null) return;
+        const value = JSON.parse(stored);
+        if (rule.state) writePath(state, rule.state, value);
+        else {
+          rule.value = value;
+          provider.dataset.amlContextProvider = JSON.stringify(rule);
+        }
+      } catch (error) {
+        root.dispatchEvent(new CustomEvent("aml:context-error", { detail: { name: rule.name, error } }));
+      }
+    });
+  };
+  var persistContext = (root, rule, value) => {
+    try {
+      localStorage.setItem(rule.storageKey || `phpaml.context.${rule.name}`, JSON.stringify(value));
+    } catch (error) {
+      root.dispatchEvent(new CustomEvent("aml:context-error", { detail: { name: rule.name, error } }));
+    }
+  };
+
+  // src-js/list-bindings.js
+  var bindings = /* @__PURE__ */ new WeakMap();
+  var errors = /* @__PURE__ */ new WeakMap();
+  var dependencies = (value, paths = /* @__PURE__ */ new Set()) => {
+    if (value && typeof value === "object") {
+      if (typeof value.$state === "string") paths.add(value.$state);
+      Object.values(value).forEach((child) => dependencies(child, paths));
+    }
+    return [...paths];
+  };
+  var listItems = (list, state, target, context2) => {
+    const source = list.dataset.amlListValue;
+    if (source === void 0) {
+      if (target && list.dataset.amlList && !pathAffects(list.dataset.amlList, target) && !list.dataset.amlList.includes(".rows.")) return null;
+      if (list.dataset.amlList === void 0) return null;
+      const items = readPath(state, list.dataset.amlList);
+      if (list.dataset.amlIlist !== void 0 && !Array.isArray(items)) throw new TypeError("IList expects an indexed array of items.");
+      return Array.isArray(items) ? items : [];
+    }
+    let cached = bindings.get(list);
+    if (!cached || cached.source !== source) {
+      const expression = JSON.parse(source);
+      cached = { source, expression, dependencies: dependencies(expression), initialized: false };
+      bindings.set(list, cached);
+    }
+    if (cached.initialized && target && !cached.dependencies.some((path) => pathAffects(path, target))) return null;
+    const value = resolveData2(cached.expression, state, { ...context2 });
+    if (!isPhpArray(value)) throw new TypeError("A calculated IList must return an array.");
+    cached.initialized = true;
+    return arrayEntries(value).map(([, item]) => item);
+  };
+  var listDependencies = (list) => bindings.get(list)?.dependencies || [];
+  var listRendered = (list) => {
+    errors.delete(list);
+  };
+  var reportListError = (scope, list, error) => {
+    if (list.dataset.amlListValue === void 0 && list.dataset.amlIlist === void 0) throw error;
+    const binding = bindings.get(list);
+    error = withSource(error, binding?.expression?.$expression?.right?.source);
+    if (errors.get(list) === error.message) return;
+    errors.set(list, error.message);
+    scope.dispatchEvent(new CustomEvent("aml:render-error", { detail: { error, node: list } }));
+    console.error(error);
+  };
+  var listOptions = (list, state, context2) => {
+    if (!list.dataset.amlListOptions) return null;
+    const expressions = JSON.parse(list.dataset.amlListOptions);
+    const values3 = Object.fromEntries(Object.entries(expressions).map(([name, expression]) => [name, resolveData2(expression, state, { ...context2 })]));
+    const markers = ["disc", "circle", "square", "none", "decimal", "decimal-leading-zero", "lower-alpha", "upper-alpha", "lower-latin", "upper-latin", "lower-roman", "upper-roman", "lower-greek", "armenian", "georgian"];
+    for (const [name, value] of Object.entries(values3)) {
+      const valid2 = name === "type" ? typeof value === "string" && ["unordered", "ordered"].includes(value.trim().toLowerCase()) : name === "start" ? Number.isSafeInteger(value) : name === "reversed" ? typeof value === "boolean" : name === "marker" ? markers.includes(value) : name === "markerPosition" ? ["inside", "outside"].includes(value) : false;
+      if (!valid2) throw new TypeError("Invalid IList " + name + " value.");
+    }
+    return values3;
+  };
+  var applyListOptions = (list, values3) => {
+    if (!values3) return list;
+    const tag = values3.type === void 0 ? list.localName : values3.type.trim().toLowerCase() === "ordered" ? "ol" : "ul";
+    const focus = list.contains(document.activeElement) ? document.activeElement : null;
+    const selection = focus && typeof focus.selectionStart === "number" ? [focus.selectionStart, focus.selectionEnd] : null;
+    if (tag !== list.localName) {
+      const replacement = document.createElement(tag);
+      for (const attribute of list.attributes) replacement.setAttribute(attribute.name, attribute.value);
+      replacement.append(...list.childNodes);
+      list.replaceWith(replacement);
+      list = replacement;
+      if (focus) {
+        focus.focus({ preventScroll: true });
+        if (selection) focus.setSelectionRange(...selection);
+      }
+    }
+    if (tag === "ol" && values3.start !== void 0) {
+      if (list.getAttribute("start") !== String(values3.start)) list.setAttribute("start", values3.start);
+    } else list.removeAttribute("start");
+    if (list.hasAttribute("reversed") !== (tag === "ol" && values3.reversed === true)) list.toggleAttribute("reversed", tag === "ol" && values3.reversed === true);
+    if (values3.marker !== void 0 && list.style.listStyleType !== values3.marker) list.style.listStyleType = values3.marker;
+    if (values3.markerPosition !== void 0 && list.style.listStylePosition !== values3.markerPosition) list.style.listStylePosition = values3.markerPosition;
+    return list;
+  };
+
+  // src-js/style-bindings.js
+  var dimensions = /^(?:(?:min-|max-)?(?:width|height)|(?:margin|padding)(?:-(?:top|right|bottom|left|inline|block)(?:-start|-end)?)?|(?:row-|column-)?gap|top|right|bottom|left|inset|font-size|letter-spacing|word-spacing|text-indent|outline-(?:width|offset)|border(?:-(?:top|right|bottom|left))?-width|border(?:-(?:top|bottom)-(?:left|right))?-radius)$/;
+  var bindings2 = /* @__PURE__ */ new WeakMap();
+  var keywords = ["initial", "inherit", "unset", "revert", "revert-layer"];
+  var normalizeStyleValue = (property2, value, rule = "css") => {
+    const invalid2 = (message) => {
+      throw new TypeError(`CSS ${property2}: ${message}`);
+    };
+    if (!["string", "number"].includes(typeof value) || typeof value === "number" && !Number.isFinite(value)) invalid2("expected a string or finite number");
+    if (rule === "iconDimension") {
+      const plain = typeof value === "string" ? styleDeclaration(property2, value).value.replace(/\/\*.*?\*\//gs, " ").trim() : value;
+      const number = typeof plain === "string" && plain.match(/^(-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)(?:[a-zA-Z]+|%)?$/);
+      if (typeof plain === "number" ? plain < 0 : number && Number(number[1]) < 0) invalid2("icon dimension must not be negative");
+    }
+    if (["padding", "fontSize", "letterSpacing", "lineHeight"].includes(rule)) {
+      if (typeof value !== "number") invalid2("expected a number");
+      if (rule === "padding") value = Math.max(0, value);
+      if (rule === "fontSize" && (value <= 0 || value > 1e3) || rule === "lineHeight" && (value <= 0 || value > 20) || rule === "letterSpacing" && (value < -100 || value > 100)) invalid2("out of range");
+    }
+    if (rule === "fontWeight") {
+      value = String(value).toLowerCase();
+      if (!["normal", "bold", "bolder", "lighter"].includes(value) && !(/^\d+$/.test(value) && Number(value) >= 100 && Number(value) <= 900 && Number(value) % 100 === 0)) invalid2("unknown font weight");
+    }
+    if (rule === "textAlign") {
+      value = String(value).toLowerCase();
+      if (!["start", "end", "left", "right", "center", "justify"].includes(value)) invalid2("unknown alignment");
+    }
+    if (rule === "alignment") {
+      value = { leading: "flex-start", start: "flex-start", top: "flex-start", center: "center", trailing: "flex-end", end: "flex-end", bottom: "flex-end", stretch: "stretch" }[String(value).toLowerCase()];
+      if (!value) invalid2("unknown alignment");
+    }
+    if (rule === "textColor" && value === "") invalid2("empty color");
+    if (rule !== "raw" && typeof value === "number") value = String(value) + (dimensions.test(property2) ? "px" : "");
+    value = String(value);
+    if (/[;{}<>\x00-\x1F\x7F]/.test(value)) invalid2("unsafe value");
+    styleDeclaration(property2, value);
+    return value;
+  };
+  var styleDeclaration = (property2, value, keyframe = false) => {
+    const stack = [];
+    let quote2 = null, priority = null;
+    for (let i = 0; i < value.length; i++) {
+      const char = value[i];
+      if (char === "\\") {
+        if (++i >= value.length) throw new TypeError("Unclosed CSS escape.");
+        continue;
+      }
+      if (quote2 !== null) {
+        if (char === quote2) quote2 = null;
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote2 = char;
+        continue;
+      }
+      if (value.slice(i, i + 2) === "/*") {
+        const end = value.indexOf("*/", i + 2);
+        if (end === -1) throw new TypeError("Unclosed CSS comment.");
+        i = end + 1;
+        continue;
+      }
+      if (char === "(" || char === "[") stack.push(char);
+      if ((char === ")" || char === "]") && stack.pop() !== (char === ")" ? "(" : "[")) throw new TypeError("Unbalanced CSS value.");
+      if (char === "!" && !stack.length) priority = i;
+    }
+    if (quote2 !== null || stack.length) throw new TypeError("Unbalanced CSS value.");
+    const important = priority !== null && /^!\s*important\s*$/i.test(value.slice(priority).replace(/\/\*.*?\*\//gs, " "));
+    if (important) value = value.slice(0, priority).trimEnd();
+    const plain = value.replace(/\/\*.*?\*\//gs, " ").trim();
+    const keyword = keywords.includes(plain.toLowerCase()) ? plain.toLowerCase() : null;
+    if (keyframe && keyword !== null && !important) throw new TypeError("Write CSS-wide keywords statically in keyframes; reactive keyframe values require a concrete value.");
+    const active = (plain !== "" || property2.startsWith("--")) && !(keyframe && important);
+    if (active && value === "") value = " ";
+    return { value, important: important && active, active, keyword };
+  };
+  var dependencies2 = (value, paths = /* @__PURE__ */ new Set()) => {
+    if (value && typeof value === "object") {
+      if (typeof value.$state === "string") paths.add(value.$state);
+      Object.values(value).forEach((child) => dependencies2(child, paths));
+    }
+    return [...paths];
+  };
+  var renderStyles = (scope, state, target, context2) => {
+    const nodes = [...scope.querySelectorAll("[data-aml-style-bindings]")];
+    if (scope.matches?.("[data-aml-style-bindings]")) nodes.unshift(scope);
+    for (const node2 of nodes) {
+      const active = new Set((node2.getAttribute("data-aml-style-active") || "").split(/\s+/).filter(Boolean));
+      const important = new Set((node2.getAttribute("data-aml-style-important") || "").split(/\s+/).filter(Boolean));
+      const source = node2.dataset.amlStyleBindings;
+      let cached = bindings2.get(node2);
+      if (!cached || cached.source !== source) {
+        cached = { source, rules: Object.entries(JSON.parse(source)).map(([variable, rule]) => ({ variable, ...rule, dependencies: dependencies2(rule.value), initialized: false })) };
+        bindings2.set(node2, cached);
+      }
+      for (const binding of cached.rules) {
+        if (binding.initialized && target && !binding.dependencies.some((path) => pathAffects(path, target))) continue;
+        try {
+          const normalized4 = normalizeStyleValue(binding.property, resolveData2(binding.value, state, { ...context2 }), binding.rule);
+          const declaration = styleDeclaration(binding.property, normalized4, binding.keyframe);
+          for (const suffix of ["", ...keywords.map((keyword) => "-" + keyword)]) {
+            active.delete(binding.variable + suffix);
+            important.delete(binding.variable + suffix);
+          }
+          const token2 = binding.variable + (declaration.keyword === null ? "" : "-" + declaration.keyword);
+          if (declaration.active && declaration.keyword === null) {
+            if (node2.style.getPropertyValue(binding.variable) !== declaration.value) node2.style.setProperty(binding.variable, declaration.value);
+          } else node2.style.removeProperty(binding.variable);
+          if (declaration.active) active.add(token2);
+          if (declaration.important) important.add(token2);
+          binding.initialized = true;
+          binding.error = null;
+        } catch (error) {
+          if (binding.error !== error.message) {
+            binding.error = error.message;
+            scope.dispatchEvent(new CustomEvent("aml:render-error", { detail: { error, node: node2, property: binding.property } }));
+            console.error(error);
+          }
+        }
+      }
+      for (const [attribute, tokens2] of [["data-aml-style-active", active], ["data-aml-style-important", important]]) {
+        const value = [...tokens2].join(" ");
+        if (node2.getAttribute(attribute) !== value) node2.setAttribute(attribute, value);
+      }
+    }
+  };
+
+  // src-js/control-state.js
+  var controls = /* @__PURE__ */ new WeakMap();
+  var pending2 = /* @__PURE__ */ new WeakMap();
+  var stateFor = (node2) => {
+    if (!controls.has(node2)) controls.set(node2, { initial: Boolean(node2.disabled), rule: null, reasons: /* @__PURE__ */ new Set() });
+    return controls.get(node2);
+  };
+  var applyDisabled = (node2, entry) => {
+    const disabled = (entry.rule ?? entry.initial) || entry.reasons.size > 0;
+    node2.disabled = disabled;
+    if (entry.rule !== null || node2.hasAttribute("aria-disabled")) node2.setAttribute("aria-disabled", String(disabled));
+  };
+  var setDisabledRule = (node2, disabled) => {
+    const entry = stateFor(node2);
+    entry.rule = disabled;
+    applyDisabled(node2, entry);
+  };
+  var setDisabledReason = (node2, owner, disabled) => {
+    const entry = stateFor(node2);
+    if (disabled) entry.reasons.add(owner);
+    else entry.reasons.delete(owner);
+    applyDisabled(node2, entry);
+  };
+  var setBoundText = (node2, text3) => {
+    (pending2.get(node2)?.content || node2).textContent = text3;
+  };
+  var markBusy = (trigger) => {
+    if (!trigger) return () => {
+    };
+    let entry = pending2.get(trigger);
+    if (!entry) {
+      entry = { count: 0, aria: trigger.getAttribute("aria-busy"), content: null, label: null };
+      pending2.set(trigger, entry);
+      if (trigger.tagName === "BUTTON") {
+        setDisabledReason(trigger, entry, true);
+        if (trigger.hasAttribute("data-aml-loading-label")) {
+          entry.content = document.createElement("span");
+          entry.content.hidden = true;
+          entry.content.append(...trigger.childNodes);
+          entry.label = document.createTextNode(trigger.getAttribute("data-aml-loading-label"));
+          trigger.append(entry.content, entry.label);
+        }
+      }
+      trigger.setAttribute("aria-busy", "true");
+    }
+    entry.count++;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      if (--entry.count) return;
+      pending2.delete(trigger);
+      if (entry.aria === null) trigger.removeAttribute("aria-busy");
+      else trigger.setAttribute("aria-busy", entry.aria);
+      if (trigger.tagName === "BUTTON") setDisabledReason(trigger, entry, false);
+      if (entry.content) {
+        entry.label.remove();
+        entry.content.replaceWith(...entry.content.childNodes);
+      }
+    };
+  };
+
   // src-js/animations-runtime.js
-  var animateIn = (node) => {
+  var animateIn = (node2) => {
     if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const source = node.closest("[data-aml-transition]") || (node.matches?.("[data-aml-transition]") ? node : null);
-    if (!source || typeof node.animate !== "function") return;
+    const source = node2.closest("[data-aml-transition]") || (node2.matches?.("[data-aml-transition]") ? node2 : null);
+    if (!source || typeof node2.animate !== "function") return;
     const duration = Number(source.dataset.amlTransitionDuration || 180);
     const name = source.dataset.amlTransition || "fade";
     const from = name === "slide" ? { opacity: 0, transform: "translateY(10px)" } : name === "scale" ? { opacity: 0, transform: "scale(.97)" } : { opacity: 0 };
-    node.animate([from, { opacity: 1, transform: "none" }], { duration, easing: "ease-out" });
+    node2.animate([from, { opacity: 1, transform: "none" }], { duration, easing: "ease-out" });
   };
   var animateNavigation = (replacement) => {
     replacement?.animate?.(
@@ -27691,15 +28484,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   // src-js/control-flow.js
   var controlSignal = (signal) => signal === "break" || signal === "continue" ? { operation: signal, levels: 1 } : signal?.operation === "return" || signal?.operation === "break" || signal?.operation === "continue" ? signal : null;
   var outerSignal = (signal) => signal.operation === "return" ? signal : signal.levels === 2 ? signal.operation : { ...signal, levels: signal.levels - 1 };
-  var iteration = (context2, count, limit3) => {
-    if (count > limit3 || --context2.loopBudget.remaining < 0) {
-      const error = new RangeError("Frontend loop exceeds its safe iteration limit");
-      error.code = "PHP_LOOP_LIMIT";
-      throw error;
-    }
-  };
-  var bind = (bindings, source, sourceKind, state, data) => bindOffsetPattern(
-    bindings,
+  var bind = (bindings4, source, sourceKind, state, data) => bindOffsetPattern(
+    bindings4,
     { value: source, kind: sourceKind },
     (key2) => {
       const value = resolveData2(key2, state, data);
@@ -27757,7 +28543,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       const patternReference = action.bindings.some((binding) => binding.reference), byReference = action.reference || patternReference;
       const source = byReference ? null : clonePhp(resolveData2(action.source, state, data));
       let count2 = 0;
-      for (const { key: key2, item, reference } of byReference ? referenceEntries(action.source, state, data, () => iteration(data, ++count2, limit3)) : foreachEntries(source, !!action.key, data, () => iteration(data, ++count2, limit3))) {
+      for (const { key: key2, item, reference } of byReference ? referenceEntries(action.source, state, data, () => checkIteration(data, ++count2, limit3)) : foreachEntries(source, !!action.key, data, () => checkIteration(data, ++count2, limit3))) {
         if (reference && patternReference) destructureReference(action.bindings, reference, state, data);
         else if (reference) bindReferenceTarget(action.bindings[0].target, reference, state, data);
         else bind(action.bindings, item.value, item.kind, state, data);
@@ -27776,7 +28562,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       return phpBool(result2);
     };
     while (action.kind === "do" && count === 0 || condition()) {
-      iteration(data, ++count, limit3);
+      checkIteration(data, ++count, limit3);
       const signal = controlSignal(await run2(action.action));
       if (signal?.operation === "return" || signal?.levels > 1) return outerSignal(signal);
       if (signal?.operation === "break") break;
@@ -27908,29 +28694,12 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   };
 
   // src-js/files-runtime.js
-  var pending2 = /* @__PURE__ */ new WeakMap();
-  var busy = /* @__PURE__ */ new WeakMap();
+  var pending3 = /* @__PURE__ */ new WeakMap();
   var cancelled = { operation: "return", cancelled: true, hasValue: false };
-  var resolveValue2 = (node, state, context2) => {
-    if (Object.hasOwn(node, "expression")) return resolveData2(node.expression, state, context2?.eventData);
-    if (Object.hasOwn(node, "items")) return Array.isArray(node.items) ? node.items.map((item) => resolveValue2(item, state, context2)) : Object.fromEntries(Object.entries(node.items).map(([key2, item]) => [key2, resolveValue2(item, state, context2)]));
-    return node.literal;
-  };
-  var markBusy = (trigger) => {
-    if (!trigger) return () => {
-    };
-    const entry = busy.get(trigger) || { count: 0, aria: trigger.getAttribute("aria-busy"), disabled: trigger.disabled };
-    busy.set(trigger, entry);
-    entry.count++;
-    trigger.setAttribute("aria-busy", "true");
-    if (trigger.tagName === "BUTTON") trigger.disabled = true;
-    return () => {
-      if (--entry.count) return;
-      busy.delete(trigger);
-      if (entry.aria === null) trigger.removeAttribute("aria-busy");
-      else trigger.setAttribute("aria-busy", entry.aria);
-      if (trigger.tagName === "BUTTON") trigger.disabled = entry.disabled;
-    };
+  var resolveValue2 = (node2, state, context2) => {
+    if (Object.hasOwn(node2, "expression")) return resolveData2(node2.expression, state, context2?.eventData);
+    if (Object.hasOwn(node2, "items")) return Array.isArray(node2.items) ? node2.items.map((item) => resolveValue2(item, state, context2)) : Object.fromEntries(Object.entries(node2.items).map(([key2, item]) => [key2, resolveValue2(item, state, context2)]));
+    return node2.literal;
   };
   var readText = (file, signal) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -27993,8 +28762,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   };
   var executeFile = async (root, state, action, trigger, context2) => {
     if (transactions.has(root)) throw new Error("File actions cannot run inside a state transaction. Use Actions::sequence().");
-    const operations2 = pending2.get(root) || /* @__PURE__ */ new Map();
-    pending2.set(root, operations2);
+    const operations2 = pending3.get(root) || /* @__PURE__ */ new Map();
+    pending3.set(root, operations2);
     const key2 = action.operation === "read" ? action.result : action;
     const previous = operations2.get(key2);
     previous?.controller.abort();
@@ -28069,6 +28838,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   var prepareApiRequest = (url, action, data, signal, token2 = "", engine = "api") => {
     const options = {
       method: action.method,
+      // Also enforce the boundary after redirects, before forwarding any data.
+      mode: "same-origin",
       credentials: "same-origin",
       signal,
       headers: { "Accept": "application/json", "X-AML-Engine": engine }
@@ -28095,11 +28866,10 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     rootControllers.set(root, controllers);
     if (action.loading) commit(root, state, action.loading, true, executionContext);
     if (action.error) commit(root, state, action.error, "", executionContext);
-    trigger?.setAttribute("aria-busy", "true");
-    if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
+    const restoreBusy = markBusy(trigger);
     try {
-      const retries = Math.max(0, Math.min(5, Number(action.retries || 0)));
-      for (let attempt = 0; attempt <= retries; attempt++) {
+      const retries2 = Math.max(0, Math.min(5, Number(action.retries || 0)));
+      for (let attempt = 0; attempt <= retries2; attempt++) {
         if (!isCurrent()) return;
         const controller = new AbortController();
         controllers.add(controller);
@@ -28131,7 +28901,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           if (!isCurrent() || error?.name === "AbortError" && !timedOut) return;
           const failure6 = timedOut ? new Error(`API request timed out after ${timeoutMs} ms`) : error;
           const retryable = timedOut || error?.retryable === true || error instanceof TypeError;
-          if (attempt >= retries || !retryable) throw failure6;
+          if (attempt >= retries2 || !retryable) throw failure6;
           const delay = Math.min(3e4, Math.max(0, Number(action.retryDelay ?? 250)) * 2 ** attempt);
           root.dispatchEvent(new CustomEvent("aml:api-retry", { detail: { url: url.href, attempt: attempt + 1, delay, error: failure6 } }));
           if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
@@ -28148,8 +28918,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       if (executionContext) throw error;
     } finally {
       if (action.loading && isCurrent()) commit(root, state, action.loading, false, executionContext);
-      trigger?.removeAttribute("aria-busy");
-      if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
+      restoreBusy();
     }
   };
 
@@ -28209,7 +28978,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     boundary.appendChild(overlay);
     const live = boundary.querySelector(":scope > [data-aml-navigation-live]");
     if (live) live.textContent = message || status;
-    fetch(url, { headers: { "X-AML-Navigation": "true", "X-AML-Navigation-State": status }, signal }).then((response) => response.text()).then(async (html) => {
+    fetch(url, { mode: "same-origin", headers: { "X-AML-Navigation": "true", "X-AML-Navigation-State": status }, signal }).then((response) => response.text()).then(async (html) => {
       if (signal?.aborted || !overlay.isConnected) return;
       const stateDocument = new DOMParser().parseFromString(html, "text/html");
       const stateRoot = stateDocument.querySelector("[data-aml-client]");
@@ -28246,8 +29015,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   var syncHead = (nextDocument) => {
     document.title = nextDocument.title || document.title;
     const selector = 'meta[name="description"],meta[name="robots"],link[rel="canonical"],meta[property^="og:"],meta[name^="twitter:"]';
-    document.head.querySelectorAll(selector).forEach((node) => node.remove());
-    nextDocument.head.querySelectorAll(selector).forEach((node) => document.head.appendChild(document.importNode(node, true)));
+    document.head.querySelectorAll(selector).forEach((node2) => node2.remove());
+    nextDocument.head.querySelectorAll(selector).forEach((node2) => document.head.appendChild(document.importNode(node2, true)));
   };
   var navigate = async (destination, push = true, sourceRoot = null) => {
     const url = new URL(destination, location.href);
@@ -28272,7 +29041,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     showNavigationState(current, "loading", "Loading page", location.href, controller.signal);
     document.dispatchEvent(new CustomEvent("aml:navigation-start", { detail: { url: url.href } }));
     try {
-      const response = await fetch(url.href, { headers: { "X-AML-Navigation": "true" }, signal: controller.signal });
+      const response = await fetch(url.href, { mode: "same-origin", headers: { "X-AML-Navigation": "true" }, signal: controller.signal });
       const html = await response.text();
       if (!active()) return;
       const nextDocument = new DOMParser().parseFromString(html, "text/html");
@@ -28358,20 +29127,31 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     return "";
   };
   var validationMessage = (control) => {
+    if (control.willValidate === false || control.matches?.(":disabled")) return "";
     const rules = JSON.parse(control.dataset.amlValidate || "[]");
-    const value = control.type === "checkbox" ? control.checked ? control.value : "" : control.value;
-    return validateValue(rules, value);
+    const checked = control.type === "radio" ? control.checked || control.name && [...control.form?.elements || control.ownerDocument.querySelectorAll('input[type="radio"]')].some((other) => other.type === "radio" && other.name === control.name && other.form === control.form && other.checked) : control.checked;
+    const value = ["checkbox", "radio"].includes(control.type) ? checked ? control.value : "" : control.value;
+    return validateValue(rules, value) || (control.validity?.valid === false ? control.validationMessage : "");
   };
 
   // src-js/browser-forms.js
+  var draftControls = (form) => {
+    const controls2 = [...form.elements].filter((control) => control.name && control.matches("input,select,textarea"));
+    const excluded = new Set(controls2.filter((control) => {
+      const autocomplete = (control.getAttribute("autocomplete") || form.getAttribute("autocomplete") || "").toLowerCase().split(/\s+/);
+      return ["password", "hidden", "file", "submit", "reset", "button", "image"].includes(control.type) || control.matches(":disabled") || autocomplete.some((token2) => ["off", "current-password", "new-password", "one-time-code"].includes(token2) || token2.startsWith("cc-"));
+    }).map((control) => control.name));
+    return controls2.filter((control) => !excluded.has(control.name));
+  };
   var preserveForm = (form) => {
-    const values3 = {};
+    const controls2 = draftControls(form), allowed = new Set(controls2.map((control) => control.name));
+    const values3 = /* @__PURE__ */ Object.create(null);
     for (const [name, value] of new FormData(form).entries()) {
-      if (value instanceof File) continue;
+      if (value instanceof File || !allowed.has(name)) continue;
       if (Object.prototype.hasOwnProperty.call(values3, name)) values3[name] = Array.isArray(values3[name]) ? [...values3[name], value] : [values3[name], value];
       else values3[name] = value;
     }
-    [...form.querySelectorAll('input[type="checkbox"][name]')].forEach((control) => {
+    controls2.filter((control) => control.type === "checkbox").forEach((control) => {
       if (!Object.prototype.hasOwnProperty.call(values3, control.name)) values3[control.name] = false;
     });
     try {
@@ -28384,10 +29164,14 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     try {
       const saved = sessionStorage.getItem(`phpaml.form.${form.dataset.amlFormPreserve}`);
       if (!saved) return;
-      const values3 = JSON.parse(saved);
-      const positions = {};
-      [...form.elements].forEach((control) => {
-        if (!control.name || !Object.prototype.hasOwnProperty.call(values3, control.name) || control.type === "file") return;
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("Invalid form draft.");
+      const controls2 = draftControls(form), allowed = new Set(controls2.map((control) => control.name));
+      const values3 = Object.fromEntries(Object.entries(parsed).filter(([name]) => allowed.has(name)));
+      sessionStorage.setItem(`phpaml.form.${form.dataset.amlFormPreserve}`, JSON.stringify(values3));
+      const positions = /* @__PURE__ */ Object.create(null);
+      controls2.forEach((control) => {
+        if (!Object.prototype.hasOwnProperty.call(values3, control.name)) return;
         const stored = values3[control.name];
         const list = Array.isArray(stored) ? stored : [stored];
         if (control.type === "checkbox") control.checked = stored === true || list.map(String).includes(control.value);
@@ -28405,6 +29189,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     }
   };
   var validateRemote = async (root, state, control) => {
+    if (control.willValidate === false || control.matches(":disabled")) return true;
     if (!control.dataset.amlValidateApi || !validateControl(control)) return !control.matches('[aria-invalid="true"]');
     const config = JSON.parse(control.dataset.amlValidateApi);
     const action = config.request;
@@ -28432,6 +29217,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     }
   };
   var scheduleRemoteValidation = (root, state, control) => {
+    if (control.willValidate === false || control.matches(":disabled")) return;
     if (!control.dataset.amlValidateApi || !validateControl(control)) return;
     clearTimeout(validationTimers2.get(control));
     const config = JSON.parse(control.dataset.amlValidateApi);
@@ -28442,40 +29228,58 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   var updateModel = (root, state, control) => {
     const target = control.dataset.amlModel;
     if (!target) return;
-    const raw = control.type === "file" ? [...control.files || []].map((file) => ({ name: file.name, size: file.size, type: file.type, lastModified: file.lastModified })) : control.type === "checkbox" ? control.checked : control.value;
+    if (control.type === "radio" && !control.checked) return;
+    const raw = control.type === "file" ? [...control.files || []].map((file) => ({ name: file.name, size: file.size, type: file.type, lastModified: file.lastModified })) : control.matches("select[multiple]") ? [...control.selectedOptions].map((option) => option.value) : control.type === "checkbox" ? control.checked : control.value;
     const declared = rootConfigs.get(root)?.types?.[target];
-    const type = ["int", "float", "bool", "string", "array"].includes(declared) ? declared : control.dataset.amlModelType || (control.type === "checkbox" ? "bool" : control.type === "number" ? "float" : "string");
+    const type = ["int", "float", "bool", "string", "array"].includes(declared) ? declared : control.dataset.amlModelType || (Array.isArray(raw) ? "array" : control.type === "checkbox" ? "bool" : control.type === "number" ? "float" : "string");
     const value = coerce(type, raw);
-    commit(root, state, target, value);
+    try {
+      commit(root, state, target, value);
+    } catch (error) {
+      const previous = readPath(state, target);
+      if (control.type === "checkbox") control.checked = Boolean(previous);
+      else if (control.type !== "file") control.value = previous ?? "";
+      root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, control, target } }));
+      console.error(error);
+    }
   };
+  var validationErrors = /* @__PURE__ */ new WeakMap();
+  var validationId = 0;
   var showValidation = (control, message) => {
     const base = control.dataset.amlModel || control.name || "field";
-    const id = `aml-error-${base.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-    let error = control.parentElement?.querySelector(`:scope > [data-aml-validation-for="${CSS.escape(base)}"]`);
+    let error = validationErrors.get(control);
+    const describedBy = new Set((control.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean));
     control.setAttribute("aria-invalid", message ? "true" : "false");
     if (!message) {
-      if (control.getAttribute("aria-describedby") === id) control.removeAttribute("aria-describedby");
+      if (error) describedBy.delete(error.id);
+      if (describedBy.size) control.setAttribute("aria-describedby", [...describedBy].join(" "));
+      else control.removeAttribute("aria-describedby");
       error?.remove();
+      validationErrors.delete(control);
       return true;
     }
-    control.setAttribute("aria-describedby", id);
     if (!error) {
       error = document.createElement("small");
-      error.id = id;
+      do {
+        error.id = `aml-error-${base.replace(/[^a-zA-Z0-9_-]/g, "-")}-${++validationId}`;
+      } while (document.getElementById(error.id));
       error.dataset.amlValidationFor = base;
       error.setAttribute("role", "alert");
+      validationErrors.set(control, error);
       control.insertAdjacentElement("afterend", error);
     }
+    describedBy.add(error.id);
+    control.setAttribute("aria-describedby", [...describedBy].join(" "));
     error.textContent = message;
     return false;
   };
   var validateControl = (control) => showValidation(control, validationMessage(control));
   var validateForm = (form) => {
     let valid2 = true;
-    form.querySelectorAll("[data-aml-validate]:not([disabled])").forEach((control) => {
+    form.querySelectorAll("input,select,textarea").forEach((control) => {
       if (!validateControl(control)) valid2 = false;
     });
-    if (!valid2) form.querySelector('[aria-invalid="true"]')?.focus();
+    if (!valid2) form.querySelector('[aria-invalid="true"]:not(:disabled)')?.focus();
     return valid2;
   };
 
@@ -28723,17 +29527,17 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     }
     if (action.type === "console") {
       if (action.level === "echo") {
-        console.log((action.values || []).map((node) => {
-          const value = resolveData2(node, state, executionContext.eventData);
-          return phpString(value, resolveType(node, state, executionContext.eventData, value), executionContext.eventData);
+        console.log((action.values || []).map((node2) => {
+          const value = resolveData2(node2, state, executionContext.eventData);
+          return phpString(value, resolveType(node2, state, executionContext.eventData, value), executionContext.eventData);
         }).join(""));
         return;
       }
       if (action.level === "dump") {
         const data = executionContext.eventData;
-        const values3 = (action.values || []).map((node) => {
-          const value = resolveData2(node, state, data);
-          return { value, kind: resolveType(node, state, data, value) };
+        const values3 = (action.values || []).map((node2) => {
+          const value = resolveData2(node2, state, data);
+          return { value, kind: resolveType(node2, state, data, value) };
         });
         console.log(values3.map(({ value, kind }) => phpDump(value, kind, 0, void 0, data)).join(""));
         return;
@@ -28844,18 +29648,13 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     const effects2 = rootConfigs.get(root)?.effects || {};
     Object.entries(effects2).forEach(([id, definition]) => {
       if (mounting && !definition.runOnMount) return;
-      if (!mounting && (!changedTargets || !(definition.dependencies || []).some((dependency) => changedTargets.some((target) => pathAffects(dependency, target))))) return;
-      const selfTriggered = !mounting && changedTargets.some((target) => origins.get(target) === id && (definition.dependencies || []).some((dependency) => pathAffects(dependency, target)));
+      if (!mounting && (!changedTargets || !(definition.dependencies || []).some((dependency) => changedTargets.some((target) => statePathAffects(state, dependency, target))))) return;
+      const selfTriggered = !mounting && changedTargets.some((target) => origins.get(target) === id && (definition.dependencies || []).some((dependency) => statePathAffects(state, dependency, target)));
       activateEffect(root, state, id, definition, selfTriggered);
     });
   };
 
   // src-js/rendering.js
-  var dynamicToken = (key2) => {
-    let hash = 2166136261;
-    for (const character of String(key2)) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
-    return `k${(hash >>> 0).toString(36)}`;
-  };
   var dynamicTarget = (target, token2) => {
     const segments = safeSegments(target);
     const property2 = segments.pop();
@@ -28868,88 +29667,98 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     const source = Object.keys(mapping).sort((a, b) => b.length - a.length).find((path) => value === path || value.startsWith(`${path}.`));
     return source ? mapping[source] + value.slice(source.length) : value;
   };
-  var rewriteDynamicEffectId = (id, mapping) => {
-    return rewriteDynamic(id, mapping);
+  var rewriteRow = (node2, mapping) => {
+    const walk = (root) => root.querySelectorAll("*").forEach((element) => {
+      for (const attribute of [...element.attributes]) {
+        if (!attribute.name.startsWith("data-aml-")) continue;
+        try {
+          const rewrite = (value) => Array.isArray(value) ? value.map(rewrite) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key2, child]) => [rewriteDynamic(key2, mapping), rewrite(child)])) : rewriteDynamic(value, mapping);
+          element.setAttribute(attribute.name, JSON.stringify(rewrite(JSON.parse(attribute.value))));
+        } catch (_) {
+          element.setAttribute(attribute.name, rewriteDynamic(attribute.value, mapping));
+        }
+      }
+      if (element.localName === "template") walk(element.content);
+    });
+    walk(node2);
   };
-  var releaseServiceScopes = (root, node) => {
+  var trackInitialRow = (node2) => {
+    const targets = [], effects2 = [];
+    node2.querySelectorAll("template[data-aml-state]").forEach((manifest) => {
+      targets.push(...Object.keys(JSON.parse(manifest.dataset.amlState || "{}")));
+      effects2.push(...Object.keys(JSON.parse(manifest.dataset.amlStateConfig || "{}").effects || {}));
+    });
+    node2.dataset.amlDynamicState = JSON.stringify(targets);
+    node2.dataset.amlDynamicEffects = JSON.stringify(effects2);
+  };
+  var releaseServiceScopes = (root, node2) => {
     const scopes = rootConfigs.get(root)?.serviceScopes;
     if (!scopes) return;
-    if (node.matches?.("template[data-aml-service-scope]")) scopes.delete(node.dataset.amlServiceScope);
-    node.querySelectorAll("template[data-aml-service-scope]").forEach((marker) => scopes.delete(marker.dataset.amlServiceScope));
+    if (node2.matches?.("template[data-aml-service-scope]")) scopes.delete(node2.dataset.amlServiceScope);
+    node2.querySelectorAll("template[data-aml-service-scope]").forEach((marker) => scopes.delete(marker.dataset.amlServiceScope));
   };
-  var hydrateDynamicItem = (root, state, node, key2) => {
-    const token2 = dynamicToken(key2);
+  var hydrateDynamicItem = (root, state, node2, key2) => {
+    const token2 = rowToken(key2);
     const config = rootConfigs.get(root);
     if (!config) return;
     const mapping = {};
     const dynamicEffects = [];
     const dynamicStateTargets = [];
-    node.querySelectorAll("template[data-aml-state]").forEach((manifest) => {
+    const all = [];
+    const collect = (parent) => parent.querySelectorAll("*").forEach((element) => {
+      all.push(element);
+      if (element.localName === "template") collect(element.content);
+    });
+    collect(node2);
+    all.filter((element) => element.matches("template[data-aml-state]")).forEach((manifest) => {
       const values3 = JSON.parse(manifest.dataset.amlState || "{}");
       Object.keys(values3).forEach((target) => {
         mapping[target] = dynamicTarget(target, token2);
       });
-      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{"effects":{}}');
+      const addition = JSON.parse(manifest.dataset.amlStateConfig || "{}");
       Object.keys(addition.effects || {}).forEach((id) => {
         const scope = id.split(".").slice(0, -1).join(".");
         if (scope && !mapping[scope]) mapping[scope] = `${scope}.items.${token2}`;
       });
     });
-    node.querySelectorAll("template[data-aml-service-scope]").forEach((marker) => {
-      const scope = marker.dataset.amlServiceScope;
-      mapping[scope] = `${scope}.items.${token2}`;
-    });
-    node.querySelectorAll("[data-aml-file-source]").forEach((input) => {
-      const source = input.dataset.amlFileSource;
-      mapping[source] = `${source}.items.${token2}`;
+    all.forEach((element) => {
+      const scope = element.dataset.amlServiceScope || element.dataset.amlFileSource;
+      if (scope) mapping[scope] = `${scope}.items.${token2}`;
     });
     if (Object.keys(mapping).length === 0) return;
-    node.querySelectorAll("template[data-aml-state]").forEach((manifest) => {
+    rewriteRow(node2, mapping);
+    node2.querySelectorAll("template[data-aml-state]").forEach((manifest) => {
       const values3 = JSON.parse(manifest.dataset.amlState || "{}");
-      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{"shared":{},"persisted":{},"types":{},"computed":{},"effects":{}}');
-      const rewrittenValues = {};
+      const addition = JSON.parse(manifest.dataset.amlStateConfig || "{}");
       Object.entries(values3).forEach(([target, initial]) => {
-        const rewritten = mapping[target];
-        rewrittenValues[rewritten] = rewriteDynamic(initial, mapping);
-        dynamicStateTargets.push(rewritten);
-        writePath(state, rewritten, rewrittenValues[rewritten]);
+        dynamicStateTargets.push(target);
+        writePath(state, target, initial);
       });
-      const rewrittenConfig = { shared: {}, persisted: {}, types: {}, computed: {}, effects: {} };
-      for (const group2 of ["shared", "persisted", "types", "computed", "effects"]) {
+      for (const group2 of ["shared", "persisted", "types", "typeRules", "valueTypes", "arrayMetadata", "computed", "effects"]) {
         Object.entries(addition[group2] || {}).forEach(([target, value]) => {
-          const rewritten = group2 === "effects" ? rewriteDynamicEffectId(target, mapping) : mapping[target] || rewriteDynamic(target, mapping);
-          rewrittenConfig[group2][rewritten] = rewriteDynamic(value, mapping);
-          if (group2 === "persisted") rewrittenConfig[group2][rewritten].key += `.${token2}`;
-          Object.assign(config[group2], rewrittenConfig[group2]);
-          if (group2 === "effects") dynamicEffects.push(rewritten);
+          if (group2 === "persisted") value.key += `.${token2}`;
+          (config[group2] || (config[group2] = {}))[target] = value;
+          if (group2 === "effects") dynamicEffects.push(target);
         });
       }
-      manifest.dataset.amlState = JSON.stringify(rewrittenValues);
-      manifest.dataset.amlStateConfig = JSON.stringify(rewrittenConfig);
+      manifest.dataset.amlStateConfig = JSON.stringify(addition);
     });
-    node.querySelectorAll("*").forEach((element) => {
-      for (const attribute of [...element.attributes]) {
-        if (!attribute.name.startsWith("data-aml-") || attribute.name === "data-aml-state" || attribute.name === "data-aml-state-config") continue;
-        try {
-          element.setAttribute(attribute.name, JSON.stringify(rewriteDynamic(JSON.parse(attribute.value), mapping)));
-        } catch (_) {
-          element.setAttribute(attribute.name, rewriteDynamic(attribute.value, mapping));
-        }
-      }
-    });
-    node.dataset.amlDynamicState = JSON.stringify(dynamicStateTargets);
-    node.dataset.amlDynamicEffects = JSON.stringify(dynamicEffects);
+    node2.dataset.amlDynamicState = JSON.stringify(dynamicStateTargets);
+    node2.dataset.amlDynamicEffects = JSON.stringify(dynamicEffects);
     recomputeComputed(root, state, config);
     dynamicEffects.forEach((id) => registerEffect(root, state, id, config.effects[id], true));
   };
-  var releaseDynamicItem = (root, state, node) => {
-    releaseServiceScopes(root, node);
-    const targets = JSON.parse(node.dataset.amlDynamicState || "[]");
-    const effects2 = JSON.parse(node.dataset.amlDynamicEffects || "[]");
+  var releaseDynamicItem = (root, state, node2) => {
+    releaseServiceScopes(root, node2);
+    if (node2.dataset.amlRowScope) unbindRows(state, node2.dataset.amlRowScope);
+    node2.querySelectorAll("[data-aml-row-scope]").forEach((child) => unbindRows(state, child.dataset.amlRowScope));
+    const owned = [node2, ...node2.querySelectorAll("[data-aml-dynamic-state], [data-aml-dynamic-effects]")];
+    const targets = new Set(owned.flatMap((child) => JSON.parse(child.dataset.amlDynamicState || "[]")));
+    const effects2 = new Set(owned.flatMap((child) => JSON.parse(child.dataset.amlDynamicEffects || "[]")));
     const config = rootConfigs.get(root) || {};
     targets.forEach((target) => {
       deletePath(state, target);
-      for (const group2 of ["shared", "persisted", "types", "computed"]) delete config[group2]?.[target];
+      for (const group2 of ["shared", "persisted", "types", "typeRules", "valueTypes", "arrayMetadata", "computed"]) delete config[group2]?.[target];
     });
     effects2.forEach((id) => {
       cleanupEffect(root, id, "dynamic-unmount");
@@ -29022,13 +29831,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
         if (active) panel.removeAttribute("inert");
         else panel.setAttribute("inert", "");
         panel.querySelectorAll("input,select,textarea,button").forEach((control) => {
-          if (!active && !control.disabled) {
-            control.dataset.amlStepEnabled = "true";
-            control.disabled = true;
-          } else if (active && control.dataset.amlStepEnabled === "true") {
-            control.disabled = false;
-            delete control.dataset.amlStepEnabled;
-          }
+          setDisabledReason(control, panel, !active);
         });
       });
       if (target) queueMicrotask(() => form.querySelector(`[data-aml-form-step="${step}"] h2`)?.focus?.({ preventScroll: true }));
@@ -29047,33 +29850,33 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       const start = Math.max(0, Math.floor(list.scrollTop / rowHeight) - overscan);
       const visible = Math.ceil(list.clientHeight / rowHeight) + overscan * 2;
       const end = Math.min(Array.isArray(items) ? items.length : 0, start + visible);
-      const existing = new Map([...content.children].filter((node) => node !== template && node.dataset.amlVirtualKey !== void 0).map((node) => [node.dataset.amlVirtualKey, node]));
+      const existing = new Map([...content.children].filter((node2) => node2 !== template && node2.dataset.amlVirtualKey !== void 0).map((node2) => [node2.dataset.amlVirtualKey, node2]));
       const fragment = document.createDocumentFragment();
       for (let index = start; index < end; index++) {
         const item = items[index];
         const key2 = String(readPath(item, rule.key) ?? index);
-        const node = existing.get(key2) || document.createElement("div");
-        const isNew = !node.hasChildNodes();
+        const node2 = existing.get(key2) || document.createElement("div");
+        const isNew = !node2.hasChildNodes();
         existing.delete(key2);
         if (isNew) {
-          node.appendChild(template.content.cloneNode(true));
-          hydrateDynamicItem(root, state, node, key2);
-          animateIn(node);
+          node2.appendChild(template.content.cloneNode(true));
+          hydrateDynamicItem(root, state, node2, key2);
+          animateIn(node2);
         }
-        node.querySelectorAll("[data-aml-item-bind]").forEach((binding) => {
+        node2.querySelectorAll("[data-aml-item-bind]").forEach((binding) => {
           binding.textContent = readPath(item, binding.dataset.amlItemBind) ?? "";
         });
-        node.dataset.amlVirtualKey = key2;
-        node.style.cssText = `position:absolute;left:0;right:0;height:${rowHeight}px;transform:translateY(${index * rowHeight}px)`;
-        fragment.appendChild(node);
+        node2.dataset.amlVirtualKey = key2;
+        node2.style.cssText = `position:absolute;left:0;right:0;height:${rowHeight}px;transform:translateY(${index * rowHeight}px)`;
+        fragment.appendChild(node2);
       }
-      existing.forEach((node) => releaseDynamicItem(root, state, node));
+      existing.forEach((node2) => releaseDynamicItem(root, state, node2));
       content.replaceChildren(fragment, template);
       content.style.height = `${(Array.isArray(items) ? items.length : 0) * rowHeight}px`;
     });
   };
-  var matchingContextProvider = (node, name, root = null) => {
-    let provider = node?.closest?.("[data-aml-context-provider]") || null;
+  var matchingContextProvider = (node2, name, root = null) => {
+    let provider = node2?.closest?.("[data-aml-context-provider]") || null;
     while (provider) {
       const rule = JSON.parse(provider.dataset.amlContextProvider);
       if (rule.name === name) return provider;
@@ -29109,110 +29912,187 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   var render = (scope, state, target = null) => {
     const config = rootConfigs.get(scope) || rootConfigs.get(scope.closest?.("[data-aml-client]")) || {};
     const textContext = { valueTypes: config.valueTypes || {}, stateTypes: config.types || {} };
-    scope.querySelectorAll("[data-aml-bind-value]").forEach((node) => {
-      const expression = JSON.parse(node.dataset.amlBindValue), context2 = { ...textContext };
-      const value = resolveData2(expression, state, context2);
-      node.textContent = phpString(value, resolveType(expression, state, context2, value), context2);
-    });
-    scope.querySelectorAll("[data-aml-bind]").forEach((node) => {
-      if (target && !pathAffects(node.dataset.amlBind, target)) return;
-      const value = readPath(state, node.dataset.amlBind);
-      if (node.matches("progress,meter")) {
-        node.value = Number(value ?? 0);
-      } else if (node.matches("input,textarea,select")) {
-        if (node.type === "file") return;
-        if (node.type === "checkbox") node.checked = Boolean(value);
-        else if (document.activeElement !== node) node.value = value ?? "";
-      } else {
-        node.textContent = phpString(value, resolveType({ $state: node.dataset.amlBind }, state, textContext, value), textContext);
+    const structureSelector = "[data-aml-list], [data-aml-list-value], [data-aml-ilist], [data-aml-when]";
+    const pendingLists = [...scope.querySelectorAll(structureSelector)];
+    const visitedLists = /* @__PURE__ */ new Set();
+    while (pendingLists.length) {
+      let list = pendingLists.shift();
+      if (!scope.contains(list) || visitedLists.has(list)) continue;
+      visitedLists.add(list);
+      if (list.dataset.amlWhen !== void 0) {
+        const row = list.closest("[data-aml-row-scope]");
+        const rule = JSON.parse(list.dataset.amlWhen);
+        const branch = readPath(state, rule.state) === rule.equals ? "then" : "else";
+        const content = list.querySelector(":scope > [data-aml-when-content]");
+        if (content && list.dataset.amlWhenActive !== branch) {
+          const template = list.querySelector(`:scope > template[data-aml-when-${branch}]`);
+          if (row) releaseDynamicItem(scope, state, content);
+          else releaseServiceScopes(scope, content);
+          content.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
+          if (row) hydrateDynamicItem(scope, state, content, branch);
+          list.dataset.amlWhenActive = branch;
+          target = null;
+        }
+        if (row && content && !content.dataset.amlDynamicState) trackInitialRow(content);
+        pendingLists.unshift(...list.querySelectorAll(structureSelector));
+        continue;
+      }
+      try {
+        const options = listOptions(list, state, textContext);
+        const items = listItems(list, state, target, textContext);
+        if (items === null) {
+          applyListOptions(list, options);
+          continue;
+        }
+        const labelPath = list.dataset.amlListLabel || "";
+        const keyPath = list.dataset.amlListKey || "";
+        const itemTag = list.dataset.amlListItemTag || "li";
+        const template = list.querySelector(":scope > template[data-aml-list-template]");
+        const existing = new Map([...list.children].filter((child) => child !== template && child.dataset.amlListKey !== void 0).map((child) => [child.dataset.amlListKey, child]));
+        const seenKeys = /* @__PURE__ */ new Set();
+        const calculated = list.dataset.amlListValue !== void 0 || list.dataset.amlIlist !== void 0;
+        const rows = items.map((item, index) => {
+          const record2 = item !== null && typeof item === "object";
+          const itemValues = record2 ? item : { value: item };
+          const label = record2 && labelPath ? readPath(item, labelPath) : item;
+          const key2 = (keyPath ? readPath(item, keyPath) : index) ?? index;
+          if (calculated && typeof key2 !== "string" && !(typeof key2 === "number" && Number.isSafeInteger(key2))) throw new TypeError("AML collection keys must be strings or integers.");
+          const keyString = String(key2);
+          if (seenKeys.has(keyString)) throw new Error(`Duplicate AML collection key: ${keyString}`);
+          if (calculated && !template && label != null && !["string", "number", "boolean"].includes(typeof label)) throw new TypeError("AML collection labels must be scalar values.");
+          seenKeys.add(keyString);
+          return { index, itemValues, label, keyString };
+        });
+        list = applyListOptions(list, options);
+        const focus = list.contains(document.activeElement) ? document.activeElement : null;
+        const selection = focus && typeof focus.selectionStart === "number" ? [focus.selectionStart, focus.selectionEnd] : null;
+        let cursor = [...list.children].find((child) => child.dataset.amlListKey !== void 0) || null;
+        rows.forEach(({ index, itemValues, label, keyString }) => {
+          const node2 = existing.get(keyString) || document.createElement(itemTag);
+          const isNew = !node2.hasChildNodes();
+          existing.delete(keyString);
+          node2.dataset.amlListIndex = String(index);
+          node2.dataset.amlListKey = keyString;
+          const rowScope = list.dataset.amlIlist ? `${list.dataset.amlIlist}.rows.${rowToken(keyString)}` : null;
+          if (rowScope) {
+            bindRow(state, rowScope, { dependencies: listDependencies(list), value: itemValues, key: keyString, keyPath, source: list.dataset.amlListEditable || list.dataset.amlList, direct: list.dataset.amlListValue === void 0 });
+            node2.dataset.amlRowScope = rowScope;
+          }
+          if (template && isNew) {
+            node2.appendChild(template.content.cloneNode(true));
+            if (rowScope) {
+              const mapping = { [`${list.dataset.amlIlist}.rows.template`]: rowScope };
+              const scopes = (root) => root.querySelectorAll("*").forEach((child) => {
+                if (child.dataset.amlIlist) mapping[child.dataset.amlIlist] = `${child.dataset.amlIlist}.items.${rowToken(keyString)}`;
+                if (child.localName === "template") scopes(child.content);
+              });
+              scopes(node2);
+              rewriteRow(node2, mapping);
+            }
+            hydrateDynamicItem(scope, state, node2, keyString);
+          }
+          if (template) {
+            node2.querySelectorAll("[data-aml-item-bind]").forEach((binding) => {
+              if (binding.closest("[data-aml-list-key]") !== node2) return;
+              binding.textContent = phpString(readPath(itemValues, binding.dataset.amlItemBind) ?? "");
+            });
+          } else node2.textContent = phpString(label ?? "");
+          node2.dataset.amlListIndex = String(index);
+          node2.dataset.amlListKey = keyString;
+          if (list.dataset.amlSortable === "true") {
+            node2.draggable = true;
+            node2.tabIndex = 0;
+            node2.setAttribute("aria-keyshortcuts", "Alt+ArrowUp Alt+ArrowDown");
+          }
+          if (node2 !== cursor) {
+            if (list.moveBefore && node2.parentNode === list) list.moveBefore(node2, cursor);
+            else list.insertBefore(node2, cursor);
+          }
+          cursor = node2.nextElementSibling;
+          if (rowScope && !node2.dataset.amlDynamicState) trackInitialRow(node2);
+          pendingLists.unshift(...node2.querySelectorAll(structureSelector));
+          if (isNew) animateIn(node2);
+        });
+        existing.forEach((node2) => {
+          releaseDynamicItem(scope, state, node2);
+          node2.remove();
+        });
+        const empty3 = list.querySelector(":scope > [data-aml-list-empty]");
+        if (empty3) empty3.hidden = items.length > 0;
+        if (focus?.isConnected && document.activeElement !== focus) {
+          focus.focus({ preventScroll: true });
+          if (selection) focus.setSelectionRange(...selection);
+        }
+        if (list.dataset.amlIlist) target = null;
+        listRendered(list);
+      } catch (error) {
+        reportListError(scope, list, error);
+      }
+    }
+    renderIcons(scope, state, textContext);
+    scope.querySelectorAll("[data-aml-href]").forEach((node2) => {
+      try {
+        const value = resolveData2(JSON.parse(node2.dataset.amlHref), state, { ...textContext });
+        if (typeof value !== "string" || /[\x00-\x1f\x7f]/.test(value) || /^([a-z][a-z0-9+.-]*):/i.test(value.trim()) && !/^(https?|mailto|tel):/i.test(value.trim())) throw new TypeError("Unsafe or unsupported reactive link URL.");
+        if (node2.getAttribute("href") !== value.trim()) node2.setAttribute("href", value.trim());
+      } catch (error) {
+        scope.dispatchEvent(new CustomEvent("aml:render-error", { detail: { error, node: node2 } }));
       }
     });
-    scope.querySelectorAll("[data-aml-show-when]").forEach((node) => {
-      const rule = JSON.parse(node.dataset.amlShowWhen);
+    scope.querySelectorAll("[data-aml-bind-value]").forEach((node2) => {
+      const expression = JSON.parse(node2.dataset.amlBindValue), context2 = { ...textContext };
+      const value = resolveData2(expression, state, context2);
+      setBoundText(node2, phpString(value, resolveType(expression, state, context2, value), context2));
+    });
+    scope.querySelectorAll("[data-aml-bind]").forEach((node2) => {
+      if (target && !pathAffects(node2.dataset.amlBind, target)) return;
+      const value = readPath(state, node2.dataset.amlBind);
+      if (node2.matches("progress,meter")) {
+        node2.value = Number(value ?? 0);
+      } else if (node2.matches("button[data-aml-model]")) {
+        node2.value = value == null ? "" : String(value);
+      } else if (node2.matches("input,textarea,select")) {
+        if (node2.type === "file") return;
+        if (node2.type === "checkbox") node2.checked = Boolean(value);
+        else if (node2.type === "radio") node2.checked = node2.value === String(value ?? "");
+        else if (node2.matches("select[multiple]")) {
+          const selected = new Set((Array.isArray(value) ? value : [value ?? ""]).map(String));
+          [...node2.options].forEach((option) => {
+            option.selected = selected.has(option.value);
+          });
+        } else if (document.activeElement !== node2) node2.value = value ?? "";
+      } else {
+        setBoundText(node2, phpString(value, resolveType({ $state: node2.dataset.amlBind }, state, textContext, value), textContext));
+      }
+    });
+    scope.querySelectorAll("[data-aml-show-when]").forEach((node2) => {
+      const rule = JSON.parse(node2.dataset.amlShowWhen);
       if (target && !pathAffects(rule.state, target)) return;
       const hidden = readPath(state, rule.state) !== rule.equals;
-      node.hidden = hidden;
-      if (hidden) node.setAttribute("inert", "");
-      else node.removeAttribute("inert");
-      node.querySelectorAll("input,select,textarea,button").forEach((control) => {
-        if (hidden && !control.disabled) {
-          control.dataset.amlConditionEnabled = "true";
-          control.disabled = true;
-        } else if (!hidden && control.dataset.amlConditionEnabled === "true") {
-          control.disabled = false;
-          delete control.dataset.amlConditionEnabled;
-        }
-      });
+      node2.toggleAttribute("hidden", hidden);
+      if (hidden) node2.setAttribute("inert", "");
+      else node2.removeAttribute("inert");
+      const controls2 = [...node2.querySelectorAll("input,select,textarea,button")];
+      if (node2.matches("input,select,textarea,button")) controls2.push(node2);
+      controls2.forEach((control) => setDisabledReason(control, node2, hidden));
     });
-    scope.querySelectorAll("[data-aml-class-when]").forEach((node) => {
-      JSON.parse(node.dataset.amlClassWhen).forEach((rule) => {
+    scope.querySelectorAll("[data-aml-class-when]").forEach((node2) => {
+      JSON.parse(node2.dataset.amlClassWhen).forEach((rule) => {
         if (target && !pathAffects(rule.state, target)) return;
-        node.classList.toggle(rule.class, readPath(state, rule.state) === rule.equals);
+        node2.classList.toggle(rule.class, readPath(state, rule.state) === rule.equals);
       });
     });
-    scope.querySelectorAll("[data-aml-disabled-when]").forEach((node) => {
-      const rule = JSON.parse(node.dataset.amlDisabledWhen);
+    scope.querySelectorAll("[data-aml-disabled-when]").forEach((node2) => {
+      const rule = JSON.parse(node2.dataset.amlDisabledWhen);
       if (target && !pathAffects(rule.state, target)) return;
       const disabled = readPath(state, rule.state) === rule.equals;
-      node.disabled = disabled;
-      node.setAttribute("aria-disabled", disabled ? "true" : "false");
-    });
-    scope.querySelectorAll("[data-aml-list]").forEach((list) => {
-      if (target && !pathAffects(list.dataset.amlList, target)) return;
-      const items = readPath(state, list.dataset.amlList);
-      const labelPath = list.dataset.amlListLabel || "";
-      const keyPath = list.dataset.amlListKey || "";
-      const itemTag = list.dataset.amlListItemTag || "li";
-      const template = list.querySelector(":scope > template[data-aml-list-template]");
-      const existing = new Map([...list.children].filter((child) => child !== template && child.dataset.amlListKey !== void 0).map((child) => [child.dataset.amlListKey, child]));
-      const seenKeys = /* @__PURE__ */ new Set();
-      (Array.isArray(items) ? items : []).forEach((item, index) => {
-        const label = labelPath ? readPath(item, labelPath) : item;
-        const key2 = keyPath ? readPath(item, keyPath) : index;
-        const keyString = String(key2 ?? index);
-        if (seenKeys.has(keyString)) throw new Error(`Duplicate AML collection key: ${keyString}`);
-        seenKeys.add(keyString);
-        const node = existing.get(keyString) || document.createElement(itemTag);
-        const isNew = !node.hasChildNodes();
-        existing.delete(keyString);
-        if (template && isNew) {
-          node.appendChild(template.content.cloneNode(true));
-          hydrateDynamicItem(scope, state, node, keyString);
-        }
-        if (template) {
-          node.querySelectorAll("[data-aml-item-bind]").forEach((binding) => {
-            binding.textContent = readPath(item, binding.dataset.amlItemBind) ?? "";
-          });
-        } else node.textContent = label ?? "";
-        node.dataset.amlListIndex = String(index);
-        node.dataset.amlListKey = keyString;
-        if (list.dataset.amlSortable === "true") {
-          node.draggable = true;
-          node.tabIndex = 0;
-          node.setAttribute("aria-keyshortcuts", "Alt+ArrowUp Alt+ArrowDown");
-        }
-        list.appendChild(node);
-        if (isNew) animateIn(node);
-      });
-      existing.forEach((node) => {
-        releaseDynamicItem(scope, state, node);
-        node.remove();
-      });
-      if (template) list.appendChild(template);
-    });
-    scope.querySelectorAll("[data-aml-when]").forEach((container) => {
-      const rule = JSON.parse(container.dataset.amlWhen);
-      if (target && !pathAffects(rule.state, target)) return;
-      const content = container.querySelector(":scope > [data-aml-when-content]");
-      const template = readPath(state, rule.state) === rule.equals ? container.querySelector(":scope > template[data-aml-when-then]") : container.querySelector(":scope > template[data-aml-when-else]");
-      if (content && template) {
-        releaseServiceScopes(scope, content);
-        content.replaceChildren(template.content.cloneNode(true));
-      }
+      setDisabledRule(node2, disabled);
     });
     renderRichComponents(scope, state, target);
     renderVirtualLists(scope, state);
     renderContexts(scope, state, target);
+    renderCalendars(scope);
+    renderStyles(scope, state, target, textContext);
   };
 
   // src-js/lifecycle.js
@@ -29233,10 +30113,10 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
 
   // src-js/state-runtime.js
   var scheduleUpdate = (root, state, changes, originEffectId = null) => {
-    let pending3 = pendingBatches.get(root);
-    if (!pending3) {
-      pending3 = /* @__PURE__ */ new Map();
-      pendingBatches.set(root, pending3);
+    let pending4 = pendingBatches.get(root);
+    if (!pending4) {
+      pending4 = /* @__PURE__ */ new Map();
+      pendingBatches.set(root, pending4);
       queueMicrotask(() => {
         const batch = pendingBatches.get(root);
         const origins = pendingEffectOrigins.get(root) || /* @__PURE__ */ new Map();
@@ -29259,7 +30139,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
         runEffects(root, state, targets, false, origins);
       });
     }
-    changes.forEach((value, target) => pending3.set(target, value));
+    changes.forEach((value, target) => pending4.set(target, value));
     if (originEffectId) {
       const origins = pendingEffectOrigins.get(root) || /* @__PURE__ */ new Map();
       changes.forEach((_, target) => origins.set(target, originEffectId));
@@ -29267,6 +30147,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     }
   };
   var commit = (root, state, target, value, executionContext = null) => {
+    target = resolveWritePath(state, target);
     validatePhpValue(value, executionContext?.valueType || phpType(value));
     if (typeof value === "number" && !Number.isFinite(value)) throw new RangeError("Frontend state must contain finite floats");
     const config = rootConfigs.get(root) || { shared: {}, persisted: {}, types: {}, computed: {} };
@@ -29312,6 +30193,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     scheduleUpdate(root, state, changes, (executionContext?.owner || executionContext)?.id);
   };
   var apply = (scope, state, action, executionContext = null) => {
+    if (action.target) action = { ...action, target: resolveWritePath(state, action.target) };
     if (action.type === "remove-path") {
       const segments = safeSegments(action.target);
       if (segments.length < 2) throw new Error("AML remove-path requires a nested state path");
@@ -29368,171 +30250,179 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     commit(scope, state, action.target, next2, { ...executionContext || {}, valueType });
   };
 
-  // src-js/storage.js
-  var migrateValue = (root, target, value, storedVersion, config) => {
-    let migrated = clone(value);
-    for (let version = Number(storedVersion) + 1; version <= Number(config.version || 1); version++) {
-      const migration = config.migrations?.[version] || config.migrations?.[String(version)];
-      if (!migration) {
-        root.dispatchEvent(new CustomEvent("aml:storage-migration-required", { detail: { target, storedVersion, expectedVersion: config.version || 1, missingVersion: version } }));
-        return void 0;
+  // src-js/icon-bindings.js
+  var shapes = { path: ["d"], circle: ["cx", "cy", "r", "fill"], ellipse: ["cx", "cy", "rx", "ry"], rect: ["x", "y", "width", "height", "rx", "ry"], line: ["x1", "y1", "x2", "y2"], polyline: ["points"], polygon: ["points"] };
+  var cache = /* @__PURE__ */ new Map();
+  var bindings3 = /* @__PURE__ */ new WeakMap();
+  var retries = /* @__PURE__ */ new Set();
+  var retryDelays = [500, 1500, 4e3];
+  var iconName = (name) => {
+    if (typeof name !== "string" || name.length > 100 || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(name)) throw new TypeError("Icon expects a Lucide name such as heart or arrow-right.");
+    return name;
+  };
+  var iconGeometry = (nodes) => {
+    if (!Array.isArray(nodes) || !nodes.length || nodes.length > 128) throw new TypeError("Invalid icon geometry.");
+    for (const node2 of nodes) {
+      if (!Array.isArray(node2) || node2.length !== 2 || typeof node2[0] !== "string" || !Object.hasOwn(shapes, node2[0]) || !node2[1] || typeof node2[1] !== "object" || Array.isArray(node2[1]) || !Object.keys(node2[1]).length) throw new TypeError("Invalid icon shape.");
+      for (const [key2, value] of Object.entries(node2[1])) {
+        if (!shapes[node2[0]].includes(key2) || typeof value !== "string" || value.length > 16e3 || (key2 === "fill" ? value !== "currentColor" : !(key2 === "d" ? /^[MmZzLlHhVvCcSsQqTtAaEe0-9.,+\s-]+$/ : /^[Ee0-9.,+\s-]+$/).test(value))) throw new TypeError("Unsafe icon geometry attribute.");
       }
-      Object.entries(migration.rename || {}).forEach(([from, to]) => {
-        const previous = readPath(migrated, from);
-        if (previous !== void 0) {
-          writePath(migrated, to, previous);
-          deletePath(migrated, from);
-        }
-      });
-      Object.entries(migration.defaults || {}).forEach(([path, fallback]) => {
-        if (readPath(migrated, path) === void 0) writePath(migrated, path, fallback);
-      });
-      (migration.remove || []).forEach((path) => deletePath(migrated, path));
     }
-    root.dispatchEvent(new CustomEvent("aml:storage-migrated", { detail: { target, from: storedVersion, to: config.version || 1 } }));
-    return migrated;
+    return nodes;
   };
-  var openStateDatabase = () => new Promise((resolve, reject) => {
-    const request2 = indexedDB.open("phpaml-engine", 1);
-    request2.onupgradeneeded = () => request2.result.createObjectStore("state");
-    request2.onsuccess = () => resolve(request2.result);
-    request2.onerror = () => reject(request2.error);
-  });
-  var indexedState = async (operation, key2, value = void 0) => {
-    const database = await openStateDatabase();
-    try {
-      return await new Promise((resolve, reject) => {
-        const transaction = database.transaction("state", operation === "get" ? "readonly" : "readwrite");
-        const store = transaction.objectStore("state");
-        const request2 = operation === "get" ? store.get(key2) : operation === "delete" ? store.delete(key2) : store.put(value, key2);
-        request2.onsuccess = () => resolve(request2.result);
-        request2.onerror = () => reject(request2.error);
-      });
-    } finally {
-      database.close();
-    }
+  var remember2 = (key2, value) => {
+    cache.delete(key2);
+    cache.set(key2, value);
+    if (cache.size > 256) cache.delete(cache.keys().next().value);
+    return value;
   };
-  var persistedPayload = (config, value, phpType2 = void 0) => JSON.stringify({
-    __amlPersisted: true,
-    version: Number(config.version || 1),
-    savedAt: Date.now(),
-    value,
-    ...phpType2 ? { phpType: phpType2 } : {},
-    ...value && typeof value === "object" ? { phpArray: describeArray(value) } : {}
-  });
-  var restoredValue = (root, target, config, serialized, type, stateConfig = null) => {
-    const parsed = JSON.parse(serialized);
-    const restore2 = (value2, savedKind = null) => {
-      const kind = typeof value2 === "number" && ["integer", "double"].includes(savedKind) ? savedKind : phpType(value2);
-      const typed = stateConfig?.typeRules?.[target] ? assignType(stateConfig.typeRules[target], value2, kind, false) : { value: coerce(type, value2), kind: type === "float" && value2 !== null ? "double" : kind };
-      if (typeof typed.value === "number" && (!Number.isFinite(typed.value) || typed.kind === "integer" && !Number.isSafeInteger(typed.value))) throw new RangeError("Persisted number cannot be represented safely");
-      if (stateConfig?.valueTypes) stateConfig.valueTypes[target] = typed.kind;
-      return typed.value;
+  var load2 = (url) => {
+    if (cache.has(url)) return cache.get(url);
+    const networkError = (error) => {
+      error.iconRetryable = true;
+      throw error;
     };
-    if (!parsed || parsed.__amlPersisted !== true) return restore2(parsed);
-    if (Number(parsed.version) > Number(config.version || 1)) {
-      root.dispatchEvent(new CustomEvent("aml:storage-version-newer", { detail: { target, storedVersion: parsed.version, expectedVersion: config.version || 1 } }));
-      return void 0;
-    }
-    if (config.expiresAfter && Date.now() - Number(parsed.savedAt || 0) > Number(config.expiresAfter) * 1e3) {
-      root.dispatchEvent(new CustomEvent("aml:storage-expired", { detail: { target } }));
-      return void 0;
-    }
-    restoreArrayMetadata(parsed.value, parsed.phpArray);
-    const value = Number(parsed.version) < Number(config.version || 1) ? migrateValue(root, target, parsed.value, parsed.version, config) : parsed.value;
-    return value === void 0 ? void 0 : restore2(value, Number(parsed.version) === Number(config.version || 1) ? parsed.phpType : null);
+    const promise = fetch(url, { credentials: "same-origin", redirect: "error", cache: "no-cache", headers: { Accept: "application/json" } }).catch(networkError).then(async (response) => {
+      if (!response.ok) {
+        const error = new Error("Unknown or unavailable Lucide icon: " + url.split("/").pop().replace(/\.json$/, "") + ".");
+        error.iconRetryable = [408, 429].includes(response.status) || response.status >= 500;
+        throw error;
+      }
+      if (Number(response.headers.get("content-length")) > 65536) throw new Error("Icon data is too large.");
+      const text3 = await response.text().catch(networkError);
+      if (text3.length > 65536) throw new Error("Icon data is too large.");
+      return iconGeometry(JSON.parse(text3));
+    });
+    remember2(url, promise);
+    promise.catch(() => {
+      if (cache.get(url) === promise) cache.delete(url);
+    });
+    return promise;
   };
-
-  // src-js/browser-storage.js
-  var persistState = (root, target, persisted, value, kind) => {
-    try {
-      const payload = persistedPayload(persisted, value, kind);
-      if (persisted.storage === "indexeddb") indexedState("put", persisted.key, payload).catch((error) => root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } })));
-      else (persisted.storage === "session" ? sessionStorage : localStorage).setItem(persisted.key, payload);
-    } catch (error) {
-      root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
-    }
+  var report = (scope, node2, binding, error) => {
+    const key2 = error.message;
+    if (binding.error === key2) return;
+    binding.error = key2;
+    scope.dispatchEvent(new CustomEvent("aml:render-error", { detail: { error, node: node2 } }));
+    console.error(error);
   };
-  var storageListenerInstalled = false;
-  var installStorageListener = () => {
-    if (storageListenerInstalled) return;
-    storageListenerInstalled = true;
-    addEventListener("storage", (event) => {
-      mountedRoots.forEach((root) => {
-        const state = rootStates.get(root);
-        const config = rootConfigs.get(root) || {};
-        Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
-          if (persisted.storage !== "local" || persisted.key !== event.key) return;
-          try {
-            const value = event.newValue === null ? void 0 : restoredValue(root, target, persisted, event.newValue, config.types?.[target]);
-            if (value === void 0) return;
-            writePath(state, target, value);
-            const changes = /* @__PURE__ */ new Map([[target, value]]);
-            recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
-            scheduleUpdate(root, state, changes);
-          } catch (error) {
-            root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
-          }
-        });
+  var cancelRetry = (binding) => {
+    if (!binding.retry) return;
+    clearTimeout(binding.retry.timer);
+    retries.delete(binding.retry);
+    binding.retry = null;
+  };
+  var retryIcon = (retry) => {
+    const { binding, ticket, url, name, catalog } = retry;
+    const scope = retry.scope.deref(), node2 = retry.node.deref();
+    cancelRetry(binding);
+    if (!scope || !node2?.isConnected || !scope.contains(node2) || ticket !== binding.ticket) return;
+    requestIcon(scope, node2, binding, ticket, url, name, catalog);
+  };
+  var requestIcon = (scope, node2, binding, ticket, url, name, catalog) => {
+    load2(url).then((geometry) => {
+      if (ticket !== binding.ticket || !node2.isConnected || !scope.contains(node2)) return;
+      const children = geometry.map(([tag, attributes]) => {
+        const child = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        for (const [key2, value] of Object.entries(attributes)) child.setAttribute(key2, value);
+        return child;
       });
-    });
-  };
-  var restorePersisted = (root, state, config) => {
-    installStorageListener();
-    Object.entries(config.persisted || {}).forEach(([target, persisted]) => {
-      if (persisted.storage === "indexeddb") return;
-      try {
-        const storage6 = persisted.storage === "session" ? sessionStorage : localStorage;
-        const saved = storage6.getItem(persisted.key);
-        if (saved !== null) {
-          const restored = restoredValue(root, target, persisted, saved, config.types?.[target], config);
-          if (restored === void 0) storage6.removeItem(persisted.key);
-          else writePath(state, target, restored);
-        }
-      } catch (error) {
-        root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+      node2.replaceChildren(...children);
+      node2.dataset.amlIconName = name;
+      binding.catalog = catalog;
+      binding.error = null;
+      binding.attempts = 0;
+    }).catch((error) => {
+      if (ticket !== binding.ticket || !node2.isConnected || !scope.contains(node2)) return;
+      report(scope, node2, binding, error);
+      if (!error.iconRetryable) return;
+      const retry = { scope: new WeakRef(scope), node: new WeakRef(node2), binding, ticket, url, name, catalog };
+      binding.retry = retry;
+      retries.add(retry);
+      if (navigator.onLine !== false && binding.attempts < retryDelays.length) {
+        retry.timer = setTimeout(() => retryIcon(retry), retryDelays[binding.attempts++]);
       }
     });
   };
-  var restoreIndexed = (root, state, config) => Object.entries(config.persisted || {}).filter(([, persisted]) => persisted.storage === "indexeddb").map(async ([target, persisted]) => {
-    try {
-      const saved = await indexedState("get", persisted.key);
-      if (saved === void 0) return;
-      const restored = restoredValue(root, target, persisted, saved, config.types?.[target], config);
-      if (restored === void 0) await indexedState("delete", persisted.key);
-      else {
-        writePath(state, target, restored);
-        const changes = /* @__PURE__ */ new Map([[target, restored]]);
-        recomputeComputed(root, state, config, target).forEach((computed, name) => changes.set(name, computed));
-        scheduleUpdate(root, state, changes);
-      }
-    } catch (error) {
-      root.dispatchEvent(new CustomEvent("aml:storage-error", { detail: { target, error } }));
+  if (typeof window !== "undefined") window.addEventListener("online", () => {
+    for (const retry of [...retries]) {
+      retry.binding.attempts = 0;
+      retryIcon(retry);
     }
   });
-  var restoreContexts = (root, state) => {
-    root.querySelectorAll("[data-aml-context-provider]").forEach((provider) => {
-      const rule = JSON.parse(provider.dataset.amlContextProvider);
-      if (!rule.persist) return;
-      try {
-        const stored = localStorage.getItem(rule.storageKey || `phpaml.context.${rule.name}`);
-        if (stored === null) return;
-        const value = JSON.parse(stored);
-        if (rule.state) writePath(state, rule.state, value);
-        else {
-          rule.value = value;
-          provider.dataset.amlContextProvider = JSON.stringify(rule);
-        }
-      } catch (error) {
-        root.dispatchEvent(new CustomEvent("aml:context-error", { detail: { name: rule.name, error } }));
+  var cleanupIcons = (scope) => {
+    const nodes = [...scope.querySelectorAll("[data-aml-icon], [data-aml-icon-label]")];
+    if (scope.matches?.("[data-aml-icon], [data-aml-icon-label]")) nodes.unshift(scope);
+    for (const node2 of nodes) {
+      const binding = bindings3.get(node2);
+      if (binding) {
+        ++binding.ticket;
+        cancelRetry(binding);
+        bindings3.delete(node2);
       }
-    });
+    }
+    for (const retry of retries) if (!retry.scope.deref() || retry.scope.deref() === scope) cancelRetry(retry.binding);
   };
-  var persistContext = (root, rule, value) => {
-    try {
-      localStorage.setItem(rule.storageKey || `phpaml.context.${rule.name}`, JSON.stringify(value));
-    } catch (error) {
-      root.dispatchEvent(new CustomEvent("aml:context-error", { detail: { name: rule.name, error } }));
+  var renderIcons = (scope, state, context2) => {
+    const nodes = [...scope.querySelectorAll("[data-aml-icon], [data-aml-icon-label]")];
+    if (scope.matches?.("[data-aml-icon], [data-aml-icon-label]")) nodes.unshift(scope);
+    for (const node2 of nodes) {
+      let binding = bindings3.get(node2);
+      if (!binding) {
+        binding = { ticket: 0 };
+        bindings3.set(node2, binding);
+      }
+      try {
+        if (node2.hasAttribute("data-aml-icon-label")) {
+          const label = resolveData2(JSON.parse(node2.dataset.amlIconLabel), state, { ...context2 });
+          if (label !== null && (typeof label !== "string" || !label.trim())) throw new TypeError("Icon label must be a nonempty string or null.");
+          if (label === null) {
+            node2.removeAttribute("role");
+            node2.removeAttribute("aria-label");
+            if (node2.getAttribute("aria-hidden") !== "true") node2.setAttribute("aria-hidden", "true");
+          } else {
+            node2.removeAttribute("aria-hidden");
+            if (node2.getAttribute("role") !== "img") node2.setAttribute("role", "img");
+            if (node2.getAttribute("aria-label") !== label) node2.setAttribute("aria-label", label);
+          }
+        }
+        if (!node2.hasAttribute("data-aml-icon")) {
+          ++binding.ticket;
+          cancelRetry(binding);
+          binding.requested = null;
+          binding.error = null;
+          continue;
+        }
+        const name = iconName(resolveData2(JSON.parse(node2.dataset.amlIcon), state, { ...context2 }));
+        const catalog = node2.dataset.amlIconCatalog;
+        if (typeof catalog !== "string" || !/^\/(?:[a-zA-Z0-9_-]+\/)*assets\/phpaml\/lucide\/\d+\.\d+\.\d+$/.test(catalog)) throw new TypeError("Invalid local icon catalogue URL.");
+        const url = new URL(`${catalog}/${name}.json`, location.origin).href;
+        if (binding.requested === url) continue;
+        cancelRetry(binding);
+        const ticket = ++binding.ticket;
+        binding.requested = url;
+        binding.error = null;
+        binding.attempts = 0;
+        if (!binding.seeded) {
+          binding.seeded = true;
+          const initial = iconName(node2.dataset.amlIconName);
+          remember2(
+            new URL(`${catalog}/${initial}.json`, location.origin).href,
+            Promise.resolve(iconGeometry([...node2.children].map((child) => [child.localName, Object.fromEntries([...child.attributes].map((attr) => [attr.name, attr.value]))])))
+          );
+        }
+        if (node2.dataset.amlIconName === name && binding.catalog === catalog) continue;
+        if (node2.dataset.amlIconName === name && binding.catalog === void 0) {
+          binding.catalog = catalog;
+          continue;
+        }
+        requestIcon(scope, node2, binding, ticket, url, name, catalog);
+      } catch (error) {
+        ++binding.ticket;
+        cancelRetry(binding);
+        binding.requested = null;
+        report(scope, node2, binding, error);
+      }
     }
   };
 
@@ -29550,7 +30440,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     if (path && !Object.is(readPath(state, path), value)) commit(root, state, path, value);
   };
   var updateFormValidityState = (root, state, form, rule) => {
-    const valid2 = form.checkValidity() && !form.querySelector('[aria-invalid="true"]');
+    const valid2 = form.checkValidity() && !form.querySelector('[aria-invalid="true"]:not(:disabled)');
     commitFormState(root, state, rule, "valid", valid2);
     commitFormState(root, state, rule, "invalid", !valid2);
     return valid2;
@@ -29627,7 +30517,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, event: eventName } }));
           return Promise.reject(error);
         }
-        return execute(root, state, action, target, { eventData: eventPayload(event) }).then(() => true).catch((error) => {
+        const trigger = eventName === "submit" ? event?.submitter || target : target;
+        return execute(root, state, action, trigger, { eventData: eventPayload(event) }).then(() => true).catch((error) => {
           root.dispatchEvent(new CustomEvent("aml:error", { detail: { error, action, event: eventName } }));
           console.error(error);
           return false;
@@ -29644,6 +30535,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
       stateHistories.set(root, []);
       root.dataset.amlEngineMounted = "true";
       listen("click", async (event) => {
+        if (calendarClick(root, event)) return;
         const stepControl = event.target.closest("[data-aml-step-next],[data-aml-step-previous]");
         if (stepControl && root.contains(stepControl)) {
           event.preventDefault();
@@ -29653,10 +30545,10 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           if (stepControl.matches("[data-aml-step-next]")) {
             const panel = form.querySelector(`[data-aml-form-step="${current}"]`);
             let valid2 = true;
-            panel?.querySelectorAll("[data-aml-validate]:not([disabled])").forEach((control) => {
+            panel?.querySelectorAll("input,select,textarea").forEach((control) => {
               if (!validateControl(control)) valid2 = false;
             });
-            const remote = [...panel?.querySelectorAll("[data-aml-validate-api]:not([disabled])") || []];
+            const remote = [...panel?.querySelectorAll("[data-aml-validate-api]:not(:disabled)") || []];
             if (valid2) valid2 = (await Promise.all(remote.map((control) => validateRemote(root, state, control)))).every(Boolean);
             if (!valid2) {
               panel?.querySelector('[aria-invalid="true"]')?.focus();
@@ -29742,6 +30634,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
         });
       });
       listen("keydown", (event) => {
+        if (calendarKey(root, event)) return;
         if (event.key === "Escape") {
           const openTriggers = [...root.querySelectorAll('[data-aml-disclosure-trigger][aria-expanded="true"]')];
           const focusedPanel = document.activeElement?.closest?.("[data-aml-disclosure-panel]");
@@ -29902,6 +30795,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           updateFormValidityState(root, state, tracked, rule);
         }
         executeClientEvent(event.target.closest("[data-aml-client-input]"), "input", event);
+        if (event.target.matches("[data-aml-calendar-input]")) renderCalendars(root);
       });
       listen("change", (event) => {
         const control = event.target.closest("[data-aml-model]");
@@ -29919,6 +30813,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           updateFormValidityState(root, state, tracked, rule);
         }
         executeClientEvent(event.target.closest("[data-aml-client-change]"), "change", event);
+        if (event.target.matches("[data-aml-calendar-input]")) renderCalendars(root);
       });
       listen("focusin", (event) => {
         executeClientEvent(event.target.closest("[data-aml-client-focus]"), "focus", event);
@@ -29947,8 +30842,8 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
           form.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        const controls = [...form.querySelectorAll("[data-aml-validate-api]")];
-        const valid2 = (await Promise.all(controls.map((control) => validateRemote(root, state, control)))).every(Boolean);
+        const controls2 = [...form.querySelectorAll("[data-aml-validate-api]:not(:disabled)")];
+        const valid2 = (await Promise.all(controls2.map((control) => validateRemote(root, state, control)))).every(Boolean);
         updateFormValidityState(root, state, form, rule);
         if (valid2) {
           if (form.hasAttribute("data-aml-client-submit")) {
@@ -30003,6 +30898,7 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     if (root) pendingMounts.delete(root);
     if (!root || root.dataset.amlEngineMounted !== "true") return;
     lifecycle(root, "unmount", { state: clone(rootStates.get(root) || {}) });
+    cleanupIcons(root);
     effectRuntimes.get(root)?.forEach((_, id) => cleanupEffect(root, id, "unmount"));
     rootControllers.get(root)?.forEach((controller) => controller.abort());
     navigationRuntimes.get(root)?.controller?.abort();
@@ -30043,10 +30939,10 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
   };
 
   // src-js/diagnostics.js
-  var observer = new MutationObserver((records2) => records2.forEach((record2) => record2.removedNodes.forEach((node) => {
-    if (!(node instanceof Element)) return;
-    if (node.matches("[data-aml-client]")) unmount(node);
-    node.querySelectorAll?.("[data-aml-client]").forEach(unmount);
+  var observer = new MutationObserver((records2) => records2.forEach((record2) => record2.removedNodes.forEach((node2) => {
+    if (!(node2 instanceof Element)) return;
+    if (node2.matches("[data-aml-client]")) unmount(node2);
+    node2.querySelectorAll?.("[data-aml-client]").forEach(unmount);
   })));
   observer.observe(document.documentElement, { childList: true, subtree: true });
   var clearPersisted = (key2, storage6 = "local") => storage6 === "indexeddb" ? Promise.resolve(prepareModules(["browser"])).then(() => indexedState("delete", key2)) : (storage6 === "session" ? sessionStorage : localStorage).removeItem(key2);
@@ -30199,19 +31095,45 @@ ${indent}  ${phpDump(item, arrayKind(value, key2), depth + 1, budget, context2)}
     const liveReloadMeta = document.querySelector('meta[name="aml-live-reload"]');
     if (liveReloadMeta) {
       let liveReloadVersion = null;
+      let liveReloadTimer = null, liveReloadRequest = null, liveReloadStopped = true;
       const liveReloadEndpoint = liveReloadMeta.content || "/_aml/live-reload";
       const checkForChanges = async () => {
+        if (liveReloadStopped || liveReloadRequest || document.visibilityState === "hidden") return;
+        const request2 = new AbortController();
+        liveReloadRequest = request2;
         try {
-          const response = await fetch(liveReloadEndpoint, { cache: "no-store", headers: { Accept: "application/json" } });
+          const response = await fetch(liveReloadEndpoint, { mode: "same-origin", cache: "no-store", headers: { Accept: "application/json" }, signal: request2.signal });
           if (!response.ok) return;
           const state = await response.json();
+          if (request2.signal.aborted || liveReloadStopped) return;
           if (liveReloadVersion !== null && liveReloadVersion !== state.version) location.reload();
           liveReloadVersion = state.version;
         } catch {
+        } finally {
+          if (liveReloadRequest === request2) liveReloadRequest = null;
         }
       };
-      checkForChanges();
-      setInterval(checkForChanges, 1e3);
+      const resumeLiveReload = () => {
+        if (!liveReloadStopped || document.visibilityState === "hidden") return;
+        liveReloadStopped = false;
+        checkForChanges();
+        liveReloadTimer = setInterval(checkForChanges, 1e3);
+      };
+      const stopLiveReload = () => {
+        liveReloadStopped = true;
+        clearInterval(liveReloadTimer);
+        liveReloadRequest?.abort();
+        liveReloadRequest = null;
+      };
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") stopLiveReload();
+        else resumeLiveReload();
+      });
+      window.addEventListener("pagehide", stopLiveReload);
+      window.addEventListener("pageshow", (event) => {
+        if (event.persisted) resumeLiveReload();
+      });
+      resumeLiveReload();
     }
   };
 

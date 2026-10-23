@@ -51,10 +51,15 @@ test('state-driven loops read current values on every event and do executes at l
 test('infinite and nested loops fail with a source location and restore state', async () => {
   const root = owner(), state = {count: 0};
   const action = {...loop(true, {type: 'increment', target: 'count', value: 1}), phpSource: {file: 'Page.php', line: 20}};
-  await assert.rejects(execute(root, state, action), (error) => error.code === 'PHP_LOOP_LIMIT' && error.source.line === 20);
+  await assert.rejects(execute(root, state, action), (error) => error.code === 'PHP_LOOP_LIMIT'
+    && error.limitKind === 'loop' && error.limit === 1000 && error.source.line === 20
+    && error.message.includes('1000 iterations per loop') && error.message.includes('[PHP Page.php:20]'));
   assert.equal(state.count, 0);
   const outer = {...loop(true, {...loop(true, {type: 'loop-control', operation: 'continue', levels: 2}), limit: 10000}), limit: 10000};
-  await assert.rejects(execute(root, state, outer), (error) => error.code === 'PHP_LOOP_LIMIT');
+  await assert.rejects(execute(root, state, outer), (error) => error.code === 'PHP_LOOP_LIMIT'
+    && error.limitKind === 'execution' && error.limit === 10000 && error.message.includes('10000 iterations shared by all loops'));
+  await execute(root, state, set('count', 42));
+  assert.equal(state.count, 42);
 });
 
 test('array offsets and copies preserve key order and floating values', () => {

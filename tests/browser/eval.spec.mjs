@@ -5,14 +5,14 @@ import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 const fixture = viewFile('tests/eval.php');
 const samples = JSON.parse(execFileSync(process.env.PHP_BINARY || 'php', [fixture, '--json'], {encoding: 'utf8', maxBuffer: 16 * 1024 * 1024}));
-const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.9.min.js'), 'utf8'));
-const parser = readFileSync(assetFile('engine-eval-0.1.0-beta.9.min.js'), 'utf8');
+const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.10.min.js'), 'utf8'));
+const parser = readFileSync(assetFile('engine-eval-0.1.0-beta.10.min.js'), 'utf8');
 const attribute = (value) => JSON.stringify(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
-const html = (sample) => `<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="/favicon.ico"></head><body><main data-aml-client><template data-aml-state="${attribute(sample.initial)}" data-aml-state-config="${attribute(sample.config)}"></template><button data-aml-client-click="${attribute(sample.action)}">Run</button><output data-aml-bind="count"></output></main><script defer data-aml-engine src="/_aml/engine-0.1.0-beta.9.min.js"></script></body></html>`;
+const html = (sample) => `<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="/favicon.ico"></head><body><main data-aml-client><template data-aml-state="${attribute(sample.initial)}" data-aml-state-config="${attribute(sample.config)}"></template><button data-aml-client-click="${attribute(sample.action)}">Run</button><output data-aml-bind="count"></output></main><script defer data-aml-engine src="/_aml/engine-0.1.0-beta.10.min.js"></script></body></html>`;
 const mount = async (page, sample, parserHandler, nonce = null) => {
   await page.route('**/eval-test', (route) => route.fulfill({body: nonce ? html(sample).replace('<script defer', `<script nonce="${nonce}" defer`) : html(sample), contentType: 'text/html', headers: {'Content-Security-Policy': `default-src 'none'; img-src 'self'; script-src ${nonce ? "'nonce-" + nonce + "'" : "'self'"}; style-src 'unsafe-inline'`}}));
-  await page.route('**/engine-0.1.0-beta.9.min.js', (route) => route.fulfill({body: runtime, contentType: 'text/javascript'}));
-  await page.route('**/engine-eval-0.1.0-beta.9.min.js', parserHandler);
+  await page.route('**/engine-0.1.0-beta.10.min.js', (route) => route.fulfill({body: runtime, contentType: 'text/javascript'}));
+  await page.route('**/engine-eval-0.1.0-beta.10.min.js', parserHandler);
   await page.addInitScript(() => {
     window.cspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) => window.cspViolations.push(event.blockedURI));
@@ -71,9 +71,9 @@ test('the optional parser inherits the main script CSP nonce', async ({page}) =>
 });
 test('the complete example edits dynamic code, displays errors and keeps fixed eval available', async ({page}) => {
   const markup = execFileSync(process.env.PHP_BINARY || 'php', [fixture, '--example'], {encoding: 'utf8'});
-  await page.route('**/eval-example', (route) => route.fulfill({body: `<!doctype html><meta charset="utf-8"><link rel="icon" href="/favicon.ico"><main data-aml-client>${markup}</main><script defer data-aml-engine src="/_aml/engine-0.1.0-beta.9.min.js"></script>`, contentType: 'text/html'}));
-  await page.route('**/engine-0.1.0-beta.9.min.js', (route) => route.fulfill({body: runtime, contentType: 'text/javascript'}));
-  await page.route('**/engine-eval-0.1.0-beta.9.min.js', (route) => route.fulfill({body: parser, contentType: 'text/javascript'}));
+  await page.route('**/eval-example', (route) => route.fulfill({body: `<!doctype html><meta charset="utf-8"><link rel="icon" href="/favicon.ico"><main data-aml-client>${markup}</main><script defer data-aml-engine src="/_aml/engine-0.1.0-beta.10.min.js"></script>`, contentType: 'text/html'}));
+  await page.route('**/engine-0.1.0-beta.10.min.js', (route) => route.fulfill({body: runtime, contentType: 'text/javascript'}));
+  await page.route('**/engine-eval-0.1.0-beta.10.min.js', (route) => route.fulfill({body: parser, contentType: 'text/javascript'}));
   await page.goto('/eval-example');
   await expect(page.locator('[data-aml-client]')).toHaveAttribute('data-aml-engine-mounted', 'true');
   await page.getByRole('button', {name: 'Exécuter', exact: true}).click();

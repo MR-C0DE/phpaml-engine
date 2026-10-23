@@ -1,3 +1,4 @@
+import {checkIteration} from './loop-budget.js';
 import {destructureReference} from './php-destructure.js';
 import {executeFunctionBody, declareFunction} from './php-functions.js';
 import {containsYield} from '../eval/generators.js';
@@ -19,7 +20,7 @@ export function* executeGeneratorBody(action, state, context, frame) {
   const item = function* (node) {return yield* generatorValue(node, state, data, frame);};
   const value = function* (node) {return (yield* item(node)).value;};
   const run = function* (child) {return yield* executeGeneratorBody(child, state, data, frame);};
-  const iteration = (count) => {if (count > (action.limit || 1000) || --data.loopBudget.remaining < 0) throw Object.assign(new RangeError('Frontend loop exceeds its safe iteration limit'), {code: 'PHP_LOOP_LIMIT'});};
+  const iteration = (count) => checkIteration(data, count, action.limit || 1000);
   const outer = (signal) => signal.operation === 'return' ? signal : {...signal, levels: signal.levels - 1};
   const bindings = function* (rules, source, kind) {
     const cache = new Map();

@@ -8,7 +8,7 @@ namespace AML\Engine;
 final readonly class StateExpression
 {
     private const OPERATIONS = [
-        'dynamicLocal', 'enumCase', 'enumCases', 'enumFrom', 'staticLocal',
+        'componentInput', 'dynamicLocal', 'enumCase', 'enumCases', 'enumFrom', 'staticLocal',
         'objectClass', 'objectConstant', 'isObject', 'nullsafeChain', 'objectClassName', 'objectDeclare', 'objectNew', 'objectThis', 'objectProperty', 'objectStaticProperty', 'objectCall', 'objectMethodRef', 'objectClone',
         'exception', 'exceptionGet', 'exceptionIs', 'throw', 'assert',
         'assignReference', 'splMethod', 'yield', 'yieldFrom', 'call', 'closure', 'functionRef', 'builtin', 'display', 'roundingMode', 'eval',

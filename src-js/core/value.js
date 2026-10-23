@@ -1,3 +1,4 @@
+import {componentInputReference} from './component-inputs.js';
 import {dynamicLocalId} from './php-symbols.js';
 import {resolveNullsafe} from './php-nullsafe.js';
 import {createReference, bindLocalReference, unbindLocalReference, hasLocalBinding} from './php-references.js';
@@ -48,6 +49,7 @@ const assign = (target, value, kind, state, context) => {
   throw new Error('A mutating expression requires an action scope and an assignable target');
 };
 export const valueReference = (target, state, context, indirect = false, quiet = false, unpack = false) => {
+  if (target?.$expression?.operation === 'componentInput') return componentInputReference(target.$expression, state, context);
   if (target?.$expression?.operation === 'dynamicLocal') target = {$local: dynamicLocalId(resolveData(target.$expression.left,state,context),context)};
   if (resolved.get(target)?.reference) return resolved.get(target).reference;
   if (target?.$local) {
@@ -132,6 +134,7 @@ const resolveValue = (value, state, eventData) => {
     if (typeof value.$collection === 'string') return readPath(eventData?.collection || {}, value.$collection);
     if (value.$expression && typeof value.$expression === 'object') {
       const expression = value.$expression;
+      if (expression.operation === 'componentInput') return record(value, componentInputReference(expression, state, eventData).get(), eventData);
       if (expression.operation === 'dynamicLocal') { const target={$local:dynamicLocalId(resolveData(expression.left,state,eventData),eventData)}; const result=resolveData(target,state,eventData); return record(value,{value:result,kind:resolveType(target,state,eventData,result)},eventData); }
       if (expression.operation === 'nullsafeChain') return record(value,resolveNullsafe(expression.left,state,eventData),eventData);
       if (expression.operation.startsWith('object')) return record(value, evaluateObject(expression, state, eventData), eventData);
@@ -316,7 +319,7 @@ const resultType = (expression, state, context, value) => {
   if (expression.$conditional) return context.evaluated?.get(expression)?.kind || phpType(value);
   const rule = expression.$expression;
   if (!rule) return phpType(value);
-  if (collectionOperations.has(rule.operation) || ['match', 'offset', 'call', 'builtin', 'display', 'eval', 'objectProperty', 'objectStaticProperty', 'objectCall', 'objectConstant'].includes(rule.operation)) return context.evaluated?.get(expression)?.kind || phpType(value);
+  if (collectionOperations.has(rule.operation) || ['componentInput', 'match', 'offset', 'call', 'builtin', 'display', 'eval', 'objectProperty', 'objectStaticProperty', 'objectCall', 'objectConstant'].includes(rule.operation)) return context.evaluated?.get(expression)?.kind || phpType(value);
   if (['compoundAssign', 'assign', 'coalesceAssign', 'preIncrement', 'postIncrement', 'preDecrement', 'postDecrement', 'incrementValue', 'decrementValue', 'coalesce', 'elvis'].includes(rule.operation)) return context.evaluated?.get(expression)?.kind || phpType(value);
   if (['toFloat', 'ceil', 'floor', 'round'].includes(rule.operation)) return 'double';
   if (['toInt', 'count', 'compare', 'modulo'].includes(rule.operation)) return 'integer';

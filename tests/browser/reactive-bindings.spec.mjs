@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 const fixture = viewFile('tests/reactive-bindings.php');
 const sample = JSON.parse(execFileSync(process.env.PHP_BINARY || 'php', [fixture, '--json'], {encoding: 'utf8', maxBuffer: 16 * 1024 * 1024}));
-const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.9.min.js'), 'utf8'));
+const runtime = browserRuntime(readFileSync(assetFile('engine-0.1.0-beta.10.min.js'), 'utf8'));
 
 test('local calculations and helper arguments stay reactive under CSP and recover from render failures', async ({page}) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));

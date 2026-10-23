@@ -67,6 +67,8 @@ try {
   symlinkSync('view', resolve(application, 'vendor/phpaml/phpaml-view'));
   const verify = () => run(process.env.PHP_BINARY || 'php', [resolve(project, 'tests/verify-installed.php'), application]);
   console.log(verify().trim());
+  // Execute the Icon PHP regressions from the Composer-installed archive too.
+  console.log(run(process.env.PHP_BINARY || 'php', ['-r', 'require $argv[1]; require $argv[2];', autoload, resolve(installedView, 'tests/icons.php')]).trim());
   // Prove that the package check actually rejects missing dynamic chunks.
   const manifest = JSON.parse(readFileSync(resolve(installedEngine, 'assets/public-assets.json'), 'utf8'));
   const chunk = manifest.find(file => /\.min\/unicode-.*\.js$/.test(file));

@@ -6,7 +6,7 @@ namespace AML\Engine;
 
 final class EngineRuntime
 {
-    public const VERSION = '0.1.0-beta.9';
+    public const VERSION = '0.1.0-beta.10';
 
     /**
      * Compatibility bridge for applications that still embed the engine.

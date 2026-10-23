@@ -33,7 +33,7 @@ export const showNavigationState = (current, status, message = '', url = locatio
     boundary.appendChild(overlay);
     const live = boundary.querySelector(':scope > [data-aml-navigation-live]');
     if (live) live.textContent = message || status;
-    fetch(url, {headers: {'X-AML-Navigation': 'true', 'X-AML-Navigation-State': status}, signal})
+    fetch(url, {mode: 'same-origin', headers: {'X-AML-Navigation': 'true', 'X-AML-Navigation-State': status}, signal})
       .then((response) => response.text())
       .then(async (html) => {
         if (signal?.aborted || !overlay.isConnected) return;
@@ -87,7 +87,7 @@ export const navigate = async (destination, push = true, sourceRoot = null) => {
     showNavigationState(current, 'loading', 'Loading page', location.href, controller.signal);
     document.dispatchEvent(new CustomEvent('aml:navigation-start', {detail: {url: url.href}}));
     try {
-      const response = await fetch(url.href, {headers: {'X-AML-Navigation': 'true'}, signal: controller.signal});
+      const response = await fetch(url.href, {mode: 'same-origin', headers: {'X-AML-Navigation': 'true'}, signal: controller.signal});
       const html = await response.text();
       if (!active()) return;
       const nextDocument = new DOMParser().parseFromString(html, 'text/html');

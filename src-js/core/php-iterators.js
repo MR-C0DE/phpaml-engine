@@ -1,3 +1,4 @@
+import {checkIteration} from './loop-budget.js';
 import {isSplObject, splStorageReference} from './php-spl.js';
 import {valueReference, promoteReference} from './value.js';
 import {isGenerator, generatorClosed, generatorMethod, generatorReference} from './php-generators.js';
@@ -42,7 +43,7 @@ export function* spreadEntries(value, context) {
   if (isPhpArray(value)) {for (const [key, item] of arrayEntries(value)) yield {key: {value: key, kind: phpType(key)}, item: {value: item, kind: arrayKind(value, key)}}; return;}
   if (!objectIs(value, 'Traversable')) throw new TypeError('Only arrays and Traversables can be unpacked');
   let count = 0;
-  const iteration = () => {if (++count > 1000 || --(context.loopBudget ||= {remaining: 10000}).remaining < 0) throw Object.assign(new RangeError('Frontend loop limit exceeded'), {code: 'PHP_LOOP_LIMIT'});};
+  const iteration = () => checkIteration(context, ++count);
   for (const entry of foreachEntries(value, true, context, iteration)) {
     if (!['integer', 'string'].includes(entry.key.kind)) throw new Error('Keys must be of type int|string during unpacking');
     yield entry;

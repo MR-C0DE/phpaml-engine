@@ -1,3 +1,4 @@
+import {checkIteration} from './loop-budget.js';
 import {nativeReflectionMethod} from './php-reflection.js';
 import {destructure,destructureReference} from './php-destructure.js';
 import {observeValueOwnership} from './php-value-ownership.js';
@@ -90,7 +91,7 @@ const callable = (value, context) => {
   if(typeof value==='function')throw new TypeError('Value is not a compiled frontend callable');
   throw new Error('Value is not a compiled frontend callable');
 };
-const assignable = (node) => node?.$local || node?.$state || node?.$collection || ['dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(node?.$expression?.operation);
+const assignable = (node) => node?.$local || node?.$state || node?.$collection || ['componentInput', 'dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(node?.$expression?.operation);
 export const evaluateCall = (expression, state, context, target = resolveData(expression.left, state, context)) => {
   if (typeof target === 'string' && builtinNames.includes(target.replace(/^\\/, '').toLowerCase())) return evaluateBuiltin({...expression, left: target.replace(/^\\/, '').toLowerCase()}, state, context, resolveData, resolveType, valueReference);
   const source = expression.right.source || context.source;
@@ -223,7 +224,7 @@ export const executeFunctionBody = (action, state, context) => {
   const value = (node) => resolveData(node, state, data);
   const item = (node) => {const result = value(node); return {value: result, kind: resolveType(node, state, data, result)};};
   const run = (child) => executeFunctionBody(child, state, data);
-  const iteration = (count) => {if (count > (action.limit || 1000) || --data.loopBudget.remaining < 0) throw Object.assign(new RangeError('Frontend loop exceeds its safe iteration limit'), {code: 'PHP_LOOP_LIMIT'});};
+  const iteration = (count) => checkIteration(data, count, action.limit || 1000);
   const outer = (signal) => signal.operation === 'return' ? signal : {...signal, levels: signal.levels - 1};
   const bindings = (rules, source, kind) => bindOffsetPattern(rules, {value: source, kind}, item, (target, current) => assignTarget(target, current.value, current.kind, state, data), data);
   try {

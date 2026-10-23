@@ -2,26 +2,14 @@ import {rootStates, rootConfigs, rootControllers, rootCleanups, transactions} fr
 import {commit, resolveData} from './state-runtime.js';
 import {clonePhp} from './core/php-arrays.js';
 import {decodeFile, encodeFile, fileLimit, downloadName} from './core/file-codecs.js';
+import {markBusy} from './control-state.js';
 
-const pending = new WeakMap(), busy = new WeakMap();
+const pending = new WeakMap();
 const cancelled = {operation: 'return', cancelled: true, hasValue: false};
 const resolveValue = (node, state, context) => {
   if (Object.hasOwn(node, 'expression')) return resolveData(node.expression, state, context?.eventData);
   if (Object.hasOwn(node, 'items')) return Array.isArray(node.items) ? node.items.map((item) => resolveValue(item, state, context)) : Object.fromEntries(Object.entries(node.items).map(([key, item]) => [key, resolveValue(item, state, context)]));
   return node.literal;
-};
-const markBusy = (trigger) => {
-  if (!trigger) return () => {};
-  const entry = busy.get(trigger) || {count: 0, aria: trigger.getAttribute('aria-busy'), disabled: trigger.disabled};
-  busy.set(trigger, entry); entry.count++;
-  trigger.setAttribute('aria-busy', 'true');
-  if (trigger.tagName === 'BUTTON') trigger.disabled = true;
-  return () => {
-    if (--entry.count) return;
-    busy.delete(trigger);
-    if (entry.aria === null) trigger.removeAttribute('aria-busy'); else trigger.setAttribute('aria-busy', entry.aria);
-    if (trigger.tagName === 'BUTTON') trigger.disabled = entry.disabled;
-  };
 };
 const readText = (file, signal) => new Promise((resolve, reject) => {
   const reader = new FileReader();

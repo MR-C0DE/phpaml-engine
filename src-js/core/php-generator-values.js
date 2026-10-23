@@ -1,3 +1,4 @@
+import {checkIteration} from './loop-budget.js';
 import {resolveData, resolveType, resolvedNode, valueReference, promoteReference} from './value.js';
 import {containsYield} from '../eval/generators.js';
 import {isGenerator, generatorMethod, generatorClosed} from './php-generators.js';
@@ -12,7 +13,7 @@ import {clonePhp} from './php-arrays.js';
 
 const empty = () => ({value: null, kind: 'NULL'});
 const expr = (operation, left, right) => ({$expression: {operation, left, right}});
-const assignable = (node) => node?.$local || node?.$state || ['dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(node?.$expression?.operation);
+const assignable = (node) => node?.$local || node?.$state || ['componentInput', 'dynamicLocal', 'offset', 'appendOffset', 'objectProperty', 'objectStaticProperty'].includes(node?.$expression?.operation);
 const read = (node, state, context) => {const value = resolveData(node, state, context); return {value, kind: resolveType(node, state, context, value)};};
 export function* generatorTarget(node, state, context, frame) {
   const rule = node?.$expression;
@@ -35,7 +36,7 @@ function* delegate(source, context) {
     const call = (method, args = []) => generatorMethod(source, method, args, context);
     let count = 0;
     while (call('valid').value) {
-      if (++count > 1000 || --context.loopBudget.remaining < 0) throw Object.assign(new RangeError('Frontend generator delegation exceeds its iteration limit'), {code: 'PHP_LOOP_LIMIT'});
+      checkIteration(context, ++count);
       let sent;
       try {sent = yield {key: call('key'), item: call('current')};}
       catch (error) {call('throw', [{value: error, kind: 'object'}]); continue;}
@@ -45,7 +46,7 @@ function* delegate(source, context) {
   }
   let count = 0;
   for (const entry of foreachEntries(source, true, context, () => {
-    if (++count > 1000 || --context.loopBudget.remaining < 0) throw Object.assign(new RangeError('Frontend generator delegation exceeds its iteration limit'), {code: 'PHP_LOOP_LIMIT'});
+    checkIteration(context, ++count);
   })) yield entry;
   return empty();
 }

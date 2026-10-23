@@ -1,3 +1,4 @@
+import {checkIteration} from './loop-budget.js';
 import {splListMethod,cloneSplList,isSplList} from './php-spl-list.js';
 import definitions from './spl-definitions.json' with {type: 'json'};
 import {makeObject, objectData, isPhpObject, objectIs} from './php-object-values.js';
@@ -61,7 +62,7 @@ export const runIterators = (name, items, context, invoke) => {
   const source = items[0].value;
   if (name === 'iterator_apply' && !objectIs(source, 'Traversable')) throw new TypeError('iterator_apply(): Argument #1 must be Traversable');
   let count = 0, output = makeArray();
-  const iteration = () => {if (count >= 1000 || --(context.loopBudget ||= {remaining: 10000}).remaining < 0) throw Object.assign(new RangeError('Frontend loop limit exceeded'), {code: 'PHP_LOOP_LIMIT'});};
+  const iteration = () => checkIteration(context, count + 1);
   for (const {key, item} of foreachEntries(source, name === 'iterator_to_array' && items[1].value, context, iteration)) {
     count++;
     if (name === 'iterator_to_array') output = item.reference ? arrayWithReference(output, key?.value, item.reference, context, !items[1].value) : arrayWrite(output, key?.value, item.value, item.kind, context, !items[1].value);

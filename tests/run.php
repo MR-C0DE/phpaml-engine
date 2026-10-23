@@ -18,6 +18,18 @@ use AML\Engine\Effects;
 use AML\Engine\EventRef;
 use AML\Engine\StateNamespace;
 
+$pageReference = StateRef::to('__locals.state1', 0);
+StateNamespace::enter('Child');
+try {
+    foreach ([ClientAction::increment($pageReference), ClientAction::set($pageReference, 2), ClientAction::append($pageReference, 3)] as $action) {
+        if ($action->target !== '__locals.state1') throw new RuntimeException('A forwarded StateRef must retain its owning state path.');
+    }
+    if (!str_starts_with(ClientAction::increment('count')->target, 'components.Child.')) throw new RuntimeException('String targets must retain component scoping.');
+} finally {
+    StateNamespace::leave();
+    StateNamespace::reset();
+}
+
 $increment = ClientAction::increment('count', 2)->json();
 if ($increment !== '{"type":"increment","target":"count","value":2}') {
     throw new RuntimeException('Increment action is invalid.');
@@ -209,20 +221,20 @@ if (!str_contains($minifiedScript, 'window.AMLEngine') || strlen($minifiedScript
     throw new RuntimeException('The minified compatibility runtime is unavailable.');
 }
 $assetPath = EngineRuntime::assetPath();
-if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.9.js')) {
+if (!is_file($assetPath) || !str_ends_with($assetPath, '/assets/engine-0.1.0-beta.10.js')) {
     throw new RuntimeException('The external browser runtime asset is unavailable.');
 }
-if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.9.min.js') {
+if (EngineRuntime::assetFilename(true) !== 'engine-0.1.0-beta.10.min.js') {
     throw new RuntimeException('The minified browser runtime filename is inconsistent.');
 }
 if (!is_file(EngineRuntime::evalAssetPath()) || !is_file(EngineRuntime::evalAssetPath() . '.map')
     || EngineRuntime::evalAssetFilename() !== 'engine-eval-' . EngineRuntime::VERSION . '.min.js') {
     throw new RuntimeException('The optional PHP parser assets are unavailable.');
 }
-if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.9.min.js" data-aml-engine></script>') {
+if (EngineRuntime::externalScript() !== '<script defer src="/_aml/engine-0.1.0-beta.10.min.js" data-aml-engine></script>') {
     throw new RuntimeException('The external browser runtime tag is inconsistent.');
 }
-if (EngineRuntime::externalScript(modular: true) !== '<script type="module" src="/_aml/modules-0.1.0-beta.9.min/engine.js" data-aml-engine></script>'
+if (EngineRuntime::externalScript(modular: true) !== '<script type="module" src="/_aml/modules-0.1.0-beta.10.min/engine.js" data-aml-engine></script>'
     || !is_file(EngineRuntime::publicAssetPath(EngineRuntime::moduleAssetFilename()))
     || EngineRuntime::publicAssetPath('../composer.json') !== null
     || EngineRuntime::publicAssetPath('modules-' . EngineRuntime::VERSION . '.min/../../composer.json') !== null) {
@@ -244,7 +256,7 @@ try {
     throw new RuntimeException('Unsafe CSP nonce was accepted.');
 } catch (InvalidArgumentException) {
 }
-if (EngineRuntime::VERSION !== '0.1.0-beta.9') {
+if (EngineRuntime::VERSION !== '0.1.0-beta.10') {
     throw new RuntimeException('Engine version is inconsistent.');
 }
 $package = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -328,7 +340,7 @@ foreach (['data-aml-show-when', 'data-aml-class-when', 'data-aml-disabled-when']
 foreach (['effectRuntimes', 'activateEffect', 'cleanupEffect', 'aml:effect-run', 'aml:effect-cleanup', 'aml:effect-error', 'aml:effect-cycle'] as $effectFeature) {
     if (!str_contains($scriptFeatures, $effectFeature)) throw new RuntimeException("Missing effect support: {$effectFeature}");
 }
-foreach (['registerEffect', 'rewriteDynamicEffectId', 'pendingEffectOrigins', "strategy === 'exhaust'", "strategy === 'queue'", "strategy === 'latest'", 'Duplicate AML effect identifier', 'runEffects(root, state, restoredTargets)'] as $effectFeature) {
+foreach (['registerEffect', 'rewriteRow', 'pendingEffectOrigins', "strategy === 'exhaust'", "strategy === 'queue'", "strategy === 'latest'", 'Duplicate AML effect identifier', 'runEffects(root, state, restoredTargets)'] as $effectFeature) {
     if (!str_contains($scriptFeatures, $effectFeature)) throw new RuntimeException("Missing stable effect behavior: {$effectFeature}");
 }
 foreach (['value.$event', 'runtime.definition.cleanup', 'definition.throttle', 'const effects =', 'pauseEffect', 'resumeEffect', 'runEffect', 'aml:effect-pause', 'aml:effect-resume'] as $effectFeature) {
@@ -340,7 +352,7 @@ foreach (['renderRichComponents', 'renderVirtualLists', 'data-aml-modal', 'data-
 foreach (['data-aml-toast', 'toastTimers', 'data-aml-disclosure-trigger', "[role='menuitem']", 'data-aml-tooltip-trigger', 'data-aml-multi-step-form', 'preserveForm', 'restoreForm', "control.type === 'file'"] as $advancedUiFeature) {
     if (!str_contains($scriptFeatures, $advancedUiFeature)) throw new RuntimeException("Missing advanced UI/form support: {$advancedUiFeature}");
 }
-foreach (['clearFormDraft', 'new FormData(form)', 'data-aml-step-next', "[data-aml-validate]:not([disabled])", 'relatedTarget instanceof Node', "clearTimeout(toastTimers.get(toast))", "actionForm && action.type !== 'form-state-reset' && !validateForm(actionForm)"] as $auditedUiGuard) {
+foreach (['clearFormDraft', 'new FormData(form)', 'data-aml-step-next', "control.willValidate === false", 'relatedTarget instanceof Node', "clearTimeout(toastTimers.get(toast))", "actionForm && action.type !== 'form-state-reset' && !validateForm(actionForm)"] as $auditedUiGuard) {
     if (!str_contains($scriptFeatures, $auditedUiGuard)) throw new RuntimeException("Missing audited UI guard: {$auditedUiGuard}");
 }
 foreach (["prefers-reduced-motion: reduce", 'ResizeObserver', "source.state !== list.dataset.amlList", "Array.from(event.dataTransfer.types).includes('text/x-aml-index')", "sort.closest('table')", "event.altKey", "input: 'keyboard'"] as $guard) {

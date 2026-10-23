@@ -89,12 +89,12 @@ export const runEffects = (root, state, changedTargets = null, mounting = false,
     const effects = rootConfigs.get(root)?.effects || {};
     Object.entries(effects).forEach(([id, definition]) => {
       if (mounting && !definition.runOnMount) return;
-      if (!mounting && (!changedTargets || !(definition.dependencies || []).some((dependency) => changedTargets.some((target) => pathAffects(dependency, target))))) return;
-      const selfTriggered = !mounting && changedTargets.some((target) => origins.get(target) === id && (definition.dependencies || []).some((dependency) => pathAffects(dependency, target)));
+      if (!mounting && (!changedTargets || !(definition.dependencies || []).some((dependency) => changedTargets.some((target) => statePathAffects(state, dependency, target))))) return;
+      const selfTriggered = !mounting && changedTargets.some((target) => origins.get(target) === id && (definition.dependencies || []).some((dependency) => statePathAffects(state, dependency, target)));
       activateEffect(root, state, id, definition, selfTriggered);
     });
   };
 import { effectRuntimes, rootConfigs, rootStates } from './context.js';
-import { pathAffects } from './core/state.js';
+import { statePathAffects } from './core/state.js';
 import { eventPayload, newEffectRuntime } from './effects.js';
 import { execute } from './actions-runtime.js';

@@ -12,8 +12,8 @@
 state, local actions and targeted bindings in the browser. Local interactions
 do not contact the PHP server.
 
-The coordinated frontend candidate pairs Engine `0.1.0-beta.9`, View
-`0.1.0-beta.13` and CLI `1.7.0-beta.45`. The CLI distribution check installs
+The coordinated frontend candidate pairs Engine `0.1.0-beta.10`, View
+`0.1.0-beta.14` and CLI `1.7.0-beta.46`. The CLI distribution check installs
 their ZIPs into a newly generated application and verifies its production
 archive with both runtimes. Versions remain independent; Engine has no CLI
 or Framework dependency.
@@ -163,6 +163,14 @@ closes its automation session afterward. The sibling View checkout is required.
 `PHP_BINARY`, `AML_TASKS_URL` and `WEBDRIVER_URL` override the local defaults.
 The runner waits for layout after scrolling before issuing native Safari clicks.
 
+`npm run test:safari:nesting` starts its own local fixture server and checks both
+runtimes with the installed Safari. Only `safaridriver -p 8121` is required in
+advance. It compares nested conditions, mixed loops, multi-level break/continue,
+function calls and finally blocks with native PHP, including limit diagnostics,
+State rollback and recovery. The report is saved to
+`test-results/nested-control-final/safari.json`. The Engine and View workflows
+also run this check on macOS, alongside the existing Playwright and package jobs.
+
 ### Both runtimes and distributed installations
 
 Check out the matching `phpaml-view` revision beside `phpaml-engine`, then run:
@@ -294,6 +302,13 @@ Engine beta.9 also evaluates structured switch/match, empty/isset, dynamic loops
 local foreach bindings and destructuring. Compiled loops are limited to 1,000
 iterations each and 10,000 cumulative iterations per invocation. Synchronous
 failures restore state and allow subsequent events. Echo uses the browser console.
+`PHP_LOOP_LIMIT` identifies whether a single loop (`limitKind: "loop"`) or the
+shared execution budget (`limitKind: "execution"`) was exhausted. The message
+includes the allowed count and the PHP source file/line. Function, generator and
+iterator execution use the same guard; the limits are unchanged.
+The permanent nested-flow suite checks 128 nested conditions and 64 nested loops.
+These are tested depths, not a promise of unlimited nesting: View still rejects
+compiled payloads exceeding 512 nested JSON containers, with a source diagnostic.
 PHP arrays keep insertion order, key types, numeric element kinds and their next
 append index in internal metadata. Copies, callback results and persisted values
 retain that metadata while public state remains ordinary JSON-compatible data.

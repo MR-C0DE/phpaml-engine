@@ -34,6 +34,7 @@ export const scheduleUpdate = (root, state, changes, originEffectId = null) => {
     }
   };
 export const commit = (root, state, target, value, executionContext = null) => {
+    target = resolveWritePath(state, target);
     validatePhpValue(value, executionContext?.valueType || phpType(value));
     if (typeof value === 'number' && !Number.isFinite(value)) throw new RangeError('Frontend state must contain finite floats');
     const config = rootConfigs.get(root) || {shared: {}, persisted: {}, types: {}, computed: {}};
@@ -78,6 +79,7 @@ export const commit = (root, state, target, value, executionContext = null) => {
     scheduleUpdate(root, state, changes, (executionContext?.owner || executionContext)?.id);
   };
 export const apply = (scope, state, action, executionContext = null) => {
+    if (action.target) action = {...action, target: resolveWritePath(state, action.target)};
     if (action.type === 'remove-path') {
       const segments = safeSegments(action.target);
       if (segments.length < 2) throw new Error('AML remove-path requires a nested state path');
@@ -135,7 +137,7 @@ export const apply = (scope, state, action, executionContext = null) => {
     commit(scope, state, action.target, next, {...(executionContext || {}), valueType});
   };
 import { mountedRoots, pendingBatches, pendingEffectOrigins, rootConfigs, rootStates, sharedState, sharedValueTypes, transactions } from './context.js';
-import { clone, owningTarget, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
+import { clone, resolveWritePath, owningTarget, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
 import { resolveData, resolveType } from './core/value.js';
 import {persistState} from './browser-storage.js';
 import { render } from './rendering.js';

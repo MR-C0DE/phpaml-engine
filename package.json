@@ -10,7 +10,12 @@
     "test:browser:runtimes": "node scripts/test-runtimes.mjs",
     "test:packages": "node scripts/test-packages.mjs",
     "test:safari": "node tests/safari-applications.mjs",
-    "benchmark:browser": "playwright test benchmarks/engine.spec.mjs --config=playwright.performance.config.mjs"
+    "test:safari:inputs": "node tests/safari-component-inputs.mjs",
+    "test:safari:icons": "node tests/safari-icon-conditions.mjs",
+    "test:security": "node scripts/test-runtimes.mjs tests/browser/security-lab.spec.mjs tests/browser/security-storage.spec.mjs",
+    "test:safari:security": "node tests/safari-security.mjs",
+    "benchmark:browser": "playwright test benchmarks/engine.spec.mjs --config=playwright.performance.config.mjs",
+    "test:safari:nesting": "node tests/safari-nested-control-flow.mjs"
   },
   "devDependencies": {
     "@noble/hashes": "2.0.1",

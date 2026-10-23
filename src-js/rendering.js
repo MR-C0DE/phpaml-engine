@@ -1,3 +1,8 @@
+import {listItems, listDependencies, listRendered, reportListError, listOptions, applyListOptions} from './list-bindings.js';
+import {renderStyles} from './style-bindings.js';
+import {renderIcons} from './icon-bindings.js';
+import {setBoundText, setDisabledReason, setDisabledRule} from './control-state.js';
+import {renderCalendars} from './calendar.js';
 export const dynamicToken = (key) => {
     let hash = 2166136261;
     for (const character of String(key)) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
@@ -17,6 +22,29 @@ export const rewriteDynamic = (value, mapping) => {
 export const rewriteDynamicEffectId = (id, mapping) => {
     return rewriteDynamic(id, mapping);
   };
+const rewriteRow = (node, mapping) => {
+    const walk = root => root.querySelectorAll('*').forEach(element => {
+      for (const attribute of [...element.attributes]) {
+        if (!attribute.name.startsWith('data-aml-')) continue;
+        try {
+          const rewrite = value => Array.isArray(value) ? value.map(rewrite) : value && typeof value === 'object'
+            ? Object.fromEntries(Object.entries(value).map(([key, child]) => [rewriteDynamic(key, mapping), rewrite(child)])) : rewriteDynamic(value, mapping);
+          element.setAttribute(attribute.name, JSON.stringify(rewrite(JSON.parse(attribute.value))));
+        } catch (_) { element.setAttribute(attribute.name, rewriteDynamic(attribute.value, mapping)); }
+      }
+      if (element.localName === 'template') walk(element.content);
+    });
+    walk(node);
+  };
+const trackInitialRow = node => {
+    const targets = [], effects = [];
+    node.querySelectorAll('template[data-aml-state]').forEach(manifest => {
+      targets.push(...Object.keys(JSON.parse(manifest.dataset.amlState || '{}')));
+      effects.push(...Object.keys(JSON.parse(manifest.dataset.amlStateConfig || '{}').effects || {}));
+    });
+    node.dataset.amlDynamicState = JSON.stringify(targets);
+    node.dataset.amlDynamicEffects = JSON.stringify(effects);
+  };
 export const releaseServiceScopes = (root, node) => {
     const scopes = rootConfigs.get(root)?.serviceScopes;
     if (!scopes) return;
@@ -24,58 +52,48 @@ export const releaseServiceScopes = (root, node) => {
     node.querySelectorAll('template[data-aml-service-scope]').forEach((marker) => scopes.delete(marker.dataset.amlServiceScope));
   };
 export const hydrateDynamicItem = (root, state, node, key) => {
-    const token = dynamicToken(key);
+    const token = rowToken(key);
     const config = rootConfigs.get(root);
     if (!config) return;
     const mapping = {};
     const dynamicEffects = [];
     const dynamicStateTargets = [];
-    node.querySelectorAll('template[data-aml-state]').forEach((manifest) => {
+    // Include inactive branches/templates: two newly inserted rows must never
+    // share a component scope when the same branch is opened later.
+    const all = [];
+    const collect = parent => parent.querySelectorAll('*').forEach(element => {
+      all.push(element); if (element.localName === 'template') collect(element.content);
+    });
+    collect(node);
+    all.filter(element => element.matches('template[data-aml-state]')).forEach(manifest => {
       const values = JSON.parse(manifest.dataset.amlState || '{}');
-      Object.keys(values).forEach((target) => { mapping[target] = dynamicTarget(target, token); });
-      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{"effects":{}}');
-      Object.keys(addition.effects || {}).forEach((id) => {
+      Object.keys(values).forEach(target => { mapping[target] = dynamicTarget(target, token); });
+      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{}');
+      Object.keys(addition.effects || {}).forEach(id => {
         const scope = id.split('.').slice(0, -1).join('.');
         if (scope && !mapping[scope]) mapping[scope] = `${scope}.items.${token}`;
       });
     });
-    node.querySelectorAll('template[data-aml-service-scope]').forEach((marker) => {
-      const scope = marker.dataset.amlServiceScope; mapping[scope] = `${scope}.items.${token}`;
-    });
-    node.querySelectorAll('[data-aml-file-source]').forEach((input) => {
-      const source = input.dataset.amlFileSource;
-      mapping[source] = `${source}.items.${token}`;
+    all.forEach(element => {
+      const scope = element.dataset.amlServiceScope || element.dataset.amlFileSource;
+      if (scope) mapping[scope] = `${scope}.items.${token}`;
     });
     if (Object.keys(mapping).length === 0) return;
-    node.querySelectorAll('template[data-aml-state]').forEach((manifest) => {
+    rewriteRow(node, mapping);
+    node.querySelectorAll('template[data-aml-state]').forEach(manifest => {
       const values = JSON.parse(manifest.dataset.amlState || '{}');
-      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{"shared":{},"persisted":{},"types":{},"computed":{},"effects":{}}');
-      const rewrittenValues = {};
+      const addition = JSON.parse(manifest.dataset.amlStateConfig || '{}');
       Object.entries(values).forEach(([target, initial]) => {
-        const rewritten = mapping[target];
-        rewrittenValues[rewritten] = rewriteDynamic(initial, mapping);
-        dynamicStateTargets.push(rewritten);
-        writePath(state, rewritten, rewrittenValues[rewritten]);
+        dynamicStateTargets.push(target); writePath(state, target, initial);
       });
-      const rewrittenConfig = {shared: {}, persisted: {}, types: {}, computed: {}, effects: {}};
-      for (const group of ['shared', 'persisted', 'types', 'computed', 'effects']) {
+      for (const group of ['shared', 'persisted', 'types', 'typeRules', 'valueTypes', 'arrayMetadata', 'computed', 'effects']) {
         Object.entries(addition[group] || {}).forEach(([target, value]) => {
-          const rewritten = group === 'effects' ? rewriteDynamicEffectId(target, mapping) : (mapping[target] || rewriteDynamic(target, mapping));
-          rewrittenConfig[group][rewritten] = rewriteDynamic(value, mapping);
-          if (group === 'persisted') rewrittenConfig[group][rewritten].key += `.${token}`;
-          Object.assign(config[group], rewrittenConfig[group]);
-          if (group === 'effects') dynamicEffects.push(rewritten);
+          if (group === 'persisted') value.key += `.${token}`;
+          (config[group] ||= {})[target] = value;
+          if (group === 'effects') dynamicEffects.push(target);
         });
       }
-      manifest.dataset.amlState = JSON.stringify(rewrittenValues);
-      manifest.dataset.amlStateConfig = JSON.stringify(rewrittenConfig);
-    });
-    node.querySelectorAll('*').forEach((element) => {
-      for (const attribute of [...element.attributes]) {
-        if (!attribute.name.startsWith('data-aml-') || attribute.name === 'data-aml-state' || attribute.name === 'data-aml-state-config') continue;
-        try { element.setAttribute(attribute.name, JSON.stringify(rewriteDynamic(JSON.parse(attribute.value), mapping))); }
-        catch (_) { element.setAttribute(attribute.name, rewriteDynamic(attribute.value, mapping)); }
-      }
+      manifest.dataset.amlStateConfig = JSON.stringify(addition);
     });
     node.dataset.amlDynamicState = JSON.stringify(dynamicStateTargets);
     node.dataset.amlDynamicEffects = JSON.stringify(dynamicEffects);
@@ -84,12 +102,15 @@ export const hydrateDynamicItem = (root, state, node, key) => {
   };
 export const releaseDynamicItem = (root, state, node) => {
     releaseServiceScopes(root, node);
-    const targets = JSON.parse(node.dataset.amlDynamicState || '[]');
-    const effects = JSON.parse(node.dataset.amlDynamicEffects || '[]');
+    if (node.dataset.amlRowScope) unbindRows(state, node.dataset.amlRowScope);
+    node.querySelectorAll('[data-aml-row-scope]').forEach(child => unbindRows(state, child.dataset.amlRowScope));
+    const owned = [node, ...node.querySelectorAll('[data-aml-dynamic-state], [data-aml-dynamic-effects]')];
+    const targets = new Set(owned.flatMap(child => JSON.parse(child.dataset.amlDynamicState || '[]')));
+    const effects = new Set(owned.flatMap(child => JSON.parse(child.dataset.amlDynamicEffects || '[]')));
     const config = rootConfigs.get(root) || {};
     targets.forEach((target) => {
       deletePath(state, target);
-      for (const group of ['shared', 'persisted', 'types', 'computed']) delete config[group]?.[target];
+      for (const group of ['shared', 'persisted', 'types', 'typeRules', 'valueTypes', 'arrayMetadata', 'computed']) delete config[group]?.[target];
     });
     effects.forEach((id) => {
       cleanupEffect(root, id, 'dynamic-unmount');
@@ -159,8 +180,7 @@ export const renderRichComponents = (root, state, target = null) => {
         panel.setAttribute('aria-current', active ? 'step' : 'false'); panel.hidden = !active;
         if (active) panel.removeAttribute('inert'); else panel.setAttribute('inert', '');
         panel.querySelectorAll('input,select,textarea,button').forEach((control) => {
-          if (!active && !control.disabled) { control.dataset.amlStepEnabled = 'true'; control.disabled = true; }
-          else if (active && control.dataset.amlStepEnabled === 'true') { control.disabled = false; delete control.dataset.amlStepEnabled; }
+          setDisabledReason(control, panel, !active);
         });
       });
       if (target) queueMicrotask(() => form.querySelector(`[data-aml-form-step="${step}"] h2`)?.focus?.({preventScroll: true}));
@@ -235,34 +255,154 @@ export const renderContexts = (root, state, target = null) => {
 export const render = (scope, state, target = null) => {
     const config = rootConfigs.get(scope) || rootConfigs.get(scope.closest?.('[data-aml-client]')) || {};
     const textContext = {valueTypes: config.valueTypes || {}, stateTypes: config.types || {}};
+    // Resolve structural branches before binding their descendants. New nested
+    // branches must join this traversal rather than wait for another State change.
+    const structureSelector = '[data-aml-list], [data-aml-list-value], [data-aml-ilist], [data-aml-when]';
+    const pendingLists = [...scope.querySelectorAll(structureSelector)];
+    const visitedLists = new Set();
+    while (pendingLists.length) {
+      let list = pendingLists.shift();
+      if (!scope.contains(list) || visitedLists.has(list)) continue;
+      visitedLists.add(list);
+      if (list.dataset.amlWhen !== undefined) {
+        const row = list.closest('[data-aml-row-scope]');
+        const rule = JSON.parse(list.dataset.amlWhen);
+        const branch = readPath(state, rule.state) === rule.equals ? 'then' : 'else';
+        const content = list.querySelector(':scope > [data-aml-when-content]');
+        if (content && list.dataset.amlWhenActive !== branch) {
+          const template = list.querySelector(`:scope > template[data-aml-when-${branch}]`);
+          if (row) releaseDynamicItem(scope, state, content);
+          else releaseServiceScopes(scope, content);
+          content.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
+          if (row) hydrateDynamicItem(scope, state, content, branch);
+          list.dataset.amlWhenActive = branch;
+          // A fresh subtree needs every binding, even when another State caused it.
+          target = null;
+        }
+        if (row && content && !content.dataset.amlDynamicState) trackInitialRow(content);
+        pendingLists.unshift(...list.querySelectorAll(structureSelector));
+        continue;
+      }
+      try {
+        const options = listOptions(list, state, textContext);
+        const items = listItems(list, state, target, textContext);
+        if (items === null) { applyListOptions(list, options); continue; }
+        const labelPath = list.dataset.amlListLabel || '';
+        const keyPath = list.dataset.amlListKey || '';
+        const itemTag = list.dataset.amlListItemTag || 'li';
+        const template = list.querySelector(':scope > template[data-aml-list-template]');
+        const existing = new Map([...list.children]
+          .filter((child) => child !== template && child.dataset.amlListKey !== undefined)
+          .map((child) => [child.dataset.amlListKey, child]));
+        const seenKeys = new Set();
+        const calculated = list.dataset.amlListValue !== undefined || list.dataset.amlIlist !== undefined;
+        // Validate the entire projection before touching the last valid DOM.
+        const rows = items.map((item, index) => {
+          const record = item !== null && typeof item === 'object';
+          const itemValues = record ? item : {value: item};
+          const label = record && labelPath ? readPath(item, labelPath) : item;
+          const key = (keyPath ? readPath(item, keyPath) : index) ?? index;
+          if (calculated && typeof key !== 'string' && !(typeof key === 'number' && Number.isSafeInteger(key))) throw new TypeError('AML collection keys must be strings or integers.');
+          const keyString = String(key);
+          if (seenKeys.has(keyString)) throw new Error(`Duplicate AML collection key: ${keyString}`);
+          if (calculated && !template && label != null && !['string', 'number', 'boolean'].includes(typeof label)) throw new TypeError('AML collection labels must be scalar values.');
+          seenKeys.add(keyString);
+          return {index, itemValues, label, keyString};
+        });
+        list = applyListOptions(list, options);
+        const focus = list.contains(document.activeElement) ? document.activeElement : null;
+        const selection = focus && typeof focus.selectionStart === 'number' ? [focus.selectionStart, focus.selectionEnd] : null;
+        let cursor = [...list.children].find(child => child.dataset.amlListKey !== undefined) || null;
+        rows.forEach(({index, itemValues, label, keyString}) => {
+          const node = existing.get(keyString) || document.createElement(itemTag);
+          const isNew = !node.hasChildNodes();
+          existing.delete(keyString);
+          node.dataset.amlListIndex = String(index); node.dataset.amlListKey = keyString;
+          const rowScope = list.dataset.amlIlist ? `${list.dataset.amlIlist}.rows.${rowToken(keyString)}` : null;
+          if (rowScope) {
+            bindRow(state, rowScope, {dependencies: listDependencies(list), value: itemValues, key: keyString, keyPath, source: list.dataset.amlListEditable || list.dataset.amlList, direct: list.dataset.amlListValue === undefined});
+            node.dataset.amlRowScope = rowScope;
+          }
+          if (template && isNew) {
+            node.appendChild(template.content.cloneNode(true));
+            if (rowScope) {
+              const mapping = {[`${list.dataset.amlIlist}.rows.template`]: rowScope};
+              const scopes = root => root.querySelectorAll('*').forEach(child => {
+                if (child.dataset.amlIlist) mapping[child.dataset.amlIlist] = `${child.dataset.amlIlist}.items.${rowToken(keyString)}`;
+                if (child.localName === 'template') scopes(child.content);
+              });
+              scopes(node); rewriteRow(node, mapping);
+            }
+            hydrateDynamicItem(scope, state, node, keyString);
+          }
+          if (template) {
+            node.querySelectorAll('[data-aml-item-bind]').forEach((binding) => {
+              if (binding.closest('[data-aml-list-key]') !== node) return;
+              binding.textContent = phpString(readPath(itemValues, binding.dataset.amlItemBind) ?? '');
+            });
+          } else node.textContent = phpString(label ?? '');
+          node.dataset.amlListIndex = String(index);
+          node.dataset.amlListKey = keyString;
+          if (list.dataset.amlSortable === 'true') {
+            node.draggable = true; node.tabIndex = 0;
+            node.setAttribute('aria-keyshortcuts', 'Alt+ArrowUp Alt+ArrowDown');
+          }
+          if (node !== cursor) { if (list.moveBefore && node.parentNode === list) list.moveBefore(node, cursor); else list.insertBefore(node, cursor); }
+          cursor = node.nextElementSibling;
+          if (rowScope && !node.dataset.amlDynamicState) trackInitialRow(node);
+          pendingLists.unshift(...node.querySelectorAll(structureSelector));
+          if (isNew) animateIn(node);
+        });
+        existing.forEach((node) => { releaseDynamicItem(scope, state, node); node.remove(); });
+        const empty = list.querySelector(':scope > [data-aml-list-empty]');
+        if (empty) empty.hidden = items.length > 0;
+        if (focus?.isConnected && document.activeElement !== focus) { focus.focus({preventScroll: true}); if (selection) focus.setSelectionRange(...selection); }
+        if (list.dataset.amlIlist) target = null;
+        listRendered(list);
+      } catch (error) { reportListError(scope, list, error); }
+    }
+    renderIcons(scope, state, textContext);
+    scope.querySelectorAll('[data-aml-href]').forEach(node => {
+      try {
+        const value = resolveData(JSON.parse(node.dataset.amlHref), state, {...textContext});
+        if (typeof value !== 'string' || /[\x00-\x1f\x7f]/.test(value) || (/^([a-z][a-z0-9+.-]*):/i.test(value.trim()) && !/^(https?|mailto|tel):/i.test(value.trim()))) throw new TypeError('Unsafe or unsupported reactive link URL.');
+        if (node.getAttribute('href') !== value.trim()) node.setAttribute('href', value.trim());
+      } catch (error) { scope.dispatchEvent(new CustomEvent('aml:render-error', {detail: {error, node}})); }
+    });
     scope.querySelectorAll('[data-aml-bind-value]').forEach((node) => {
       const expression = JSON.parse(node.dataset.amlBindValue), context = {...textContext};
       const value = resolveData(expression, state, context);
-      node.textContent = phpString(value, resolveType(expression, state, context, value), context);
+      setBoundText(node, phpString(value, resolveType(expression, state, context, value), context));
     });
     scope.querySelectorAll('[data-aml-bind]').forEach((node) => {
       if (target && !pathAffects(node.dataset.amlBind, target)) return;
       const value = readPath(state, node.dataset.amlBind);
       if (node.matches('progress,meter')) {
         node.value = Number(value ?? 0);
+      } else if (node.matches('button[data-aml-model]')) {
+        node.value = value == null ? '' : String(value);
       } else if (node.matches('input,textarea,select')) {
         if (node.type === 'file') return; // Selection is owned by the browser; state contains metadata only.
         if (node.type === 'checkbox') node.checked = Boolean(value);
+        else if (node.type === 'radio') node.checked = node.value === String(value ?? '');
+        else if (node.matches('select[multiple]')) {
+          const selected = new Set((Array.isArray(value) ? value : [value ?? '']).map(String));
+          [...node.options].forEach(option => { option.selected = selected.has(option.value); });
+        }
         else if (document.activeElement !== node) node.value = value ?? '';
       } else {
-        node.textContent = phpString(value, resolveType({$state: node.dataset.amlBind}, state, textContext, value), textContext);
+        setBoundText(node, phpString(value, resolveType({$state: node.dataset.amlBind}, state, textContext, value), textContext));
       }
     });
     scope.querySelectorAll('[data-aml-show-when]').forEach((node) => {
       const rule = JSON.parse(node.dataset.amlShowWhen);
       if (target && !pathAffects(rule.state, target)) return;
       const hidden = readPath(state, rule.state) !== rule.equals;
-      node.hidden = hidden;
+      node.toggleAttribute('hidden', hidden);
       if (hidden) node.setAttribute('inert', ''); else node.removeAttribute('inert');
-      node.querySelectorAll('input,select,textarea,button').forEach((control) => {
-        if (hidden && !control.disabled) { control.dataset.amlConditionEnabled = 'true'; control.disabled = true; }
-        else if (!hidden && control.dataset.amlConditionEnabled === 'true') { control.disabled = false; delete control.dataset.amlConditionEnabled; }
-      });
+      const controls = [...node.querySelectorAll('input,select,textarea,button')];
+      if (node.matches('input,select,textarea,button')) controls.push(node);
+      controls.forEach(control => setDisabledReason(control, node, hidden));
     });
     scope.querySelectorAll('[data-aml-class-when]').forEach((node) => {
       JSON.parse(node.dataset.amlClassWhen).forEach((rule) => {
@@ -274,65 +414,16 @@ export const render = (scope, state, target = null) => {
       const rule = JSON.parse(node.dataset.amlDisabledWhen);
       if (target && !pathAffects(rule.state, target)) return;
       const disabled = readPath(state, rule.state) === rule.equals;
-      node.disabled = disabled;
-      node.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    });
-    scope.querySelectorAll('[data-aml-list]').forEach((list) => {
-      if (target && !pathAffects(list.dataset.amlList, target)) return;
-      const items = readPath(state, list.dataset.amlList);
-      const labelPath = list.dataset.amlListLabel || '';
-      const keyPath = list.dataset.amlListKey || '';
-      const itemTag = list.dataset.amlListItemTag || 'li';
-      const template = list.querySelector(':scope > template[data-aml-list-template]');
-      const existing = new Map([...list.children]
-        .filter((child) => child !== template && child.dataset.amlListKey !== undefined)
-        .map((child) => [child.dataset.amlListKey, child]));
-      const seenKeys = new Set();
-      (Array.isArray(items) ? items : []).forEach((item, index) => {
-        const label = labelPath ? readPath(item, labelPath) : item;
-        const key = keyPath ? readPath(item, keyPath) : index;
-        const keyString = String(key ?? index);
-        if (seenKeys.has(keyString)) throw new Error(`Duplicate AML collection key: ${keyString}`);
-        seenKeys.add(keyString);
-        const node = existing.get(keyString) || document.createElement(itemTag);
-        const isNew = !node.hasChildNodes();
-        existing.delete(keyString);
-        if (template && isNew) {
-          node.appendChild(template.content.cloneNode(true));
-          hydrateDynamicItem(scope, state, node, keyString);
-        }
-        if (template) {
-          node.querySelectorAll('[data-aml-item-bind]').forEach((binding) => {
-            binding.textContent = readPath(item, binding.dataset.amlItemBind) ?? '';
-          });
-        } else node.textContent = label ?? '';
-        node.dataset.amlListIndex = String(index);
-        node.dataset.amlListKey = keyString;
-        if (list.dataset.amlSortable === 'true') {
-          node.draggable = true; node.tabIndex = 0;
-          node.setAttribute('aria-keyshortcuts', 'Alt+ArrowUp Alt+ArrowDown');
-        }
-        list.appendChild(node);
-        if (isNew) animateIn(node);
-      });
-      existing.forEach((node) => { releaseDynamicItem(scope, state, node); node.remove(); });
-      if (template) list.appendChild(template);
-    });
-    scope.querySelectorAll('[data-aml-when]').forEach((container) => {
-      const rule = JSON.parse(container.dataset.amlWhen);
-      if (target && !pathAffects(rule.state, target)) return;
-      const content = container.querySelector(':scope > [data-aml-when-content]');
-      const template = readPath(state, rule.state) === rule.equals
-        ? container.querySelector(':scope > template[data-aml-when-then]')
-        : container.querySelector(':scope > template[data-aml-when-else]');
-      if (content && template) { releaseServiceScopes(scope, content); content.replaceChildren(template.content.cloneNode(true)); }
+      setDisabledRule(node, disabled);
     });
     renderRichComponents(scope, state, target);
     renderVirtualLists(scope, state);
     renderContexts(scope, state, target);
+    renderCalendars(scope);
+    renderStyles(scope, state, target, textContext);
   };
 import { effectRuntimes, rootConfigs, toastTimers } from './context.js';
-import { deletePath, pathAffects, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
+import { bindRow, rowToken, unbindRows, deletePath, pathAffects, readPath, recomputeComputed, safeSegments, writePath } from './core/state.js';
 import { cleanupEffect, registerEffect } from './effects-runtime.js';
 import { commit, resolveData } from './state-runtime.js';
 import {resolveType} from './core/value.js';

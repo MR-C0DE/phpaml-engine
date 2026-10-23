@@ -2,6 +2,7 @@ import {rootControllers} from './context.js';
 import {commit, resolveData} from './state-runtime.js';
 import {readPath} from './core/state.js';
 import {csrfToken, prepareApiRequest, refreshCsrfToken} from './http.js';
+import {markBusy} from './control-state.js';
 
 export const request = async (root, state, action, trigger, executionContext = null) => {
     const owner = executionContext?.owner || executionContext;
@@ -16,8 +17,7 @@ export const request = async (root, state, action, trigger, executionContext = n
     rootControllers.set(root, controllers);
     if (action.loading) commit(root, state, action.loading, true, executionContext);
     if (action.error) commit(root, state, action.error, '', executionContext);
-    trigger?.setAttribute('aria-busy', 'true');
-    if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
+    const restoreBusy = markBusy(trigger);
     try {
       const retries = Math.max(0, Math.min(5, Number(action.retries || 0)));
       for (let attempt = 0; attempt <= retries; attempt++) {
@@ -66,7 +66,6 @@ export const request = async (root, state, action, trigger, executionContext = n
       if (executionContext) throw error;
     } finally {
       if (action.loading && isCurrent()) commit(root, state, action.loading, false, executionContext);
-      trigger?.removeAttribute('aria-busy');
-      if (trigger instanceof HTMLButtonElement) trigger.disabled = false;
+      restoreBusy();
     }
   };

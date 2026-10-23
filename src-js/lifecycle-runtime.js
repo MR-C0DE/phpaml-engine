@@ -1,5 +1,7 @@
 import {restoreArrayMetadata} from './core/php-arrays.js';
 import {prepareScopeModules} from './modules/runtime.js';
+import {calendarClick, calendarKey, renderCalendars} from './calendar.js';
+import {cleanupIcons} from './icon-bindings.js';
 const formState = (form) => {
     if (!form?.dataset?.amlFormState) return null;
     try { return JSON.parse(form.dataset.amlFormState); }
@@ -12,7 +14,7 @@ const commitFormState = (root, state, rule, target, value) => {
   };
 
 const updateFormValidityState = (root, state, form, rule) => {
-    const valid = form.checkValidity() && !form.querySelector('[aria-invalid="true"]');
+    const valid = form.checkValidity() && !form.querySelector('[aria-invalid="true"]:not(:disabled)');
     commitFormState(root, state, rule, 'valid', valid);
     commitFormState(root, state, rule, 'invalid', !valid);
     return valid;
@@ -88,7 +90,8 @@ const mountRoots = roots => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, event: eventName}}));
           return Promise.reject(error);
         }
-        return execute(root, state, action, target, {eventData: eventPayload(event)}).then(() => true).catch((error) => {
+        const trigger = eventName === 'submit' ? event?.submitter || target : target;
+        return execute(root, state, action, trigger, {eventData: eventPayload(event)}).then(() => true).catch((error) => {
           root.dispatchEvent(new CustomEvent('aml:error', {detail: {error, action, event: eventName}}));
           console.error(error);
           return false;
@@ -105,6 +108,7 @@ const mountRoots = roots => {
       stateHistories.set(root, []);
       root.dataset.amlEngineMounted = 'true';
       listen('click', async (event) => {
+        if (calendarClick(root, event)) return;
         const stepControl = event.target.closest('[data-aml-step-next],[data-aml-step-previous]');
         if (stepControl && root.contains(stepControl)) {
           event.preventDefault();
@@ -114,8 +118,8 @@ const mountRoots = roots => {
           if (stepControl.matches('[data-aml-step-next]')) {
             const panel = form.querySelector(`[data-aml-form-step="${current}"]`);
             let valid = true;
-            panel?.querySelectorAll('[data-aml-validate]:not([disabled])').forEach((control) => { if (!validateControl(control)) valid = false; });
-            const remote = [...(panel?.querySelectorAll('[data-aml-validate-api]:not([disabled])') || [])];
+            panel?.querySelectorAll('input,select,textarea').forEach((control) => { if (!validateControl(control)) valid = false; });
+            const remote = [...(panel?.querySelectorAll('[data-aml-validate-api]:not(:disabled)') || [])];
             if (valid) valid = (await Promise.all(remote.map((control) => validateRemote(root, state, control)))).every(Boolean);
             if (!valid) { panel?.querySelector('[aria-invalid="true"]')?.focus(); return; }
             commit(root, state, rule.state, Math.min(Number(rule.count) - 1, current + 1));
@@ -194,6 +198,7 @@ const mountRoots = roots => {
         });
       });
       listen('keydown', (event) => {
+        if (calendarKey(root, event)) return;
         if (event.key === 'Escape') {
           const openTriggers = [...root.querySelectorAll('[data-aml-disclosure-trigger][aria-expanded="true"]')];
           const focusedPanel = document.activeElement?.closest?.('[data-aml-disclosure-panel]');
@@ -328,6 +333,7 @@ const mountRoots = roots => {
           updateFormValidityState(root, state, tracked, rule);
         }
         executeClientEvent(event.target.closest('[data-aml-client-input]'), 'input', event);
+        if (event.target.matches('[data-aml-calendar-input]')) renderCalendars(root);
       });
       listen('change', (event) => {
         const control = event.target.closest('[data-aml-model]');
@@ -345,6 +351,7 @@ const mountRoots = roots => {
           updateFormValidityState(root, state, tracked, rule);
         }
         executeClientEvent(event.target.closest('[data-aml-client-change]'), 'change', event);
+        if (event.target.matches('[data-aml-calendar-input]')) renderCalendars(root);
       });
       listen('focusin', (event) => {
         executeClientEvent(event.target.closest('[data-aml-client-focus]'), 'focus', event);
@@ -370,7 +377,7 @@ const mountRoots = roots => {
           form.querySelector('[aria-invalid="true"]')?.focus();
           return;
         }
-        const controls = [...form.querySelectorAll('[data-aml-validate-api]')];
+        const controls = [...form.querySelectorAll('[data-aml-validate-api]:not(:disabled)')];
         const valid = (await Promise.all(controls.map((control) => validateRemote(root, state, control)))).every(Boolean);
         updateFormValidityState(root, state, form, rule);
         if (valid) {
@@ -425,6 +432,7 @@ export const unmount = (root) => {
     if (root) pendingMounts.delete(root);
     if (!root || root.dataset.amlEngineMounted !== 'true') return;
     lifecycle(root, 'unmount', {state: clone(rootStates.get(root) || {})});
+    cleanupIcons(root);
     effectRuntimes.get(root)?.forEach((_, id) => cleanupEffect(root, id, 'unmount'));
     rootControllers.get(root)?.forEach((controller) => controller.abort());
     navigationRuntimes.get(root)?.controller?.abort();
