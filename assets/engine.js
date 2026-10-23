@@ -7221,7 +7221,7 @@ if (!window.AMLEngine?.mount) {
       value = makeArray(entries);
     } else {
       const slice = name === "grapheme_strstr" || name === "grapheme_stristr", insensitive = name.includes("stri") || name === "grapheme_strripos", reverse = name.includes("strr");
-      const match = name === "grapheme_strstr" && !a.includes(b) ? null : find(a, b, slice ? 0 : c, reverse, insensitive, context2);
+      const match = name === "grapheme_strstr" && !context2.source?.graphemeSubstringCollation && !a.includes(b) ? null : find(a, b, slice ? 0 : c, reverse, insensitive, context2);
       value = match === null ? false : slice ? c ? a.slice(0, match.position) : a.slice(match.position) : match.index;
     }
     if (typeof value === "string") bounded(value);

@@ -135,7 +135,7 @@
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js",
+            "path": "assets/modules-0.1.0-beta.10/unicode-C4CDOK3W.js",
             "kind": "dynamic-import"
           },
           {
@@ -317,13 +317,13 @@
         },
         "bytes": 135469
       },
-      "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js.map": {
+      "assets/modules-0.1.0-beta.10/unicode-C4CDOK3W.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 666006
+        "bytes": 666073
       },
-      "assets/modules-0.1.0-beta.10/unicode-ZBOCKO2T.js": {
+      "assets/modules-0.1.0-beta.10/unicode-C4CDOK3W.js": {
         "imports": [
           {
             "path": "assets/modules-0.1.0-beta.10/chunk-URCPTMHR.js",
@@ -338,7 +338,7 @@
         "entryPoint": "phpaml-module:unicode",
         "inputs": {
           "src-js/core/php-builtin-grapheme.js": {
-            "bytesInOutput": 6072
+            "bytesInOutput": 6119
           },
           "src-js/core/normalizer-data.json": {
             "bytesInOutput": 314833
@@ -353,7 +353,7 @@
             "bytesInOutput": 114
           }
         },
-        "bytes": 375441
+        "bytes": 375488
       },
       "assets/modules-0.1.0-beta.10/intl-MDUFDXKG.js.map": {
         "imports": [],
@@ -1041,7 +1041,7 @@
             "kind": "import-statement"
           },
           {
-            "path": "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js",
+            "path": "assets/modules-0.1.0-beta.10.min/unicode-NQSJLXE2.js",
             "kind": "dynamic-import"
           },
           {
@@ -1223,13 +1223,13 @@
         },
         "bytes": 74067
       },
-      "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js.map": {
+      "assets/modules-0.1.0-beta.10.min/unicode-NQSJLXE2.js.map": {
         "imports": [],
         "exports": [],
         "inputs": {},
-        "bytes": 667280
+        "bytes": 667350
       },
-      "assets/modules-0.1.0-beta.10.min/unicode-GIC2SJE6.js": {
+      "assets/modules-0.1.0-beta.10.min/unicode-NQSJLXE2.js": {
         "imports": [
           {
             "path": "assets/modules-0.1.0-beta.10.min/chunk-OOCVYYLR.js",
@@ -1244,7 +1244,7 @@
         "entryPoint": "phpaml-module:unicode",
         "inputs": {
           "src-js/core/php-builtin-grapheme.js": {
-            "bytesInOutput": 3379
+            "bytesInOutput": 3418
           },
           "src-js/core/normalizer-data.json": {
             "bytesInOutput": 277257
@@ -1259,7 +1259,7 @@
             "bytesInOutput": 41
           }
         },
-        "bytes": 323393
+        "bytes": 323432
       },
       "assets/modules-0.1.0-beta.10.min/intl-6ZH6XE6G.js.map": {
         "imports": [],

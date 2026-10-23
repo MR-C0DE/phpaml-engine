@@ -2,6 +2,6 @@
 <roave-bc-check>
   <baseline>
     <!-- This release intentionally updates its public version marker only. -->
-    <ignored-regex>#^\[BC\] CHANGED: Value of constant AML\\Engine\\EngineRuntime::VERSION changed from '0\.1\.0-beta\.8' to '0\.1\.0-beta\.9'$#</ignored-regex>
+    <ignored-regex>#^\[BC\] CHANGED: Value of constant AML\\Engine\\EngineRuntime::VERSION changed from '0\.1\.0-beta\.9' to '0\.1\.0-beta\.10'$#</ignored-regex>
   </baseline>
 </roave-bc-check>

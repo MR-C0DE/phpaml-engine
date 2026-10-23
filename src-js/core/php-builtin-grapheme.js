@@ -55,7 +55,7 @@ export const runGrapheme = (name, items, context) => {
   else if(name==='grapheme_str_split'){if(b<1)throw failure('ValueError','grapheme_str_split(): length must be greater than 0');const parts=clusters(a),entries=[];arrayLimit(Math.ceil(parts.length/b));for(let i=0;i<parts.length;i+=b)entries.push([entries.length,parts.slice(i,i+b).join('')]);value=makeArray(entries);}
   else{
     const slice=name==='grapheme_strstr'||name==='grapheme_stristr',insensitive=name.includes('stri')||name==='grapheme_strripos',reverse=name.includes('strr');
-    const match=name==='grapheme_strstr'&&!a.includes(b)?null:find(a,b,slice?0:c,reverse,insensitive,context);
+    const match=name==='grapheme_strstr'&&!context.source?.graphemeSubstringCollation&&!a.includes(b)?null:find(a,b,slice?0:c,reverse,insensitive,context);
     value=match===null?false:slice?(c?a.slice(0,match.position):a.slice(match.position)):match.index;
   }
   if(typeof value==='string')bounded(value);return {value,kind:phpType(value)};

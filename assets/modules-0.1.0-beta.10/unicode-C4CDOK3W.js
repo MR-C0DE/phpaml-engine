@@ -116,7 +116,7 @@ var runGrapheme = (name, items, context) => {
     value = makeArray(entries);
   } else {
     const slice = name === "grapheme_strstr" || name === "grapheme_stristr", insensitive = name.includes("stri") || name === "grapheme_strripos", reverse = name.includes("strr");
-    const match = name === "grapheme_strstr" && !a.includes(b) ? null : find(a, b, slice ? 0 : c, reverse, insensitive, context);
+    const match = name === "grapheme_strstr" && !context.source?.graphemeSubstringCollation && !a.includes(b) ? null : find(a, b, slice ? 0 : c, reverse, insensitive, context);
     value = match === null ? false : slice ? c ? a.slice(0, match.position) : a.slice(match.position) : match.index;
   }
   if (typeof value === "string") bounded(value);

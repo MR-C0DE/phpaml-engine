@@ -6,6 +6,9 @@ All notable changes follow Semantic Versioning.
 
 ## 0.1.0-beta.10 — 2026-10-23
 
+- Match the compiling PHP/Intl behavior for grapheme substring searches across
+  canonical-equivalent strings and ignored Unicode characters.
+
 - Clarify per-loop and cumulative iteration errors while keeping their budgets,
   PHP source locations, error code and rollback behavior. Share the guard across
   events, functions, generators and iterators. Add permanent nested-flow tests
